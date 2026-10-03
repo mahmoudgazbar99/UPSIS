@@ -1,0 +1,40 @@
+services:
+
+  web:
+    build: .
+    container_name: myapp_web
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: ecole_sante_gabes
+      DB_USER: myapp_user
+      DB_PASS: myapp_password
+      INSCRIPTION_TEMPLATE: /opt/templates/template_inscription_2.docx
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/var/www/html
+      - ./templates/template_inscription_2.docx:/opt/templates/template_inscription_2.docx:ro
+
+  db:
+    image: mysql:8.4
+    container_name: myapp_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: ecole_sante_gabes
+      MYSQL_USER: myapp_user
+      MYSQL_PASSWORD: myapp_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./ecole_sante_gabes_full.sql:/docker-entrypoint-initdb.d/01-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  mysql_data:
