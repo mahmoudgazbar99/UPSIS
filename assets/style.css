@@ -463,11 +463,17 @@ main.container {
     display: none !important;
   }
 
+  .dashboard-menu-item[data-alert-count] {
+    position: relative;
+  }
+
   .dashboard-menu-item[data-alert-count]::after {
     content: attr(data-alert-count);
     position: absolute;
-    top: 0.3rem;
-    right: 0.3rem;
+    top: 0.42rem;
+    left: calc(50% + 0.62rem);
+    right: auto;
+    z-index: 2;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -479,10 +485,7 @@ main.container {
     font-weight: 700;
     color: #fff;
     background: linear-gradient(135deg, #d9534f, #b02a37);
-  }
-
-  .dashboard-menu-item[data-menu-icon="alert"] {
-    position: relative;
+    pointer-events: none;
   }
 
   .dashboard-menu-item[data-menu-icon="home"] .dashboard-menu-icon::before { content: "⌂"; }
@@ -2943,6 +2946,212 @@ body.theme-atlas .btn-check:checked + .presence-chip-absent {
   height: 1.15rem;
 }
 
+.macos-row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.macos-row-actions form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.macos-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.macos-avatar {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  flex: 0 0 1.85rem;
+  border-radius: 50%;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: color-mix(in srgb, var(--app-accent) 18%, transparent);
+  color: var(--app-accent);
+}
+
+.macos-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.macos-date-pill,
+.macos-motif {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  background: color-mix(in srgb, var(--app-surface-strong) 80%, transparent);
+  border: 1px solid var(--app-border);
+  color: var(--app-muted);
+}
+
+.macos-motif {
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attestation-stage {
+  position: relative;
+  min-height: 0;
+}
+
+.attestation-board {
+  overflow: hidden;
+}
+
+.attestation-board-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.attestation-board-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.attestation-board-heading .h4 {
+  font-size: 1rem;
+}
+
+.attestation-board.is-moved {
+  position: absolute;
+  z-index: 8;
+  margin: 0;
+}
+
+.attestation-board.is-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+
+.attestation-board.is-collapsed .table-responsive {
+  display: none;
+}
+
+.attestation-board.is-max {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+}
+
+#demandesTable th:last-child,
+#demandesTable td:last-child {
+  min-width: 0 !important;
+  width: 1%;
+  white-space: nowrap;
+}
+
+#demandesTable td:last-child .btn {
+  width: auto !important;
+}
+
+@media (max-width: 767.98px) {
+  .attestation-board-titlebar {
+    flex-wrap: wrap;
+  }
+
+  .attestation-board-titlebar .attestation-toggle-form {
+    width: 100%;
+  }
+
+  #demandesTable thead {
+    display: none;
+  }
+
+  #demandesTable,
+  #demandesTable tbody,
+  #demandesTable tr,
+  #demandesTable td {
+    display: block;
+    width: 100%;
+  }
+
+  #demandesTable tr {
+    padding: 0.7rem 0.85rem 0.8rem;
+    border-bottom: 1px solid var(--app-border);
+  }
+
+  #demandesTable td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.28rem 0;
+    white-space: normal !important;
+    width: 100% !important;
+  }
+
+  #demandesTable td::before {
+    content: attr(data-label);
+    font-size: 0.66rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--app-muted);
+  }
+
+  #demandesTable td:last-child {
+    justify-content: flex-end;
+    padding-top: 0.45rem;
+  }
+
+  #demandesTable td:last-child::before,
+  #demandesTable td[colspan]::before,
+  #demandesTable tr.is-empty td::before {
+    display: none;
+  }
+
+  .macos-row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .macos-motif {
+    max-width: min(12rem, 58vw);
+  }
+
+  .attestation-accept-overlay {
+    padding: 0.65rem;
+    align-items: end;
+    place-items: end center;
+  }
+
+  .attestation-accept-dialog {
+    width: min(100%, 26rem);
+    left: 50%;
+    top: auto;
+    bottom: 0.5rem;
+    transform: translate(-50%, 0);
+  }
+
+  .attestation-accept-dialog.is-moved {
+    bottom: auto;
+  }
+
+  .attestation-accept-datetime {
+    grid-template-columns: 1fr;
+  }
+}
+
 .elimination-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5374,4 +5583,321 @@ body.theme-macos .theme-toggle {
 body.theme-macos .theme-toggle-icon,
 .theme-toggle-icon {
   display: block;
+}
+
+/* Module iframe: fill the panel and scroll inside so the mouse wheel works */
+html:has(> body.embedded-view) {
+  height: 100%;
+  overflow: hidden;
+}
+
+body.embedded-view {
+  height: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-content-panel:has(iframe:not([hidden])) {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dashboard-content-panel iframe:not([hidden]) {
+  flex: 1 1 auto;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  overflow: auto;
+}
+
+.dashboard-content-panel iframe[hidden] {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .dashboard-workspace .dashboard-content-panel:has(iframe:not([hidden])) {
+    height: calc(100vh - 8.5rem);
+    max-height: calc(100vh - 8.5rem);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-content-panel:has(iframe:not([hidden])) {
+    height: calc(100dvh - 11rem);
+    max-height: calc(100dvh - 11rem);
+  }
+}
+
+/* Glass top bar: one frosted toolbar, controls stay in-bar on every viewport */
+body.theme-glass:not(.embedded-view):not(.login-page) .app-chrome.navbar {
+  position: sticky;
+  top: 0.7rem;
+  z-index: 50;
+  width: calc(100% - 1.4rem);
+  max-width: 1440px;
+  margin: 0.7rem auto 0;
+  min-height: 3.5rem;
+  padding: 0.38rem 0.7rem !important;
+  border-radius: 1.35rem;
+  background: rgba(255, 248, 236, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.38) !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(22px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+}
+
+body.theme-glass.theme-light:not(.embedded-view):not(.login-page) .app-chrome.navbar {
+  background: rgba(255, 252, 246, 0.82) !important;
+  border-color: rgba(28, 20, 8, 0.12) !important;
+  box-shadow: 0 14px 32px rgba(40, 50, 70, 0.1);
+}
+
+body.theme-glass .app-chrome .app-chrome-inner {
+  display: flex !important;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  max-width: none;
+  padding-inline: 0.15rem;
+}
+
+body.theme-glass .macos-toolbar-lead {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+body.theme-glass .navbar-brand.navbar-institution {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
+  margin: 0;
+  min-width: 0;
+}
+
+body.theme-glass .navbar-logo {
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 2.15rem;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(28, 20, 8, 0.08);
+}
+
+body.theme-glass .navbar-institution-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: min(28rem, 42vw);
+  overflow: hidden;
+  white-space: normal;
+  font-size: 0.72rem;
+  font-weight: 560;
+  line-height: 1.18;
+}
+
+body.theme-glass .navbar-institution-name span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body.theme-glass .navbar-toggler {
+  display: none !important;
+}
+
+body.theme-glass .navbar-collapse,
+body.theme-glass .navbar-collapse.collapse,
+body.theme-glass .navbar-collapse.show,
+body.theme-glass .navbar-collapse.collapsing {
+  display: contents !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+body.theme-glass .app-chrome-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center !important;
+  justify-content: flex-end;
+  gap: 0.35rem !important;
+  width: auto !important;
+  max-width: none;
+  margin: 0 0 0 auto !important;
+  padding: 0.18rem 0.28rem !important;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  grid-template-columns: none !important;
+  grid-auto-rows: auto !important;
+}
+
+body.theme-glass.theme-light .app-chrome-actions {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(28, 20, 8, 0.08);
+}
+
+body.theme-glass .app-chrome-actions > .nav-item {
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+
+body.theme-glass .app-chrome .theme-style-select {
+  width: auto !important;
+  min-width: 6.4rem !important;
+  max-width: 8.4rem;
+  height: 2.1rem !important;
+  min-height: 2.1rem !important;
+  padding: 0 1.55rem 0 0.75rem !important;
+  border-radius: 999px !important;
+  font-size: 0.78rem;
+  box-shadow: none;
+}
+
+body.theme-glass .app-chrome .theme-toggle {
+  width: 3.4rem !important;
+  min-width: 3.4rem !important;
+  height: 1.9rem !important;
+  min-height: 1.9rem !important;
+  padding: 0.15rem !important;
+  border-radius: 999px !important;
+}
+
+body.theme-glass .app-chrome .settings-button {
+  width: 2.1rem !important;
+  min-width: 2.1rem !important;
+  height: 2.1rem !important;
+  min-height: 2.1rem !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-grid !important;
+  place-items: center;
+  box-shadow: none !important;
+}
+
+body.theme-glass.theme-light .app-chrome .theme-style-select,
+body.theme-glass.theme-light .app-chrome .theme-toggle,
+body.theme-glass.theme-light .app-chrome .settings-button {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(28, 20, 8, 0.1);
+  color: #1c1408;
+}
+
+@media (max-width: 767.98px) {
+  body.theme-glass:not(.embedded-view):not(.login-page) .app-chrome.navbar {
+    top: max(0.4rem, env(safe-area-inset-top, 0px));
+    width: calc(100% - 0.9rem);
+    margin: max(0.4rem, env(safe-area-inset-top, 0px)) auto 0.45rem;
+    padding: 0.32rem 0.5rem !important;
+    border-radius: 1.15rem;
+  }
+
+  body.theme-glass .navbar-institution-name {
+    max-width: 5.8rem;
+    font-size: 0.68rem;
+  }
+
+  body.theme-glass .navbar-institution-name span:first-child {
+    display: none;
+  }
+
+  body.theme-glass .navbar-logo {
+    width: 1.95rem;
+    height: 1.95rem;
+    flex-basis: 1.95rem;
+  }
+
+  body.theme-glass .app-chrome-actions {
+    padding: 0.12rem 0.18rem !important;
+    gap: 0.28rem !important;
+  }
+
+  body.theme-glass .app-chrome .theme-style-select {
+    min-width: 5.6rem !important;
+    max-width: 6.8rem;
+    height: 1.95rem !important;
+    min-height: 1.95rem !important;
+    font-size: 0.72rem;
+    padding: 0 1.35rem 0 0.6rem !important;
+  }
+
+  body.theme-glass .app-chrome [data-settings-dropdown] {
+    width: auto;
+    height: auto;
+  }
+
+  body.theme-glass .app-chrome [data-settings-dropdown] .settings-button {
+    position: relative !important;
+    inset: auto !important;
+  }
+}
+
+/* Wheel scroll: last-wins so every theme keeps a bounded iframe pane */
+html:has(> body.embedded-view) {
+  height: 100%;
+  overflow: hidden !important;
+}
+
+body.embedded-view {
+  height: 100%;
+  min-height: 100%;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-content-panel:has(iframe:not([hidden])) {
+  display: flex !important;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+.dashboard-content-panel iframe:not([hidden]) {
+  flex: 1 1 auto;
+  display: block !important;
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0;
+  overflow: auto !important;
+}
+
+.dashboard-content-panel iframe[hidden] {
+  display: none !important;
+}
+
+@media (min-width: 768px) {
+  .dashboard-workspace .dashboard-content-panel:has(iframe:not([hidden])) {
+    height: calc(100vh - 8.5rem);
+    max-height: calc(100vh - 8.5rem);
+  }
+}
+
+@media (max-width: 767.98px) {
+  html,
+  body.app-body {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .dashboard-content-panel:has(iframe:not([hidden])) {
+    height: calc(100dvh - 11rem);
+    max-height: calc(100dvh - 11rem);
+  }
 }

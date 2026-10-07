@@ -101,8 +101,8 @@ function page_head(string $title, string $active = ''): void {
         <title><?= e($title) ?> | École de Santé Gabès</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link href="assets/style.css?v=65" rel="stylesheet">
-        <link href="assets/macos.css?v=21" rel="stylesheet">
+        <link href="assets/style.css?v=73" rel="stylesheet">
+        <link href="assets/macos.css?v=28" rel="stylesheet">
         <script>
         (function () {
             try {
@@ -552,46 +552,53 @@ function page_foot(): void {
 
             function resizeDashboardFrame(frame, scrollPanel) {
                 try {
+                    frame.style.height = '100%';
+                    frame.style.minHeight = '0';
+                    frame.style.overflow = 'auto';
+                    frame.removeAttribute('scrolling');
                     var frameDocument = frame.contentDocument;
                     if (!frameDocument) return;
                     var frameRoot = frameDocument.documentElement;
                     var frameBody = frameDocument.body;
                     if (frameRoot) {
-                        frameRoot.style.setProperty('overflow-x', 'hidden');
-                        frameRoot.style.setProperty('overflow-y', 'auto');
+                        frameRoot.style.setProperty('height', '100%');
+                        frameRoot.style.setProperty('overflow', 'hidden');
                     }
                     if (frameBody) {
+                        frameBody.style.setProperty('height', '100%');
+                        frameBody.style.setProperty('min-height', '100%');
                         frameBody.style.setProperty('overflow-x', 'hidden');
                         frameBody.style.setProperty('overflow-y', 'auto');
+                        frameBody.style.setProperty('overscroll-behavior', 'contain');
+                        frameBody.style.setProperty('-webkit-overflow-scrolling', 'touch');
                     }
-
-                    var contentHeight = Math.max(
-                        frameRoot ? frameRoot.scrollHeight : 0,
-                        frameRoot ? frameRoot.offsetHeight : 0,
-                        frameBody ? frameBody.scrollHeight : 0,
-                        frameBody ? frameBody.offsetHeight : 0,
-                        Math.round(window.innerHeight * 0.7)
-                    );
-                    if (Math.abs((parseInt(frame.style.height, 10) || 0) - contentHeight) > 8) {
-                        frame.style.height = contentHeight + 'px';
+                    if (frame._dashboardResizeObserver) {
+                        frame._dashboardResizeObserver.disconnect();
+                        frame._dashboardResizeObserver = null;
                     }
-                    frame.removeAttribute('scrolling');
-
-                    if (!frame._dashboardResizeObserver && 'ResizeObserver' in window && frameRoot) {
-                        frame._dashboardResizeObserver = new ResizeObserver(function () {
-                            window.requestAnimationFrame(function () {
-                                resizeDashboardFrame(frame, false);
-                            });
-                        });
-                        frame._dashboardResizeObserver.observe(frameRoot);
-                        if (frameBody) frame._dashboardResizeObserver.observe(frameBody);
+                    if (frame._wheelRelayDoc !== frameDocument) {
+                        frame._wheelRelayDoc = frameDocument;
+                        frameDocument.addEventListener('wheel', function (event) {
+                            var scroller = frameDocument.body || frameDocument.documentElement;
+                            if (!scroller) return;
+                            var goingUp = event.deltaY < 0;
+                            var atTop = scroller.scrollTop <= 0;
+                            var atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
+                            if ((goingUp && !atTop) || (!goingUp && !atBottom)) return;
+                            var panel = frame.closest('.dashboard-content-panel');
+                            if (panel && panel.scrollHeight > panel.clientHeight + 1) {
+                                panel.scrollTop += event.deltaY;
+                                return;
+                            }
+                            window.scrollBy(0, event.deltaY);
+                        }, { passive: true });
                     }
-
                     if (scrollPanel) {
                         var panel = frame.closest('.dashboard-content-panel');
                         if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 } catch (error) {
+                    frame.style.height = '100%';
                     frame.style.minHeight = '70vh';
                     frame.removeAttribute('scrolling');
                 }
