@@ -342,7 +342,8 @@ if ($format !== '') {
     if ($format === 'pdf') {
         require_once __DIR__ . '/vendor/autoload.php';
         $dompdf = new \Dompdf\Dompdf();
-        $logoPath = str_replace('\\', '/', __DIR__ . '/images/no_bg_logo.png');
+        $logoFile = institution_logo_file();
+        $logoPath = str_replace('\\', '/', $logoFile['path']);
         $logoUri = 'file:///' . ltrim($logoPath, '/');
         $html = '<!doctype html><html><head><meta charset="UTF-8"><style>@page{size:A4 portrait;margin:5mm}body{font-family:DejaVu Sans,sans-serif;font-size:7px;color:#111;margin:0}.student-section{height:286mm;page-break-after:always;overflow:hidden}.student-section:last-child{page-break-after:auto}h1{font-size:13px;text-align:center;margin:0 0 3px}h2{font-size:10px;border:1px solid #222;padding:2px;margin:2px 0;background:#eee}h3{font-size:8px;margin:3px 0 1px;background:#d9d9d9;padding:2px;border:1px solid #222}.certificate{border:1px solid #222;padding:3px;line-height:1.08}.certificate p{margin:1px 0}.certificate-head{text-align:center;font-weight:bold;font-size:9px}.certificate-logo{width:38px;height:15px;object-fit:contain;vertical-align:middle}.transcript-head{display:flex;justify-content:space-between;border:1px solid #222;padding:2px;font-weight:bold}.semester-title{font-weight:bold;background:#eee;border:1px solid #222;border-bottom:0;padding:1px}.semester-average{float:right}table{border-collapse:collapse;width:100%;margin:0 0 2px;table-layout:fixed}th,td{border:1px solid #333;padding:1px 2px;text-align:left;line-height:1.05;word-wrap:break-word}th{background:#d9d9d9;font-size:6.5px}.marks-table th:nth-child(1){width:31%}.marks-table th:nth-child(2){width:10%}.marks-table th:nth-child(3){width:6%}.marks-table th:nth-child(4),.marks-table th:nth-child(5),.marks-table th:nth-child(6),.marks-table th:nth-child(7),.marks-table th:nth-child(8){width:7.4%}.finance-table th,.finance-table td{font-size:7px}.status-ok{color:#087f23;font-weight:bold}.status-due{color:#b00020;font-weight:bold}.summary{border:1px solid #222;padding:2px;font-weight:bold;margin-top:2px}</style></head><body>';
         foreach ($archives as $archive) {
@@ -355,8 +356,8 @@ if ($format !== '') {
             $statusClass = (float) $archive['remaining_balance'] <= 0 ? 'status-ok' : 'status-due';
             $statusText = (float) $archive['remaining_balance'] <= 0 ? 'Paiement terminé' : 'Paiement non terminé';
             $html .= '<section class="student-section"><h1>ARCHIVE COMPLÈTE — ' . e($year) . '</h1><h2>' . e($name) . ' — ' . e($archive['cin_passeport']) . '</h2>';
-            $html .= '<h3>Attestation d’inscription — modèle template_inscription_2.docx</h3><div class="certificate"><p class="certificate-head"><img class="certificate-logo" src="' . e($logoUri) . '"> CERTIFICAT D’INSCRIPTION</p><p class="certificate-head">Université Privée des Sciences Infirmières et de la Santé de Gabès</p><p>Le secrétaire général de l’Université certifie que l’étudiant :</p>';
-            $html .= '<p><b>Nom et prénom :</b> ' . e((string) ($payload['prenom'] ?? '') . ' ' . (string) ($payload['nom'] ?? '')) . '</p><p><b>Date et lieu de naissance :</b> ' . e($birthDate) . ' à ' . e((string) ($payload['lieu_naissance'] ?? '')) . '</p><p><b>N° CIN / N° Passeport :</b> ' . e($archive['cin_passeport']) . '</p><p><b>Diplôme :</b> Licence en sciences infirmières</p><p><b>Filière / Spécialité :</b> ' . e($archive['nom_spec']) . '</p><p><b>Niveau d’études :</b> ' . e(level_label((string) $archive['niveau'])) . '</p><p><b>Numéro d’inscription :</b> ' . e($archive['num_inscription']) . '</p><p>est inscrit(e) au sein de l’établissement au titre de l’année universitaire ' . e($archive['annee_scolaire']) . '.</p><p>Gabès, le ' . date('d/m/Y') . '</p><p><b>Le Secrétaire général</b><br>Said ALJANE</p></div>';
+            $html .= '<h3>Attestation d’inscription — modèle template_inscription_2.docx</h3><div class="certificate"><p class="certificate-head"><img class="certificate-logo" src="' . e($logoUri) . '"> CERTIFICAT D’INSCRIPTION</p><p class="certificate-head">' . e(institution_name_inline()) . '</p><p>Le secrétaire général de l’Université certifie que l’étudiant :</p>';
+            $html .= '<p><b>Nom et prénom :</b> ' . e((string) ($payload['prenom'] ?? '') . ' ' . (string) ($payload['nom'] ?? '')) . '</p><p><b>Date et lieu de naissance :</b> ' . e($birthDate) . ' à ' . e((string) ($payload['lieu_naissance'] ?? '')) . '</p><p><b>N° CIN / N° Passeport :</b> ' . e($archive['cin_passeport']) . '</p><p><b>Diplôme :</b> Licence en sciences infirmières</p><p><b>Filière / Spécialité :</b> ' . e($archive['nom_spec']) . '</p><p><b>Niveau d’études :</b> ' . e(level_label((string) $archive['niveau'])) . '</p><p><b>Numéro d’inscription :</b> ' . e($archive['num_inscription']) . '</p><p>est inscrit(e) au sein de l’établissement au titre de l’année universitaire ' . e($archive['annee_scolaire']) . '.</p><p>Gabès, le ' . date('d/m/Y') . '</p><p><b>Le Secrétaire général</b><br>' . e(institution_brand()['sec_generale']) . '</p></div>';
             $html .= '<h3>Relevé de notes complet</h3><div class="transcript-head"><span>RELEVÉ DE NOTES — ' . e($archive['annee_scolaire']) . '</span><span>Moyenne générale : ' . e((string) ($archive['moyenne_generale'] ?? '—')) . '</span></div>';
             $marks = json_decode((string) $archive['transcript_payload'], true);
             $marks = is_array($marks) ? $marks : [];
@@ -388,6 +389,9 @@ if ($format !== '') {
         $dompdf->loadHtml($html . '</body></html>', 'UTF-8');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
+        if (!empty($logoFile['temporary']) && is_file($logoFile['path'])) {
+            unlink($logoFile['path']);
+        }
         $dompdf->stream('etudiants_archives_' . ($year ?: 'export') . '.pdf', ['Attachment' => true]);
         exit;
     }

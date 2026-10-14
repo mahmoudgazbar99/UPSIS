@@ -3,8 +3,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/layout.php';
 require_admin();
 
-const TRANSCRIPT_UNIVERSITY = 'Université de Gabès';
-const TRANSCRIPT_INSTITUTION = 'École de Santé Gabès';
 
 $cin = trim((string) ($_GET['cin'] ?? ''));
 $transcriptYear = trim((string) ($_GET['year'] ?? ''));
@@ -75,21 +73,25 @@ page_head('Relevé de notes', 'transcript');
     $coeffTotal = 0.0;
     $creditsTotal = 0.0;
     $creditsAcquired = 0.0;
+    $averageSum = 0.0;
+    $averageCount = 0;
     foreach ($marksBySemester as $semesterMarks) foreach ($semesterMarks as $mark) {
         $finalNote = calculated_note($mark) ?? 0.0;
         $weightedTotal += $finalNote * (float) $mark['coeff'];
         $coeffTotal += (float) $mark['coeff'];
         $creditsTotal += (float) $mark['credit'];
-        if ($finalNote >= 10) $creditsAcquired += (float) $mark['credit'];
+        $creditsAcquired += institution_acquired_credit($finalNote, (float) $mark['credit']);
+        $averageSum += $finalNote;
+        $averageCount++;
     }
-    $generalAverage = $coeffTotal > 0 ? $weightedTotal / $coeffTotal : null;
+    $generalAverage = institution_general_average($weightedTotal, $coeffTotal, $creditsTotal, $averageCount, $averageSum);
     $decision = $generalAverage === null ? 'En attente de notes' : ($generalAverage >= 10 ? 'Admis' : 'Ajourné');
 ?>
 <article class="transcript-paper">
   <header class="transcript-header">
-    <section><img src="images/no_bg_logo.png?v=2" alt="Logo institutionnel" class="transcript-logo"><strong>République Tunisienne</strong><span>Ministère de l'Enseignement Supérieur<br>et de la Recherche Scientifique</span></section>
+    <section><img src="<?= e(institution_logo_src()) ?>" alt="Logo institutionnel" class="transcript-logo"><strong>République Tunisienne</strong><span>Ministère de l'Enseignement Supérieur<br>et de la Recherche Scientifique</span></section>
     <section class="transcript-title"><h1>RELEVÉ DE NOTES</h1><span><?= e($academicYear) ?></span></section>
-    <section><strong><?= e(TRANSCRIPT_UNIVERSITY) ?></strong><span><?= e(TRANSCRIPT_INSTITUTION) ?></span></section>
+    <section><?php foreach (institution_name_lines() as $index => $institutionLine): ?><?= $index === 0 ? '<strong>' . e($institutionLine) . '</strong>' : '<span>' . e($institutionLine) . '</span>' ?><?php endforeach; ?></section>
   </header>
   <section class="transcript-info">
     <div><p><b>Nom et Prénom :</b> <?= e($student['nom'] . ' ' . $student['prenom']) ?></p><p><b>Né(e) le :</b> <?= e(date('d/m/Y', strtotime($student['date_naissance']))) ?> <b>à :</b> <?= e($student['lieu_naissance']) ?></p><p><b>Diplôme / Spécialité :</b> <?= e($student['nom_spec']) ?></p></div>
@@ -102,11 +104,18 @@ page_head('Relevé de notes', 'transcript');
       foreach ($semesterMarks as $mark) $units[$mark['code_ue'] . '|' . $mark['description_ue']][] = $mark;
       $semesterWeighted = 0.0;
       $semesterCoefficient = 0.0;
+      $semesterCredits = 0.0;
+      $semesterSum = 0.0;
+      $semesterCount = 0;
       foreach ($semesterMarks as $semesterMark) {
-          $semesterWeighted += (calculated_note($semesterMark) ?? 0.0) * (float) $semesterMark['coeff'];
+          $semesterNote = calculated_note($semesterMark) ?? 0.0;
+          $semesterWeighted += $semesterNote * (float) $semesterMark['coeff'];
           $semesterCoefficient += (float) $semesterMark['coeff'];
+          $semesterCredits += (float) $semesterMark['credit'];
+          $semesterSum += $semesterNote;
+          $semesterCount++;
       }
-      $semesterAverage = $semesterCoefficient > 0 ? $semesterWeighted / $semesterCoefficient : null;
+      $semesterAverage = institution_general_average($semesterWeighted, $semesterCoefficient, $semesterCredits, $semesterCount, $semesterSum);
   ?>
   <section class="semester-block">
     <h2><?= e(semester_label($semester)) ?><span class="semester-average">Moyenne du semestre : <?= $semesterAverage === null ? '—' : transcript_number($semesterAverage) ?></span></h2>
@@ -117,13 +126,14 @@ page_head('Relevé de notes', 'transcript');
           $unitCredits = array_sum(array_column($elements, 'credit'));
           $unitWeighted = array_sum(array_map(fn(array $item): float => (calculated_note($item) ?? 0.0) * (float) $item['coeff'], $elements));
           $unitAverage = $unitCoefficient > 0 ? $unitWeighted / $unitCoefficient : 0;
+          $unitCreditsAcquired = institution_acquired_credit($unitAverage, (float) $unitCredits);
           $retakeElements = array_filter($elements, fn(array $item): bool => $item['note_rattrapage'] !== null);
           $retakeCoefficient = array_sum(array_column($retakeElements, 'coeff'));
           $retakeWeighted = array_sum(array_map(fn(array $item): float => (float) $item['note_rattrapage'] * (float) $item['coeff'], $retakeElements));
           $retakeAverage = $retakeCoefficient > 0 ? $retakeWeighted / $retakeCoefficient : null;
           $rowspan = count($elements) + 1;
       ?>
-        <tr class="ue-row"><td rowspan="<?= $rowspan ?>"><b><?= e($unitName ?: $unitKey) ?></b><br><small><?= e(explode('|', $unitKey, 2)[0]) ?></small></td><td rowspan="<?= $rowspan ?>"><?= transcript_number((float) $unitCoefficient) ?></td><td rowspan="<?= $rowspan ?>"><?= transcript_number((float) $unitCredits) ?></td><td rowspan="<?= $rowspan ?>">—</td><td rowspan="<?= $rowspan ?>"><?= transcript_number($unitAverage) ?></td><td rowspan="<?= $rowspan ?>"><?= $unitAverage >= 10 ? transcript_number((float) $unitCredits) : '0,00' ?></td><td rowspan="<?= $rowspan ?>"><?= $retakeAverage === null ? '—' : transcript_number($retakeAverage) ?></td><td rowspan="<?= $rowspan ?>"><?= $retakeAverage !== null && $retakeAverage >= 10 ? transcript_number((float) $unitCredits) : '—' ?></td></tr>
+        <tr class="ue-row"><td rowspan="<?= $rowspan ?>"><b><?= e($unitName ?: $unitKey) ?></b><br><small><?= e(explode('|', $unitKey, 2)[0]) ?></small></td><td rowspan="<?= $rowspan ?>"><?= transcript_number((float) $unitCoefficient) ?></td><td rowspan="<?= $rowspan ?>"><?= transcript_number((float) $unitCredits) ?></td><td rowspan="<?= $rowspan ?>">—</td><td rowspan="<?= $rowspan ?>"><?= transcript_number($unitAverage) ?></td><td rowspan="<?= $rowspan ?>"><?= transcript_number($unitCreditsAcquired) ?></td><td rowspan="<?= $rowspan ?>"><?= $retakeAverage === null ? '—' : transcript_number($retakeAverage) ?></td><td rowspan="<?= $rowspan ?>"><?= $retakeAverage !== null && $retakeAverage >= 10 ? transcript_number((float) $unitCredits) : '—' ?></td></tr>
         <?php foreach ($elements as $element): ?><tr><td class="element-name"><span><?= e($element['description_ecue']) ?></span><small><?= e($element['code_ecue']) ?> · Coef <?= transcript_number((float) $element['coeff']) ?> · <?= e($element['regime']) ?> · <b>Moyenne : <?= transcript_number(calculated_note($element) ?? 0.0) ?></b><?= $element['note_rattrapage'] !== null ? ' · Rattrapage ' . transcript_number((float) $element['note_rattrapage']) : '' ?></small></td></tr><?php endforeach; ?>
       <?php endforeach; ?>
     </tbody></table>
@@ -131,7 +141,7 @@ page_head('Relevé de notes', 'transcript');
   <?php endforeach; ?>
 
   <section class="transcript-summary"><div><b>Moyenne générale :</b> <?= $generalAverage === null ? '—' : transcript_number($generalAverage) ?></div><div><b>Crédits totaux :</b> <?= transcript_number($creditsTotal) ?></div><div><b>Crédits acquis :</b> <?= transcript_number($creditsAcquired) ?></div><div><b>Mention :</b> <?= e(transcript_mention($generalAverage)) ?></div><div><b>Décision de jury :</b> <?= e($decision) ?></div></section>
-  <footer class="transcript-footer"><p><b>NB :</b> Le calcul des moyennes et des crédits est effectué conformément à la réglementation en vigueur du Ministère de l'Enseignement Supérieur et de la Recherche Scientifique.</p><div><p>Gabès, le <?= date('d/m/Y') ?></p><strong>Le secrétaire général</strong><span>Signature et cachet</span></div></footer>
+  <footer class="transcript-footer"><p><b>NB :</b> Le calcul des moyennes et des crédits est effectué selon la formule définie par l’établissement.</p><div><p>Gabès, le <?= date('d/m/Y') ?></p><strong>Le secrétaire général</strong><b><?= e(institution_brand()['sec_generale']) ?></b><span>Signature et cachet</span></div></footer>
 </article>
 <?php endif; ?>
 

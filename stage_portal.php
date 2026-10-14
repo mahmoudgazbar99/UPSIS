@@ -8,11 +8,11 @@ require_stage();
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Service des stages | École de Santé Gabès</title>
+  <title>Service des stages | <?= e(institution_name_inline()) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="assets/style.css?v=73" rel="stylesheet">
-  <link href="assets/macos.css?v=28" rel="stylesheet">
+  <link href="assets/style.css?v=75" rel="stylesheet">
+  <link href="assets/macos.css?v=32" rel="stylesheet">
   <style>
     .stage-placeholder { min-height: 100vh; display: grid; place-content: center; padding: 2rem; text-align: center; }
     .stage-placeholder h1 { margin: 0; font-size: clamp(3rem, 12vw, 8rem); font-weight: 900; line-height: .95; letter-spacing: -.055em; color: #f0b84b; }

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_admin();
+require_once __DIR__ . '/certificate_export.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 use PhpOffice\PhpWord\TemplateProcessor;
@@ -24,6 +25,9 @@ function preparePresenceTemplate(string $sourcePath): string
     }
 
     $xml = $zip->getFromName('word/document.xml');
+    if (is_string($xml)) {
+        $xml = institution_presence_signature_xml($xml);
+    }
     if ($xml === false) {
         $zip->close();
         unlink($preparedPath);
@@ -37,6 +41,26 @@ function preparePresenceTemplate(string $sourcePath): string
             preg_match_all('/<w:t\b[^>]*>(.*?)<\/w:t>/s', $paragraph, $textMatches);
             $text = html_entity_decode(implode('', $textMatches[1]), ENT_QUOTES | ENT_XML1, 'UTF-8');
 
+            // Other bilingual lines are Arabic-then-value in an LTR, right-aligned
+            // paragraph. Keep that visual (Arabic left, INS005/2026 right) with
+            // two runs so Latin letters cannot jump to the left.
+            if (str_contains($text, '${inscription}')) {
+                if (!preg_match('/<w:p\b[^>]*>/', $paragraph, $openMatch)) {
+                    return $paragraph;
+                }
+                $pPr = '<w:pPr><w:ind w:left="360"/><w:jc w:val="right"/></w:pPr>';
+                if (preg_match('/<w:pPr\b[^>]*>.*?<\/w:pPr>/s', $paragraph, $pPrMatch)) {
+                    $pPr = preg_replace('/<w:bidi\\b[^\\/]*\\/>/', '', $pPrMatch[0]) ?? $pPrMatch[0];
+                }
+                $arabicPr = '<w:rPr><w:b/><w:bCs/><w:sz w:val="24"/><w:szCs w:val="24"/><w:rtl/></w:rPr>';
+                $latinPr = '<w:rPr><w:b/><w:bCs/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>';
+                return $openMatch[0]
+                    . $pPr
+                    . '<w:r>' . $arabicPr . '<w:t xml:space="preserve">تحت رقم : </w:t></w:r>'
+                    . '<w:r>' . $latinPr . '<w:t xml:space="preserve">${inscription}</w:t></w:r>'
+                    . '</w:p>';
+            }
+
             $replacement = match (true) {
                 str_contains($text, '${prenom_ar}') => 'الاسم : ${prenom_ar}',
                 str_contains($text, '${nom_ar}') => 'اللقب : ${nom_ar}',
@@ -44,7 +68,6 @@ function preparePresenceTemplate(string $sourcePath): string
                 str_contains($text, '${cin}') => 'صاحب بطاقة تعريف عدد : ${cin}',
                 str_contains($text, 'مرسم') => 'مرسم بالسنة الأولى من الإجازة في علوم التمريض',
                 str_contains($text, '${specialite_ar}') => 'الاختصاص : ${specialite_ar}',
-                str_contains($text, '${inscription}') => 'تحت رقم : ${inscription}',
                 str_contains($text, '${date_du_jour}') => 'قابس في، ${date_du_jour}',
                 default => null,
             };
@@ -113,39 +136,48 @@ $currentYear = (int) date('Y');
 $preparedTemplatePath = preparePresenceTemplate($templatePath);
 $templateProcessor = new TemplateProcessor($preparedTemplatePath);
 $leftToRight = static function (?string $value): string {
-    return (string) $value;
+    $value = (string) $value;
+    if ($value === '') {
+        return '';
+    }
+    return "\u{202A}{$value}\u{202C}";
 };
 $rightToLeft = static function (?string $value): string {
     return (string) $value;
 };
 
-$templateProcessor->setValue('annee_univ', $leftToRight($currentYear . '/' . ($currentYear + 1)));
-$templateProcessor->setValue('cin', $leftToRight($student['cin_passeport'] ?? ''));
-$templateProcessor->setValue('date_du_jour', $leftToRight(date('Y/m/d')));
-$templateProcessor->setValue('date_naissance', $leftToRight($dateNaissance));
+$templateProcessor->setValue('annee_univ', $currentYear . '/' . ($currentYear + 1));
+$templateProcessor->setValue('cin', $student['cin_passeport'] ?? '');
+$templateProcessor->setValue('date_du_jour', date('Y/m/d'));
+$templateProcessor->setValue('date_naissance', $dateNaissance);
 $templateProcessor->setValue('inscription', $leftToRight($student['num_inscription'] ?? ''));
 $templateProcessor->setValue('lieu_naissance_ar', $rightToLeft($student['lieu_naissance_ar'] ?? ''));
 $templateProcessor->setValue('nom_ar', $rightToLeft($student['nom_ar'] ?? ''));
 $templateProcessor->setValue('prenom_ar', $rightToLeft($student['prenom_ar'] ?? ''));
 $templateProcessor->setValue('specialite_ar', $rightToLeft($student['nom_spec_ar'] ?? $student['nom_spec'] ?? ''));
+institution_apply_signatories($templateProcessor);
 
-$fileName = 'Attestation_Presence_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $student['cin_passeport']) . '.docx';
+$fileBase = 'Attestation_Presence_' . preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);
 $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord');
 if ($tempFile === false) {
     http_response_code(500);
     exit('Erreur : impossible de créer le fichier temporaire.');
 }
+$docxPath = $tempFile . '.docx';
+unlink($tempFile);
 
 try {
-    $templateProcessor->saveAs($tempFile);
+    $templateProcessor->saveAs($docxPath);
     $preview = ($_GET['preview'] ?? '') === '1';
-    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    header('Content-Disposition: ' . ($preview ? 'inline' : 'attachment') . '; filename="' . $fileName . '"');
-    header('Content-Length: ' . filesize($tempFile));
-    header('Cache-Control: no-store, no-cache, must-revalidate');
-    readfile($tempFile);
+    $asPdf = !$preview && certificate_wants_pdf();
+    certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview);
+} catch (Throwable $exception) {
+    http_response_code(500);
+    exit('Erreur : ' . $exception->getMessage());
 } finally {
-    unlink($tempFile);
+    if (is_file($docxPath)) {
+        unlink($docxPath);
+    }
     unlink($preparedTemplatePath);
 }
 

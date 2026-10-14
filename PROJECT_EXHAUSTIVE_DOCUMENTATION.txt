@@ -1,0 +1,1079 @@
+================================================================================
+PROJECT_EXHAUSTIVE_DOCUMENTATION.txt
+École de Santé Gabès — university ERP / school-management web application
+Generated from a full recursive scan of the project root.
+Excluded from line-by-line vendor dumps (as instructed): vendor/, .git/,
+binary media binaries (JPEG/PNG/DOCX contents). Those paths are still named
+and described where the application references them.
+================================================================================
+Scan date context: application lives at C:\xampp\htdocs\webapp (also deployed
+as Docker image myapp_web). Primary language: PHP 8.x. Database: MySQL 8.4 /
+MariaDB via PDO. UI: server-rendered HTML + Bootstrap 5.3.3 + custom CSS themes.
+
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE OVERVIEW & APPLICATION PURPOSE
+--------------------------------------------------------------------------------
+
+1.1 High-level purpose
+The application is a campus ERP for the “École de Santé Gabès” (Higher Institute
+of Nursing / health sciences, Gabès, Tunisia). It manages the student lifecycle
+from bilingual (French + Arabic) enrolment, through groups, timetable, grades,
+attendance, finance (tuition cap 9 800 DT), year-end promotion/archival, and
+document generation (inscription / presence / success certificates as Word/PDF).
+
+There is no public REST/GraphQL API. Almost every screen is a PHP script that:
+  (a) starts a PHP session via config.php,
+  (b) checks a role helper (require_admin, require_finance, …),
+  (c) optionally mutates MySQL on POST,
+  (d) calls page_head()/page_foot() from layout.php to wrap HTML.
+
+Two JSON helpers exist for live polling (attestation_live.php, etudiant_inbox.php).
+They require an existing cookie session; they are not a third-party API.
+
+1.2 Primary business logic
+- Enrolment: inscription.php two-step form (verify then submit). Unique CIN/
+  passport, email, inscription number. Auto-assignment to Cours + one of two
+  TD groups per semester of the student’s niveau (config.php
+  assign_student_to_academic_groups / assign_tronc_commun_groups).
+- Grades: table `note`. Composite unique (id_etudiant, id_mat, semestre).
+  calculated_note() in config.php:
+      if note_rattrapage is set → that value;
+      else if note_cours and note_td exist:
+          if volume_tp > 0 and note_tp set → 0.25*CC + 0.50*exam + 0.25*TP;
+          else → 0.30*CC + 0.70*exam;
+      else → legacy column `note`.
+- Attendance: table `presence_etudiant`. Unique session key
+  (id_groupe, id_mat, id_etudiant, date_seance). Hours default 1.50 or average
+  from emploi_temps. Elimination: ≥4 absences per matière OR ≥ 10% of 444 S1
+  hours (44.4 h) for the semester, unless elimination_derogation exists.
+- Finance: table `finance` (each payment) + `finance_solde.total_paye` (running
+  total, CHECK 0..9800). Remaining due = 9800 − total_paye. Finance dashboard
+  rings on index.php for the finance role.
+- Promotion: promotion.php preview then commit. Requires admin password AND
+  typed confirmation “PROMOUVOIR”. Archives JSON payloads, fee rows, grades;
+  resets finance_solde; increments niveau for “admis”.
+- Certificates: PhpWord TemplateProcessor on templates/template_inscription_2.docx
+  (inscription); PhpWord-generated DOCX for presence/success. Preview via
+  CDN jszip + docx-preview. Bulk PDF uses LibreOffice (Docker) or Word COM
+  (Windows convert_inscriptions_to_pdf.ps1).
+
+1.3 User roles and permission tiers
+Session key: $_SESSION['user_role'] in {admin, enseignant, finance, stage, etudiant}.
+
+  admin
+    Cookie session name: PHPSESSID (default).
+    Auth: login.php POST role=admin + password_verify against admin_user.password_hash
+          for username “admin” (function admin_password_hash()).
+    Access: entire staff UI. Stage users cannot stay on admin pages.
+    Extra: changer_mot_de_passe.php, promotion, archives, account CRUD, audit log.
+
+  enseignant
+    Auth: CIN 8 digits + password (bcrypt; legacy MD5 upgraded in-place on login).
+    Table enseignant; must have active=1 (column added by ensure_teacher_active).
+    Session: teacher_id. Can enter notes and presence only for affectations
+    (enseignant_affectation). Dashboard shows missing grades / open presence.
+
+  finance
+    Auth: finance_user.username + bcrypt password, active=1.
+    Session: finance_id + finance_auth_generation. If auth_generation in DB
+    changes (password edit), session is invalidated (require_finance()).
+    Access: finance.php payments, recu_paiement.php, finance dashboard rings.
+
+  stage
+    Auth: stage_user.cin + bcrypt, active=1. Table may be missing until
+    stage_accounts_migration.sql; login then shows a setup error.
+    Session: stage_id + stage_auth_generation. Isolated to stage_portal.php
+    and logout.php (enforce_stage_route_isolation()). Portal is currently a
+    placeholder (“Service des stages”).
+
+  etudiant
+    Separate cookie name ESG_STUDENT (config.php app_is_student_request()).
+    Auth: connexion_etudiant.php CIN + etudiant_compte.password (bcrypt), active=1.
+    Account created on creer_espace_etudiant.php if student already enrolled.
+    Isolated to dashboard.php, etudiant_inbox.php, logout.php
+    (enforce_student_route_isolation()). Staff sessions that hit student pages
+    are not destroyed if they are not students; invalid student sessions are
+    wiped by dashboard_refuse_session().
+
+1.4 Core functional workflows (end to end)
+A. Staff login → login.php → index.php dashboard (iframe modules for admin/
+   teacher/finance). Menu items load *.php?embed=1 into iframe[name=dashboard-content].
+B. Register student → inscription.php verify → submit → INSERT etudiant →
+   assign groups → optional Word attestation.
+C. Teacher grades → gestion_notes.php grid or manual form → UPSERT note → audit_record.
+D. Presence sheet → presence_etudiants.php save_presence → presence_etudiant rows.
+E. Student asks for presence certificate → dashboard.php POST demande_attestation
+   → demande_attestation. Admin polls attestation_live.php, accepts/refuses on
+   demandes_presence.php, student_notify() writes etudiant_inbox.
+F. Finance records payment → finance.php create_payment → finance + finance_solde.
+G. Year rollover → promotion.php commit → archives + niveau++ + solde reset.
+
+
+--------------------------------------------------------------------------------
+2. COMPLETE TECH STACK & DEPENDENCY INVENTORY
+--------------------------------------------------------------------------------
+
+2.1 Languages and runtimes
+- PHP 8.3 in Docker (Dockerfile FROM php:8.3-apache). Local XAMPP PHP also used
+  (paths in comments: C:\xampp\htdocs\webapp). declare(strict_types=1) on newer
+  files; older files omit it.
+- Apache 2 with mod_rewrite enabled in Docker (a2enmod rewrite). No .htaccess
+  in the scanned root; routing is “one PHP file = one URL”.
+- MySQL 8.4 container (docker-compose db service) OR XAMPP MariaDB/MySQL.
+  Charset utf8mb4 / utf8mb4_unicode_ci.
+- Client: HTML5, CSS3, vanilla JavaScript (no React/Vue/Angular, no package.json).
+- Bootstrap 5.3.3 CSS+JS from cdn.jsdelivr.net.
+- Google Fonts: Fraunces, Outfit.
+- Optional CDN: jszip@3.10.1, docx-preview@0.3.3 (certificate previews).
+
+2.2 Frameworks
+Not Laravel/Symfony/CodeIgniter. Custom procedural PHP. Shared include:
+config.php (bootstrap + helpers) and layout.php (chrome). Composer autoload
+only for PhpWord/Dompdf (vendor/autoload.php in generate_* scripts).
+
+2.3 composer.json require
+  phpoffice/phpword: "*"     locked in composer.lock to 1.4.0
+      Used by generate_word.php (TemplateProcessor), generate_presence.php,
+      generate_reussite.php, generate_feuille_presence.php. Fills DOCX.
+  dompdf/dompdf: "^3.1"      locked to v3.1.6
+      Used by archive_export.php for PDF archive dumps.
+
+2.4 composer.lock transitives (what they do HERE)
+  dompdf/php-font-lib 1.0.2     — parse TTF/OTF for Dompdf PDF text.
+  dompdf/php-svg-lib 1.0.2      — rasterize SVG during PDF render.
+  masterminds/html5 2.11.0      — HTML5 parser for Dompdf input HTML.
+  sabberworm/php-css-parser     — CSS parser used by php-svg-lib / Dompdf.
+  phpoffice/math 0.3.0          — OMML/MathML support pulled by PhpWord
+                                  (not called directly by app code).
+  thecodingmachine/safe         — present under vendor from a Dompdf/PhpWord
+                                  tree; app PHP does not call Safe\* wrappers.
+
+2.5 PHP extensions (Dockerfile)
+  mysqli, pdo, pdo_mysql, zip, plus apt: libzip-dev, libreoffice-writer,
+  poppler-utils, locales. LibreOffice converts DOCX→PDF for
+  download_all_inscriptions.php in Linux/Docker. poppler unused in scanned PHP.
+
+2.6 Front-end “dependencies” (CDN, not npm)
+  bootstrap@5.3.3
+  fonts.googleapis.com Fraunces + Outfit
+  jszip@3.10.1 and docx-preview@0.3.3 on certificate.php only
+
+2.7 External APIs / microservices / cloud
+  NONE. No Stripe, no SMS, no OAuth, no S3, no Redis, no message queue.
+  All I/O is: browser ↔ Apache/PHP ↔ MySQL, plus filesystem templates/images
+  and optional LibreOffice/Word COM for PDF.
+
+2.8 No package.json, no requirements.txt, no artisan, no webpack.
+
+
+--------------------------------------------------------------------------------
+3. ANNOTATED DIRECTORY & FILE TREE
+--------------------------------------------------------------------------------
+
+webapp/
+├── config.php
+│     Bootstrap: session cookie params, ESG_STUDENT vs staff session name,
+│     PDO db(), all role/CSRF/escape/grade/presence/audit helpers, auto schema
+│     ensure_* functions. Included by almost every PHP page.
+├── layout.php
+│     page_head()/page_foot() HTML chrome: navbar, Mac OS window, dock, command
+│     palette, theme bootstrap script (localStorage app-theme / app-style),
+│     iframe resize/scroll, table mobile enhancer. app_is_embedded() detects
+│     ?embed=1 or Sec-Fetch-Dest: iframe.
+├── login.php
+│     Staff login UI + POST auth for admin/enseignant/stage/finance.
+├── logout.php
+│     Calls app_logout_current(); redirects to login.php or connexion_etudiant.php.
+├── index.php
+│     Staff dashboard after require_login(). Menu, home panels (admin Mac OS
+│     overview, teacher missing work, finance KPI rings), iframe host.
+├── inscription.php
+│     Admin two-step student create/edit. No verify_csrf() on POST (see §7).
+├── inscription_old.php
+│     Legacy inscription implementation kept in tree; not linked from layout.
+├── groupes.php
+│     Admin group membership: search student, POST action=change_group.
+├── gestion_notes.php
+│     Admin/teacher grade grid (save_grid) and manual note form (save_note).
+├── grille_notes.php
+│     Printable/read-only grade grid for a group+subject.
+├── presence_etudiants.php
+│     Attendance capture POST action=save_presence.
+├── feuille_presence.php
+│     UI to pick group/date then jump to generate_feuille_presence.php.
+├── generate_feuille_presence.php
+│     PhpWord attendance sheet DOCX for a scheduled session.
+├── alertes_elimination.php
+│     Admin list of absence-based elimination; POST derogations.
+├── affecter_enseignant.php
+│     Admin N:M assignment enseignant ↔ matière ↔ groupe.
+├── enseignants.php
+│     Admin create teacher accounts (CIN, profile, bcrypt password).
+├── emploi_temps.php
+│     Admin timetable view for G1–G4; GET build=1 runs tc_build().
+├── tronc_commun.php
+│     Library of constants + tc_build()/tc_load_report() for common-core weeks.
+├── finance.php
+│     Finance officer payments: create_payment, edit_payment, search.
+├── recu_paiement.php
+│     Printable receipt for one finance.id_finance_paiement.
+├── finance_users.php
+│     Admin CRUD finance_user (create/update/toggle_active).
+├── creer_comptes.php
+│     Admin hub: create teacher / finance / stage accounts.
+├── modifier_comptes.php
+│     Admin edit identifiers/passwords for those account types.
+├── activer_comptes.php
+│     Admin toggle active flags (invalidates auth_generation where applicable).
+├── ajouter_compte_stage.php
+│     Admin insert stage_user (CIN 8 digits + hashed password).
+├── changer_mot_de_passe.php
+│     Admin self-service password change for admin_user.
+├── promotion.php
+│     Year-end preview/commit wizard (PROMOUVOIR confirmation).
+├── archive_export.php
+│     CSV/PDF export of archived years (Dompdf for PDF).
+├── releve_notes.php
+│     Transcript view; supports ?cin=&year= for archived years.
+├── journal_audit.php
+│     Read-only audit_log listing for admin.
+├── demandes_presence.php
+│     Admin queue of demande_attestation; live JS poll of attestation_live.php.
+├── attestation_live.php
+│     JSON {count, stamp, requests[]} for admin polling. require_admin().
+├── attestation_inscription.php
+│     Thin wrapper: certificate_page('registration', …).
+├── attestation_presence.php
+│     Thin wrapper: certificate_page('presence', …) [file exists in tree].
+├── attestation_reussite.php
+│     Thin wrapper: certificate_page('success', …).
+├── certificate.php
+│     Shared CIN search + docx-preview fetch of generate_*?preview=1.
+├── generate_word.php
+│     PhpWord TemplateProcessor → inscription DOCX. GET cin, optional preview=1.
+├── generate_presence.php
+│     PhpWord presence attestation DOCX (Arabic heading).
+├── generate_reussite.php
+│     PhpWord success attestation DOCX.
+├── download_all_inscriptions.php
+│     Admin bulk: generate all inscription DOCX then convert to one PDF.
+├── stage_portal.php
+│     Isolated stage landing placeholder + theme controls.
+├── connexion_etudiant.php
+│     Student login (ESG_STUDENT cookie).
+├── creer_espace_etudiant.php
+│     Student self-registration of portal password against existing CIN.
+├── dashboard.php
+│     Student space: profile, timetable, grades, attestation request, inbox JS.
+├── etudiant_inbox.php
+│     JSON inbox + POST mark-read (CSRF). Student session required.
+├── fix_utf8.php
+│     One-off UTF-8 repair utility (not in main nav).
+├── convert_inscriptions_to_pdf.ps1
+│     Windows Word COM: merge DOCX folder → one PDF (used by bulk download).
+├── Dockerfile
+│     php:8.3-apache image, zip/pdo/mysqli, LibreOffice, UTF-8 locale.
+├── docker-compose.yml
+│     web :8080 + mysql:8.4 published as host 3307; env DB_* ;
+│     init SQL ecole_sante_gabes_full.sql.
+├── composer.json / composer.lock
+│     PhpWord + Dompdf lockfile.
+├── skills-lock.json
+│     Cursor skill lock for caveman skill (not runtime).
+├── README.md
+│     Install, default passwords, migration order notes.
+├── IDEA.md
+│     Two words: “university erp”.
+├── eval_main_1.md / eval_main_2.md
+│     Design-eval notes (login/stage UI), not runtime.
+├── .agents/skills/caveman/{SKILL.md,README.md}
+│     Cursor agent skill for terse replies.
+├── assets/style.css
+│     Global + original/atlas/glass/light/dark + finance rings + mobile.
+├── assets/macos.css
+│     Mac OS theme, dock, command palette, wallpaper ::before, demandes table.
+├── assets/student-space.css
+│     Student dashboard glass cards.
+├── assets/student-login.css
+│     Student gate (connexion / creer_espace) visuals.
+├── images/
+│     Referenced: no_bg_logo.png, newbg.jpg (Mac light wallpaper),
+│     macos-wallpaper.jpg, macos-campus-hero.jpg, admin-campus.jpg,
+│     student-campus.jpg, student-hall.jpg, attendance-logo.jpg, logo.png
+│     (README). Binary contents not dumped.
+├── templates/
+│     Expected template_inscription_2.docx (generate_word.php / Docker volume).
+│     Glob of templates/ was empty at scan time — generator exits if missing.
+├── SQL schema & migrations (see §5 and §8):
+│     db_new.sql, db.sql, ecole_sante_gabes_full.sql,
+│     ecole_sante_gabes_export_2026-09-18.sql, seed_tronc_commun.sql,
+│     s1_academic_seed.sql, and *_migration.sql files listed in §8.
+└── vendor/   [EXCLUDED FROM LINE DUMP] Composer packages as in §2.4.
+
+
+--------------------------------------------------------------------------------
+4. SYSTEM ARCHITECTURE & DATA FLOW
+--------------------------------------------------------------------------------
+
+4.1 Client–server model
+Server-side rendered multi-page app (MPA). No SPA router, no Inertia, no
+WebSockets, no GraphQL. HTTP:
+
+  Browser  --GET/POST-->  Apache  -->  PHP script  -->  PDO/MySQL
+                |                         |
+                +-- assets/*.css, images, CDN Bootstrap/fonts
+                +-- fetch JSON (same origin, credentials: same-origin)
+
+Dashboard modules: parent index.php hosts <iframe name="dashboard-content">.
+Links use target="dashboard-content" and href="module.php?embed=1".
+layout.php app_is_embedded() hides navbar; body.embedded-view CSS makes the
+iframe document the scrollport (html overflow hidden, body overflow-y auto).
+
+4.2 Request lifecycle (typical staff POST)
+  1. Apache maps /webapp/finance.php to that file.
+  2. finance.php require_once config.php.
+  3. config.php: detect student vs staff → session_name; session_set_cookie_params
+     (httponly, samesite Lax, secure if HTTPS); session_start(); strip student
+     keys from staff session if mixed; define db() PDO singleton.
+  4. enforce_stage_route_isolation() / enforce_student_route_isolation() may
+     302 away.
+  5. Page calls require_finance() → require_login() → 302 login.php if no role;
+     403 if wrong role; finance_user.auth_generation check.
+  6. If POST: verify_csrf() hash_equals session token vs POST csrf_token
+     (419 on fail).
+  7. Business SQL in a try/catch PDOException; audit_record() best-effort.
+  8. layout.php page_head() emits HTML, theme classes from a blocking inline
+     script reading localStorage app-theme (light|dark) and app-style
+     (original|atlas|glass|macos).
+  9. page_foot() Bootstrap JS + Mac OS window/command/iframe scripts.
+ 10. Response HTML; next navigation is a full page or iframe load.
+
+4.3 JSON poll lifecycle
+  index.php / demandes_presence.php setInterval 2000ms:
+    fetch('attestation_live.php', {credentials:'same-origin', cache:'no-store'})
+  attestation_live.php require_admin(); JSON count/stamp/requests.
+  If stamp changes, optional iframe.attestationLiveReload(data).
+
+  dashboard.php polls etudiant_inbox.php GET; POST id_notif + csrf marks read.
+
+4.4 Global state
+  Server: PHP $_SESSION only. Keys used:
+    user_role, teacher_id, stage_id, stage_auth_generation,
+    finance_id, finance_auth_generation, id_etudiant,
+    csrf_token, flash{kind,message}.
+  Client: localStorage app-theme, app-style. No Redux/Vuex.
+  iframe postMessage is used in layout.php to sync theme into embeds.
+
+4.5 Queues / jobs / cache
+  None. No Redis, no cron PHP, no queue worker. Polling replaces push.
+  Schema “migrations” are SQL files run manually (phpMyAdmin) or CREATE TABLE
+  IF NOT EXISTS inside PHP (attestation_ensure_tables, presence_ensure_table,
+  audit_ensure_table, ensure_etudiant_compte_table, elimination_ensure_table).
+
+4.6 Embedding detection
+  GET embed=1 OR header Sec-Fetch-Dest=iframe OR X-Requested-With=XMLHttpRequest.
+
+
+--------------------------------------------------------------------------------
+5. GRANULAR FILE-BY-FILE / MODULE BREAKDOWN
+--------------------------------------------------------------------------------
+
+5.1 Bootstrap & layout
+--------------------------------------------------------------------------------
+
+FILE: config.php (~881 lines)
+  Constants:
+    DB_HOST=127.0.0.1, DB_PORT=3307, DB_NAME=ecole_sante_gabes,
+    DB_USER=myapp_user, DB_PASS=myapp_password
+    Overridden by getenv DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASS (Docker).
+    PRESENCE_SEMESTER_TOTAL_HOURS=444.0
+    PRESENCE_SEMESTER_ABSENCE_RATIO=0.10  → limit 44.4 hours
+    PRESENCE_MATIERE_ABSENCE_LIMIT=4
+    PRESENCE_DEFAULT_SESSION_HOURS=1.5
+    PRESENCE_SEMESTER_CODE='S1'
+  Functions: listed in §2/§6 with signatures. PDO ATTR_ERRMODE=EXCEPTION,
+  FETCH_ASSOC, SET NAMES utf8mb4.
+
+FILE: layout.php
+  Functions:
+    app_is_embedded(): bool
+    app_user_identity(): {name, role, initials}
+    macos_dock(): HTML dock links by role
+    page_head($title, $active): full <head> + opening <body> + navbar +
+      macos-window chrome. CSS cache: style.css?v=74 macos.css?v=31
+    page_foot(): Bootstrap bundle, theme toggle JS, iframe
+      resizeDashboardFrame (iframe height 100%, body overflow-y auto, wheel
+      relay), Mac window drag/min/max/close, command palette
+      openCommandTarget() which unhides iframe and sets src for embed links.
+  Client event handlers (inline):
+    [data-theme-toggle] click → flip light/dark, localStorage, postMessage
+    [data-style-select] change → original|atlas|glass|macos
+    [data-macos-action] close|minimize|maximize
+    [data-macos-search] / Ctrl+K / Cmd+K command palette
+    Enter in command input clicks first result
+    enhanceTablesForMobile on ≤767.98px
+
+--------------------------------------------------------------------------------
+5.2 Authentication pages
+--------------------------------------------------------------------------------
+
+FILE: login.php
+  GET: form role select (admin|enseignant|stage|finance), password, CIN or
+       username fields shown via JS when role changes.
+  POST fields: role, password, cin, username. NO CSRF token.
+  Success: session_regenerate_id(true); set role-specific session keys;
+           302 index.php (or stage_portal.php for stage).
+  Teacher MD5 upgrade: if password column matches /^[a-f0-9]{32}$/i and
+           hash_equals(md5(password)), rewrite bcrypt.
+  Query ?error=stage_setup shows migration message.
+
+FILE: connexion_etudiant.php
+  POST cin, password. student_find_by_cin + etudiant_compte password_verify.
+  302 dashboard.php. Uses assets/student-login.css. Session name ESG_STUDENT
+  because SCRIPT_NAME is in the student page list.
+
+FILE: creer_espace_etudiant.php
+  POST: csrf_token, cin, password, password_confirm. verify_csrf().
+  Checks student exists, no existing etudiant_compte, then INSERT bcrypt.
+  Min password length enforced in form (8).
+
+FILE: logout.php
+  app_logout_current() clears session + cookie; 302 login or student login.
+  ?espace=etudiant forces student cookie name path via referer/script checks.
+
+--------------------------------------------------------------------------------
+5.3 Staff dashboard
+--------------------------------------------------------------------------------
+
+FILE: index.php
+  require_login(). Loads counts: students, teachers, groups, pending
+  presence requests, finance KPIs if is_finance(), teacher missing grades
+  and today’s presence if is_teacher(), Mac OS donut of students by niveau
+  if is_admin().
+  dashboard_menu_item($href,$title,$subtitle,$icon,$number,$accent,$badge)
+    emits <a class="dashboard-menu-item" target="dashboard-content"> except
+    home which is #dashboard-content + data-dashboard-home.
+  Finance rings: SVG circles r=52, --pct CSS, classes finance-ring--mint|
+    amber|rose. Values: collected this month SUM(finance.montant_paye) where
+    created_at >= first of month; remaining SUM(GREATEST(9800-total_paye,0));
+    late COUNT students with total_paye < 9800.
+  JS: creates hidden iframe; menu click unhides it; attestation poll 2s.
+
+--------------------------------------------------------------------------------
+5.4 Students, groups, enrolment
+--------------------------------------------------------------------------------
+
+FILE: inscription.php
+  require_admin(). GET ?id= edits existing student.
+  POST action=verify: validates CIN 8 digits if identity_type=cin, required
+    bilingual fields, email, dates. Stores draft in session/hidden fields.
+  POST action=submit: INSERT or UPDATE etudiant; unique violations → flash.
+    New students: assign_student_to_academic_groups($pdo, $id, $niveau).
+  UI: identity_type radio cin|passeport.
+
+FILE: groupes.php
+  require_admin(). Lists groups, members. POST action=change_group
+  csrf-protected: move student between groups (delete+insert groupe_etudiant).
+
+FILE: affecter_enseignant.php
+  require_admin(). POST assigns enseignant_affectation unique
+  (id_enseignant, id_mat, id_groupe).
+
+FILE: enseignants.php
+  require_admin(). POST create teacher: CIN 8 digits, bcrypt password,
+  type_enseignant ENUM Cours|TD|TP.
+
+--------------------------------------------------------------------------------
+5.5 Grades
+--------------------------------------------------------------------------------
+
+FILE: gestion_notes.php
+  require_teacher_or_admin().
+  POST action=save_grid: bulk UPSERT note rows for a group+subject.
+  POST action=save_note: single student note with note_cours, note_td,
+    note_tp, note_rattrapage. Teachers filtered to affectations.
+  JS: members JSON embedded; subject change filters groups for teachers.
+
+FILE: grille_notes.php
+  GET grid_group, grid_subject. Read-only table. Teacher authorization
+  checked against affectation.
+
+FILE: releve_notes.php
+  require_admin(). Current notes via calculated_note() or archived year
+  via student_grades_archive / student_transcripts_archive when year query
+  param present.
+
+--------------------------------------------------------------------------------
+5.6 Attendance & elimination
+--------------------------------------------------------------------------------
+
+FILE: presence_etudiants.php
+  require_teacher_or_admin(). Filters: group, matière, date.
+  POST action=save_presence: foreach student present|absent, INSERT/UPDATE
+  presence_etudiant, duree_heures from presence_resolve_session_hours,
+  audit_record category presence.
+
+FILE: feuille_presence.php
+  Form GET parameters then links generate_feuille_presence.php.
+
+FILE: generate_feuille_presence.php
+  PhpWord document; logo images/attendance-logo.jpg; session from emploi_temps.
+
+FILE: alertes_elimination.php
+  require_admin(). Displays presence_elimination_alerts().
+  POST can insert elimination_derogation (scope matiere|semestre).
+
+--------------------------------------------------------------------------------
+5.7 Timetable
+--------------------------------------------------------------------------------
+
+FILE: tronc_commun.php
+  Teacher CIN constants, week matrices, function tc_build(PDO) which
+  INSERT/REPLACE emploi_temps rows for G1–G4 S1, type_seance Cours/TD/TP,
+  optional semaine column. tc_load_report() returns group ids + extras.
+
+FILE: emploi_temps.php
+  require_admin(). GET group=G1|G2|G3|G4. GET build=1 → tc_build then redirect.
+  NOTE: build=1 is a state-changing GET without CSRF.
+
+--------------------------------------------------------------------------------
+5.8 Finance
+--------------------------------------------------------------------------------
+
+FILE: finance.php
+  require_finance().
+  POST action=create_payment: montant_paye, mode_paiement virement|espece,
+    id_etudiant. Updates finance_solde.total_paye; rejects if > 9800.
+  POST action=edit_payment: rewrite last payment + solde.
+  Search by CIN. History list.
+
+FILE: recu_paiement.php
+  require_finance(). GET id. Printable receipt HTML.
+
+FILE: finance_users.php
+  require_admin(). create / update / toggle_active. Toggle increments
+  auth_generation so live finance sessions die.
+
+--------------------------------------------------------------------------------
+5.9 Accounts (admin)
+--------------------------------------------------------------------------------
+
+FILE: creer_comptes.php
+  Type picker then POST create teacher/finance/stage with password_hash.
+
+FILE: modifier_comptes.php
+  GET type=enseignant|finance|stage. POST update login and/or password;
+  increments auth_generation for finance/stage.
+
+FILE: activer_comptes.php
+  POST toggle active flags.
+
+FILE: ajouter_compte_stage.php
+  POST cin (8 digits) + password ≥8 chars.
+
+FILE: changer_mot_de_passe.php
+  POST current, new, confirm. password_verify current against
+  admin_password_hash(); UPDATE admin_user.
+
+--------------------------------------------------------------------------------
+5.10 Promotion & archives
+--------------------------------------------------------------------------------
+
+FILE: promotion.php
+  POST action=preview: list students with moyenne and decision
+  admis|redouble|archive.
+  POST action=commit: admin_password + confirm==PROMOUVOIR + student_ids[].
+  Writes etudiant_archive, student_grades_archive, student_transcripts_archive,
+  student_fees_archive, finance_rollover; sets finance_solde=0; niveau++ if admis.
+
+FILE: archive_export.php
+  GET/POST filters year, format csv|pdf. Dompdf HTML→PDF. Logo path
+  images/no_bg_logo.png.
+
+--------------------------------------------------------------------------------
+5.11 Certificates
+--------------------------------------------------------------------------------
+
+FILE: certificate.php
+  certificate_page($type, $title, $arabic=false)
+  GET cin. Renders form + preview iframe-like div filled by fetch of
+  generate_*.php?cin=&preview=1 as blob into docx.renderAsync.
+
+FILE: attestation_inscription.php / attestation_presence.php /
+      attestation_reussite.php
+  One-liners requiring certificate.php.
+
+FILE: generate_word.php
+  TemplateProcessor templates/template_inscription_2.docx placeholders:
+  nom, prenom, dates, cin, specialite, etc. Stream DOCX. preview=1 skips
+  Content-Disposition attachment filename.
+
+FILE: generate_presence.php / generate_reussite.php
+  PhpWord from scratch (not template); Arabic strings; logo no_bg_logo.png.
+
+FILE: download_all_inscriptions.php
+  Loops students, generate_word to temp dir, LibreOffice --headless or
+  PowerShell convert_inscriptions_to_pdf.ps1, streams combined PDF.
+
+FILE: convert_inscriptions_to_pdf.ps1
+  Params WorkDir, OutputPdf. Word.Application COM, orientation landscape
+  842x595 twips-ish page, InsertFile each docx, ExportAsFixedFormat type 17.
+
+--------------------------------------------------------------------------------
+5.12 Attestation demand queue
+--------------------------------------------------------------------------------
+
+FILE: demandes_presence.php
+  require_admin(). POST action acceptee|refusee|toggle (feature flag
+  attestation_feature_active in system_settings). Accept stores
+  date_acceptation / pickup via attestation_pickup_from_request();
+  student_notify(). JS live table from attestation_live.php; draggable
+  board/dialog (Mac OS). CSRF on POST.
+
+FILE: attestation_live.php
+  GET JSON. Fields: count, stamp (count:lastId), requests[{id,name,cin,motif,date}].
+  500 JSON zeros on PDOException.
+
+--------------------------------------------------------------------------------
+5.13 Student space
+--------------------------------------------------------------------------------
+
+FILE: dashboard.php
+  Validates etudiant_compte.active join. Loads emploi_temps for student’s
+  groups, notes with calculated_note, attestation board, inbox.
+  POST action=demande_attestation: cin must match dossier, motif required,
+  INSERT demande_attestation if feature active.
+  Client: fetch inbox poll; POST mark read.
+
+FILE: etudiant_inbox.php
+  GET JSON payload student_notifications_payload.
+  POST csrf + id_notif → student_notification_mark_read.
+  403 if not student.
+
+--------------------------------------------------------------------------------
+5.14 Other pages
+--------------------------------------------------------------------------------
+
+FILE: stage_portal.php
+  require_stage(). Placeholder headline; theme localStorage same as login.
+
+FILE: journal_audit.php
+  SELECT audit_log order by created_at desc.
+
+FILE: fix_utf8.php
+  Utility to convert/repair character encoding in DB or files (ops tool).
+
+FILE: inscription_old.php
+  Older enrolment form; not in dashboard_menu.
+
+--------------------------------------------------------------------------------
+5.15 CSS / JS assets (application-authored)
+--------------------------------------------------------------------------------
+
+FILE: assets/style.css (~6000+ lines)
+  :root dark tokens --app-bg #080d1c etc.
+  body.theme-light token override.
+  Dashboard menu, cards, tables, finance-rings SVG gauges,
+  presence chips, mobile card tables (td::before data-label),
+  theme-atlas dock, theme-glass frost (admin-campus.jpg),
+  glass toolbar, embedded-view scroll contract,
+  phone ≤767.98px overflow-x hidden overflow-y auto.
+
+FILE: assets/macos.css (~3500+ lines)
+  Active only body.theme-macos. Window, titlebar traffic lights, dock,
+  command overlay, wallpaper body::before (dark macos-wallpaper.jpg,
+  light newbg.jpg cover), demandes chips/avatars, phone dock,
+  overflow-x clip + overflow-y auto on html.
+
+FILE: assets/student-space.css
+  .student-space min-height 100vh, hall background, glass bar/cards.
+
+FILE: assets/student-login.css
+  Student gate on student-campus.jpg.
+
+No standalone .js files in assets/; all JS is inline in PHP.
+
+--------------------------------------------------------------------------------
+5.16 Database models (tables) — fields, keys, relationships
+--------------------------------------------------------------------------------
+
+admin_user
+  id_admin PK AI, username UNIQUE, password_hash VARCHAR(255)
+  1 row seed username=admin bcrypt.
+
+specialite
+  id_spec PK, nom_spec UNIQUE, nom_spec_ar
+  1:N etudiant.id_spec
+  Seed: Soins à domicile, Personnes âgées, Anesthésie-Réanimation, Commun.
+
+etudiant
+  id_etudiant PK
+  nom, prenom, nom_ar, prenom_ar, date_naissance, lieu_naissance,
+  lieu_naissance_ar, sexe ENUM Femme|Homme, nationalite, etat_civil,
+  cin_passeport UNIQUE, num_tel, adresse, email UNIQUE,
+  num_inscription UNIQUE, date_inscrit, id_spec FK specialite,
+  niveau ENUM 1|2|3, statut ENUM actif|diplome default actif,
+  annee_bac, specialite_bac ENUM Science|Math|Lettre|Sport
+  1:N note, groupe_etudiant, finance, presence, demande_attestation,
+  etudiant_compte 1:1, finance_solde 1:1, archives 1:N
+
+matiere
+  id_mat PK, code_ue, description_ue, code_ecue UNIQUE, description_ecue,
+  semestre S1–S6, coeff, credit, regime, volume_cours/td/tp/autres,
+  coefficient_ecue, coefficient_ue
+
+groupe
+  id_groupe PK, semestre, type_groupe Cours|TD, numero, capacite
+  UNIQUE (semestre, type_groupe, numero)
+  Optional id_groupe_parent (added by td_groups_migration.sql) for TD→Cours
+
+groupe_etudiant
+  PK (id_groupe, id_etudiant) N:M students↔groups CASCADE delete
+
+note
+  id_note PK
+  id_etudiant FK CASCADE, id_mat FK CASCADE, id_groupe FK SET NULL,
+  semestre, note, note_cours, note_td, note_tp, note_rattrapage
+  UNIQUE (id_etudiant, id_mat, semestre)
+
+enseignant
+  id_enseignant PK, cin UNIQUE 8, nom, prenom, type_enseignant Cours|TD|TP,
+  num_tel, email UNIQUE, adresse, password, active TINYINT default 1 (ensured)
+
+enseignant_affectation
+  unique (id_enseignant, id_mat, id_groupe) N:M with FKs CASCADE
+
+emploi_temps
+  id_emploi PK, id_groupe, id_mat, id_enseignant, jour ENUM Lundi–Samedi,
+  heure_debut, heure_fin, type_seance Cours|TD|TP, salle, created_at
+  Optional semaine column (emploi_temps_migration / tronc_commun)
+
+finance_user
+  id_finance PK, username UNIQUE, password, active, auth_generation default 1
+  Seed mondher bcrypt (README password mondher123)
+
+stage_user
+  id_stage PK, cin UNIQUE 8, password, active, auth_generation
+
+finance_solde
+  id_etudiant PK FK CASCADE, total_paye DECIMAL(10,2) CHECK 0..9800
+
+finance
+  id_finance_paiement PK, id_etudiant FK, mode_paiement virement|espece,
+  montant_paye, id_finance_user FK RESTRICT, created_at, updated_at
+
+etudiant_archive / student_grades_archive / student_transcripts_archive /
+student_fees_archive / finance_rollover
+  Year snapshots; JSON payloads; UNIQUE (id_etudiant, annee_scolaire) on headers
+
+presence_etudiant (PHP-ensured)
+  UNIQUE (id_groupe, id_mat, id_etudiant, date_seance)
+  statut present|absent, duree_heures, id_enseignant, recorded_by_role
+
+elimination_derogation (PHP-ensured)
+  scope matiere|semestre, id_etudiant, id_mat, semestre, reason
+
+audit_log (PHP-ensured)
+  actor_role, actor_id, actor_label, category ENUM note|paiement|presence|compte,
+  action_name, summary, created_at
+
+system_settings
+  setting_key UNIQUE, setting_value
+  Key attestation_feature_active = '1'|'0'
+
+demande_attestation
+  id_demande PK, id_etudiant, cin, motif, statut en_attente|acceptee|refusee,
+  date_demande, date_acceptation
+
+etudiant_notifications
+  id_notif PK, id_etudiant FK CASCADE, sujet, message_body, is_read, date_creation
+
+etudiant_compte
+  id_compte PK, id_etudiant UNIQUE FK CASCADE, password, active, created_at
+
+Observers: none (no Eloquent). “Observers” are PHP ensure_* on request.
+
+--------------------------------------------------------------------------------
+5.17 Routes & HTTP map (every app PHP URI)
+--------------------------------------------------------------------------------
+All paths relative to the webapp document root. No router class.
+
+METHOD  URI                              AUTH                 NOTES
+GET     login.php                        guest                form
+POST    login.php                        guest                auth, no CSRF
+GET     logout.php                       session              destroy
+GET     connexion_etudiant.php           guest student
+POST    connexion_etudiant.php           guest student        no CSRF
+GET/POST creer_espace_etudiant.php       guest student        CSRF
+GET     index.php                        staff login
+GET     index.php?page=&search=          admin                student table
+GET     inscription.php                  admin
+POST    inscription.php                  admin                action verify|submit
+GET     groupes.php                      admin
+POST    groupes.php                      admin                change_group CSRF
+GET/POST gestion_notes.php               teacher|admin        CSRF
+GET     grille_notes.php                 teacher|admin
+GET/POST presence_etudiants.php          teacher|admin        CSRF
+GET     feuille_presence.php             teacher|admin
+GET     generate_feuille_presence.php    teacher|admin        DOCX
+GET/POST alertes_elimination.php         admin                CSRF
+GET/POST affecter_enseignant.php         admin                CSRF
+GET/POST enseignants.php                 admin                CSRF
+GET     emploi_temps.php                 admin
+GET     emploi_temps.php?build=1         admin                MUTATING GET
+GET/POST finance.php                     finance              CSRF
+GET     recu_paiement.php                finance
+GET/POST finance_users.php               admin                CSRF
+GET/POST creer_comptes.php               admin                CSRF
+GET/POST modifier_comptes.php            admin                CSRF
+GET/POST activer_comptes.php             admin                CSRF
+GET/POST ajouter_compte_stage.php        admin                CSRF
+GET/POST changer_mot_de_passe.php        admin                CSRF
+GET/POST promotion.php                   admin                CSRF
+GET/POST archive_export.php              admin
+GET     releve_notes.php                 admin
+GET     journal_audit.php                admin
+GET/POST demandes_presence.php           admin                CSRF
+GET     attestation_live.php             admin                JSON
+GET     attestation_inscription.php      admin
+GET     attestation_presence.php         admin
+GET     attestation_reussite.php         admin
+GET     generate_word.php?cin=           admin                DOCX
+GET     generate_presence.php?cin=       admin
+GET     generate_reussite.php?cin=       admin
+GET     download_all_inscriptions.php    admin                PDF
+GET     stage_portal.php                 stage
+GET     dashboard.php                    student
+POST    dashboard.php                    student              CSRF demande
+GET/POST etudiant_inbox.php              student              JSON
+GET     fix_utf8.php                     (ops)
+GET     inscription_old.php              (legacy)
+
+Query flag embed=1 on any layout page_head page renders embedded-view.
+
+
+--------------------------------------------------------------------------------
+6. ENVIRONMENT VARIABLES & CONFIGURATION MAP
+--------------------------------------------------------------------------------
+
+There is no .env file in the repo. Configuration is PHP constants + getenv.
+
+Name                     Default (config.php)     Controls
+DB_HOST                  127.0.0.1                PDO host. Docker compose sets db
+DB_PORT                  3307                     PDO port. Docker web uses 3306
+                                                  internally; host maps 3307:3306
+DB_NAME                  ecole_sante_gabes        Database name
+DB_USER                  myapp_user               DB user
+DB_PASS                  myapp_password           DB password
+INSCRIPTION_TEMPLATE     (unset in PHP)           Docker-only path
+                                                  /opt/templates/template_inscription_2.docx
+                                                  generate_word.php actually uses
+                                                  __DIR__/templates/template_inscription_2.docx
+LANG / LC_ALL / LANGUAGE en_US.UTF-8              Dockerfile locale
+HTTPS                    auto from $_SERVER       session cookie secure flag
+
+PHP.ini extras in Docker charset.ini:
+  default_charset=UTF-8
+  mbstring.encoding_translation=On
+  mbstring.func_overload=0
+
+Session cookie params:
+  secure = HTTPS on
+  httponly = true
+  samesite = Lax
+  name = ESG_STUDENT on student scripts else PHP default
+
+localStorage (client, not env):
+  app-theme = light | dark     default dark
+  app-style = original|atlas|glass|macos     default original
+  legacy value “alternate” rewritten to atlas
+
+Finance business constants (not env): tuition cap 9800 DT hardcoded in
+  finance_solde CHECK, finance.php, index.php late/remaining queries.
+
+README documented logins (operational, not env):
+  admin / admin
+  finance mondher / mondher123
+
+
+--------------------------------------------------------------------------------
+7. SECURITY, AUTHENTICATION & AUTHORIZATION
+--------------------------------------------------------------------------------
+
+7.1 Authentication
+  Mechanism: PHP native sessions (cookie), not JWT, not OAuth, not MFA.
+  Password storage: password_hash() PASSWORD_DEFAULT (bcrypt $2y$).
+  Admin hash loaded each request from admin_user.
+  Teacher legacy MD5 auto-upgraded on successful login.
+  session_regenerate_id(true) on all successful logins.
+  Finance/stage session binding via auth_generation integer; password or
+  identity change increments it → require_* destroys session.
+
+7.2 Authorization
+  Gate functions in config.php: require_login, require_admin,
+  require_teacher_or_admin, require_finance, require_stage.
+  Teacher data scoping: SQL joins enseignant_affectation in gestion_notes
+  and presence_etudiants.
+  Student isolation: separate cookie + enforce_student_route_isolation.
+  Stage isolation: enforce_stage_route_isolation.
+
+7.3 CSRF
+  Token: 32 bytes bin2hex in $_SESSION['csrf_token']; html hidden field;
+  verify_csrf() uses hash_equals; failure HTTP 419.
+  Applied on most mutating POST pages listed in §5.17.
+  NOT applied on: login.php, connexion_etudiant.php, inscription.php POST,
+  emploi_temps.php?build=1 GET, certificate GET generators (read-only DOCX).
+  etudiant_inbox.php POST is protected.
+
+7.4 XSS
+  Helper e() htmlspecialchars ENT_QUOTES UTF-8 with mb_check_encoding repair.
+  Most echoes use e(). Some JSON embeds use JSON_HEX_TAG|AMP|APOS|QUOT.
+
+7.5 SQL injection
+  Prepared statements dominate. A few concatenations:
+  student_notifications_latest LIMIT is cast int clamped 1..50 then
+  concatenated (safe). Dynamic SQL in archive_export should be reviewed
+  per export filters. information_schema queries use bound table names
+  in db_table_exists.
+
+7.6 CORS
+  No Access-Control headers. Same-origin only. fetch uses credentials
+  same-origin.
+
+7.7 Rate limiting
+  None at application layer. Apache/mod may apply globally (not configured
+  in repo). Login is unbounded.
+
+7.8 Cookie / session fixation
+  regenerate_id on login. httponly. No explicit session timeout in code.
+
+7.9 File generation
+  generate_* require_admin (or teacher for feuille). CIN from GET.
+  Template path is filesystem local, not user-controlled.
+
+7.10 Secrets in repo
+  Default DB password myapp_password, admin bcrypt in db_new.sql,
+  finance seed hash, README plaintext passwords. Docker MYSQL_ROOT_PASSWORD=root.
+  Treat as lab credentials, not production secrets.
+
+7.11 Iframe
+  Modules load same-origin embed=1. No CSP header in scanned files.
+  X-Frame-Options not set (dashboard iframe would be same-origin anyway).
+
+
+--------------------------------------------------------------------------------
+8. BUILD SCRIPTS, DATABASE MIGRATIONS & DEPLOYMENT
+--------------------------------------------------------------------------------
+
+8.1 CLI / Composer
+  composer.json has no "scripts" key. Typical:
+    composer install   → vendor/ PhpWord + Dompdf
+  No npm, no artisan, no make.
+
+8.2 PowerShell
+  convert_inscriptions_to_pdf.ps1 — see §5.11. Called from
+  download_all_inscriptions.php on Windows.
+
+8.3 Docker
+  docker compose up --build
+  web: build Dockerfile, port 8080→80, volume bind ./:/var/www/html
+  db: mysql:8.4, port 3307→3306, volume mysql_data,
+      init ./ecole_sante_gabes_full.sql as docker-entrypoint-initdb.d/01-db.sql
+      (runs ONLY on empty data volume).
+  Healthcheck: mysqladmin ping root password.
+  App in container must use DB_HOST=db DB_PORT=3306 (compose environment).
+  Host XAMPP Apache uses config.php defaults 127.0.0.1:3307 to reach the
+  published MySQL port while PHP still runs on Windows Apache :80.
+
+8.4 SQL files — purpose and suggested order
+
+  Fresh install (empty server):
+    1. db_new.sql
+         CREATE DATABASE ecole_sante_gabes
+         Core tables listed in §5.16 including stage_user, finance_*,
+         archives, emploi_temps, admin seed, specialites, groupes Cours/TD,
+         matières inserts (rest of file after line ~314).
+    2. Optional seed_tronc_commun.sql — 120 common-core students + group attach.
+    3. Optional s1_academic_seed.sql — extra S1 academic rows.
+
+  Existing DB that predates a feature (run AFTER backup, ONCE):
+    admin_migration.sql          — admin_user table + admin hash
+    teacher_migration.sql        — enseignant + enseignant_affectation
+    academic_migration.sql       — groupe + groupe_etudiant
+    td_groups_migration.sql      — id_groupe_parent, create missing TD,
+                                   attach students to Cours+random TD
+    finance_migration.sql        — finance_user, finance, finance_solde
+    finance_account_migration.sql— extra finance account columns/users
+    finance_history_migration.sql— payment history / updated_at
+    stage_accounts_migration.sql — stage_user (empty, no seed accounts)
+    etudiant_compte_migration.sql— etudiant_compte portal passwords
+    attestation_presence_migration.sql — system_settings, demande_attestation,
+                                   etudiant_notifications
+    presence_migration.sql       — presence_etudiant
+    emploi_temps_migration.sql   — emploi_temps (+ semaine if needed)
+    promotion_archive_migration.sql — archive + rollover tables
+    audit_migration.sql          — audit_log
+    PHP also auto-creates several of these if missing (idempotent).
+
+  Snapshots / dumps (not migrations):
+    ecole_sante_gabes_full.sql           Docker init dump (large, with data)
+    ecole_sante_gabes_export_2026-09-18.sql  dated phpMyAdmin export
+    db.sql                               oldest minimal schema (specialite,
+                                         etudiant, matiere, note only)
+
+8.5 Asset compilation
+  None. CSS is static. Cache-bust query ?v=74 / ?v=31 on layout/login/stage.
+
+8.6 Deployment notes from README
+  Copy to C:\xampp\htdocs\ecole_sante_gabes (or webapp).
+  Start Apache+MySQL. Import db_new.sql in phpMyAdmin.
+  Open http://localhost/ecole_sante_gabes/login.php
+  Tablespace recovery: stop MySQL, delete data/ecole_sante_gabes folder,
+  recreate DB, re-import.
+  Docker migrations must be applied to the container volume, not a second
+  XAMPP schema, or the running app will not see them.
+
+8.7 Missing runtime files often required
+  templates/template_inscription_2.docx — generate_word.php exits if absent.
+  images/no_bg_logo.png and wallpaper JPEGs — UI backgrounds/logo.
+  vendor/ — must exist via composer install for DOCX/PDF.
+
+
+--------------------------------------------------------------------------------
+APPENDIX A — calculated_note() exact algorithm
+--------------------------------------------------------------------------------
+Input array keys: note_rattrapage, note_cours, note_td, note_tp, volume_tp, note
+Returns ?float rounded to 2 decimals, or null if nothing numeric.
+
+  if note_rattrapage !== null:
+      return (float) note_rattrapage
+  if note_cours === null OR note_td === null:
+      return note === null ? null : (float) note
+  cc = (float) note_cours
+  exam = (float) note_td   // column is named note_td but used as exam
+  if (float) volume_tp > 0 AND note_tp !== null:
+      return round(cc*0.25 + exam*0.50 + note_tp*0.25, 2)
+  return round(cc*0.30 + exam*0.70, 2)
+
+APPENDIX B — Theme class matrix
+--------------------------------------------------------------------------------
+body.app-body
+  + theme-dark | theme-light          (localStorage app-theme)
+  + theme-atlas | theme-glass | theme-macos | (none = original)
+  + login-page | embedded-view | dashboard pages
+
+APPENDIX C — Iframe scroll contract (layout.php resizeDashboardFrame)
+--------------------------------------------------------------------------------
+Parent iframe: height 100%; min-height 0; overflow auto; hidden attr removed
+  when a module is chosen (index.php click or command palette openCommandTarget).
+Iframe documentElement: height 100%; overflow hidden.
+Iframe body: height 100%; overflow-x hidden; overflow-y auto; touch scrolling.
+Wheel events at scroll ends are relayed to parent panel/window.scrollBy.
+
+================================================================================
+END OF PROJECT_EXHAUSTIVE_DOCUMENTATION.txt
+This file is intended to let a new engineer understand routing, data, auth,
+and every first-party source file without opening the editor. Re-scan after
+large refactors; vendor/ and binary assets remain excluded as specified.
+================================================================================

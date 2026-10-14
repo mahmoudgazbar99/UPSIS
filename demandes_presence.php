@@ -135,64 +135,89 @@ try {
 }
 
 page_head('Demandes de présence', 'attestation');
+
+$attestationInitials = static function (string $prenom, string $nom): string {
+    $letters = strtoupper(substr($prenom, 0, 1) . substr($nom, 0, 1));
+    return $letters !== '' ? $letters : '?';
+};
+$attestationActions = static function (int $id): void {
+    ?>
+    <div class="macos-row-actions">
+      <button type="button" class="btn btn-sm btn-success macos-chip macos-chip-ok" data-accept-demande="<?= $id ?>">Accepter</button>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="id_demande" value="<?= $id ?>">
+        <button class="btn btn-sm btn-danger macos-chip macos-chip-no" name="action" value="refusee">Refuser</button>
+      </form>
+    </div>
+    <?php
+};
 ?>
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 page-title-block attestation-page-head">
   <div>
     <p class="eyebrow">Documents</p>
     <h1 class="display-6 fw-bold mb-1">Les demandes de présences</h1>
     <p class="text-secondary mb-0">Activez le service, puis acceptez ou refusez chaque demande étudiante.</p>
   </div>
-  <form method="post" class="attestation-toggle-form" id="attestationToggleForm">
-    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-    <input type="hidden" name="action" value="toggle">
-    <input type="hidden" name="attestation_feature_active" value="0">
-    <div class="form-check form-switch">
-      <input class="form-check-input" type="checkbox" role="switch" id="attestation_feature_active" name="attestation_feature_active" value="1" <?= $featureActive ? 'checked' : '' ?>>
-      <label class="form-check-label" for="attestation_feature_active"><?= $featureActive ? 'Service activé' : 'Service désactivé' ?></label>
-    </div>
-  </form>
 </div>
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
-<div class="card app-card">
-  <div class="card-body p-4 pb-3">
-    <h2 class="h4 mb-1">Les demandes de présences</h2>
-    <p class="text-secondary mb-0" id="pendingSummary"><?= count($pending) ?> demande<?= count($pending) > 1 ? 's' : '' ?> en attente.</p>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-dark table-hover align-middle mb-0" id="demandesTable">
-      <thead>
-        <tr>
-          <th>Étudiant</th>
-          <th>CIN</th>
-          <th>Date</th>
-          <th>Motif</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php foreach ($pending as $row): ?>
-        <tr>
-          <td><?= e(trim($row['prenom'] . ' ' . $row['nom'])) ?></td>
-          <td><?= e((string) $row['cin']) ?></td>
-          <td><?= e(date('d/m/Y H:i', strtotime((string) $row['date_demande']))) ?></td>
-          <td><?= e((string) $row['motif']) ?></td>
-          <td class="text-end">
-            <button type="button" class="btn btn-sm btn-success" data-accept-demande="<?= (int) $row['id_demande'] ?>">Accepter</button>
-            <form method="post" class="d-inline">
-              <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-              <input type="hidden" name="id_demande" value="<?= (int) $row['id_demande'] ?>">
-              <button class="btn btn-sm btn-danger" name="action" value="refusee">Refuser</button>
-            </form>
-          </td>
-        </tr>
-      <?php endforeach; ?>
-      <?php if (!$pending): ?>
-        <tr><td colspan="5" class="text-center text-secondary py-5">Aucune demande en attente.</td></tr>
-      <?php endif; ?>
-      </tbody>
-    </table>
-  </div>
+<div class="attestation-stage">
+  <section class="card app-card attestation-board" data-attestation-board>
+    <header class="attestation-board-titlebar" data-attestation-drag>
+      <div class="macos-traffic macos-only-control" data-attestation-traffic>
+        <button type="button" class="macos-dot macos-dot-close" data-board-action="reset" aria-label="Réinitialiser la fenêtre" title="Réinitialiser"></button>
+        <button type="button" class="macos-dot macos-dot-min" data-board-action="minimize" aria-label="Réduire le tableau" title="Réduire"></button>
+        <button type="button" class="macos-dot macos-dot-max" data-board-action="maximize" aria-label="Agrandir le tableau" title="Agrandir"></button>
+      </div>
+      <div class="attestation-board-heading">
+        <h2 class="h4 mb-0">Les demandes de présences</h2>
+        <p class="text-secondary mb-0" id="pendingSummary"><?= count($pending) ?> demande<?= count($pending) > 1 ? 's' : '' ?> en attente.</p>
+      </div>
+      <form method="post" class="attestation-toggle-form" id="attestationToggleForm">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="action" value="toggle">
+        <input type="hidden" name="attestation_feature_active" value="0">
+        <div class="form-check form-switch mb-0">
+          <input class="form-check-input attestation-feature-switch" type="checkbox" role="switch" id="attestation_feature_active" name="attestation_feature_active" value="1" <?= $featureActive ? 'checked' : '' ?>>
+          <label class="form-check-label" for="attestation_feature_active"><?= $featureActive ? 'Service activé' : 'Service désactivé' ?></label>
+        </div>
+      </form>
+    </header>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0" id="demandesTable">
+        <thead>
+          <tr>
+            <th>Étudiant</th>
+            <th>CIN</th>
+            <th>Date</th>
+            <th>Motif</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($pending as $row): ?>
+          <?php $studentName = trim((string) $row['prenom'] . ' ' . (string) $row['nom']); ?>
+          <tr>
+            <td data-label="Étudiant">
+              <div class="macos-person">
+                <span class="macos-avatar" aria-hidden="true"><?= e($attestationInitials((string) $row['prenom'], (string) $row['nom'])) ?></span>
+                <span><?= e($studentName) ?></span>
+              </div>
+            </td>
+            <td data-label="CIN"><span class="macos-mono"><?= e((string) $row['cin']) ?></span></td>
+            <td data-label="Date"><span class="macos-date-pill"><?= e(date('d/m/Y H:i', strtotime((string) $row['date_demande']))) ?></span></td>
+            <td data-label="Motif"><span class="macos-motif"><?= e((string) $row['motif']) ?></span></td>
+            <td class="text-end" data-label="Actions"><?php $attestationActions((int) $row['id_demande']); ?></td>
+          </tr>
+        <?php endforeach; ?>
+        <?php if (!$pending): ?>
+          <tr><td colspan="5" class="text-center text-secondary py-5">Aucune demande en attente.</td></tr>
+        <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </section>
 </div>
 
 <div class="attestation-accept-overlay" id="acceptAttestationModal" hidden>
@@ -201,7 +226,12 @@ page_head('Demandes de présence', 'attestation');
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
       <input type="hidden" name="action" value="acceptee">
       <input type="hidden" name="id_demande" id="accept_id_demande" value="">
-      <div class="attestation-accept-header">
+      <div class="attestation-accept-header" data-dialog-drag>
+        <div class="macos-traffic macos-only-control">
+          <button type="button" class="macos-dot macos-dot-close" data-accept-close aria-label="Fermer" title="Fermer"></button>
+          <span class="macos-dot macos-dot-min" aria-hidden="true"></span>
+          <span class="macos-dot macos-dot-max" aria-hidden="true"></span>
+        </div>
         <h2 class="h5 mb-0" id="acceptAttestationTitle">Accepter la demande</h2>
         <button type="button" class="btn-close btn-close-white" data-accept-close aria-label="Fermer"></button>
       </div>
@@ -219,29 +249,35 @@ page_head('Demandes de présence', 'attestation');
         </div>
       </div>
       <div class="attestation-accept-footer">
-        <button type="button" class="btn btn-outline-secondary" data-accept-close>Annuler</button>
-        <button type="submit" class="btn btn-success">Confirmer l’acceptation</button>
+        <button type="button" class="btn btn-outline-secondary macos-chip macos-chip-neutral" data-accept-close>Annuler</button>
+        <button type="submit" class="btn btn-success macos-chip macos-chip-ok">Confirmer l’acceptation</button>
       </div>
     </form>
   </div>
 </div>
 <div class="attestation-accept-overlay" id="downloadPresenceModal"<?= $downloadCin !== '' ? '' : ' hidden' ?>>
   <div class="attestation-accept-dialog" role="dialog" aria-modal="true" aria-labelledby="downloadPresenceTitle">
-    <div class="attestation-accept-header">
+    <div class="attestation-accept-header" data-dialog-drag>
+      <div class="macos-traffic macos-only-control">
+        <button type="button" class="macos-dot macos-dot-close" data-download-close aria-label="Fermer" title="Fermer"></button>
+        <span class="macos-dot macos-dot-min" aria-hidden="true"></span>
+        <span class="macos-dot macos-dot-max" aria-hidden="true"></span>
+      </div>
       <h2 class="h5 mb-0" id="downloadPresenceTitle">Attestation de présence</h2>
       <button type="button" class="btn-close btn-close-white" data-download-close aria-label="Fermer"></button>
     </div>
     <div class="attestation-accept-body">
       <p class="text-secondary mb-0">
         <?= $downloadName !== ''
-          ? 'La demande de ' . e($downloadName) . ' a été acceptée. Téléchargez son attestation de présence.'
-          : 'Téléchargez l’attestation de présence de l’étudiant.' ?>
+          ? 'La demande de ' . e($downloadName) . ' a été acceptée. Téléchargez son attestation de présence en Word ou en PDF.'
+          : 'Téléchargez l’attestation de présence de l’étudiant en Word ou en PDF.' ?>
       </p>
     </div>
     <div class="attestation-accept-footer">
-      <button type="button" class="btn btn-outline-secondary" data-download-close>Fermer</button>
+      <button type="button" class="btn btn-outline-secondary macos-chip macos-chip-neutral" data-download-close>Fermer</button>
       <?php if ($downloadCin !== ''): ?>
-        <a class="btn btn-success" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>" target="_blank" rel="noopener">Télécharger l’attestation de présence</a>
+        <a class="btn btn-success macos-chip macos-chip-ok" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>" target="_blank" rel="noopener">Word</a>
+        <a class="btn btn-outline-danger macos-chip" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>&amp;format=pdf" target="_blank" rel="noopener">PDF</a>
       <?php endif; ?>
     </div>
   </div>
@@ -267,6 +303,11 @@ page_head('Demandes de présence', 'attestation');
   function pad(value) {
     return String(value).padStart(2, '0');
   }
+  function initials(name) {
+    return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map(function (part) {
+      return part.charAt(0).toUpperCase();
+    }).join('') || '?';
+  }
   function resetDialogPosition(overlay) {
     const dialog = overlay && overlay.querySelector('.attestation-accept-dialog');
     if (!dialog) return;
@@ -278,7 +319,7 @@ page_head('Demandes de présence', 'attestation');
   function enableDialogDrag(overlay) {
     if (!overlay) return;
     const dialog = overlay.querySelector('.attestation-accept-dialog');
-    const handle = overlay.querySelector('.attestation-accept-header');
+    const handle = overlay.querySelector('[data-dialog-drag]') || overlay.querySelector('.attestation-accept-header');
     if (!dialog || !handle || handle.dataset.dragReady === '1') return;
     handle.dataset.dragReady = '1';
     let drag = null;
@@ -301,10 +342,11 @@ page_head('Demandes de présence', 'attestation');
     });
     handle.addEventListener('pointermove', function (event) {
       if (!drag || event.pointerId !== drag.pointerId) return;
+      const overlayRect = overlay.getBoundingClientRect();
       const maxLeft = Math.max(0, overlay.clientWidth - dialog.offsetWidth);
       const maxTop = Math.max(0, overlay.clientHeight - dialog.offsetHeight);
-      const left = Math.min(Math.max(0, event.clientX - overlay.getBoundingClientRect().left - drag.offsetX), maxLeft);
-      const top = Math.min(Math.max(0, event.clientY - overlay.getBoundingClientRect().top - drag.offsetY), maxTop);
+      const left = Math.min(Math.max(0, event.clientX - overlayRect.left - drag.offsetX), maxLeft);
+      const top = Math.min(Math.max(0, event.clientY - overlayRect.top - drag.offsetY), maxTop);
       dialog.style.left = left + 'px';
       dialog.style.top = top + 'px';
     });
@@ -316,6 +358,83 @@ page_head('Demandes de présence', 'attestation');
     }
     handle.addEventListener('pointerup', endDrag);
     handle.addEventListener('pointercancel', endDrag);
+  }
+  function enableBoardWindow(board) {
+    if (!board || board.dataset.windowReady === '1') return;
+    board.dataset.windowReady = '1';
+    const stage = board.closest('.attestation-stage');
+    const handle = board.querySelector('[data-attestation-drag]');
+    if (!stage || !handle) return;
+    let drag = null;
+
+    function resetBoard() {
+      board.classList.remove('is-moved', 'is-dragging', 'is-collapsed', 'is-max');
+      board.style.left = '';
+      board.style.top = '';
+      board.style.width = '';
+      stage.style.minHeight = '';
+    }
+
+    handle.addEventListener('pointerdown', function (event) {
+      if (event.button !== 0) return;
+      if (event.target.closest('button, a, input, label, select, textarea, .macos-traffic')) return;
+      if (window.matchMedia('(max-width: 767.98px)').matches) return;
+      const stageRect = stage.getBoundingClientRect();
+      const rect = board.getBoundingClientRect();
+      stage.style.minHeight = Math.max(stage.offsetHeight, board.offsetHeight) + 'px';
+      board.classList.add('is-moved', 'is-dragging');
+      board.classList.remove('is-max');
+      board.style.width = rect.width + 'px';
+      board.style.left = (rect.left - stageRect.left) + 'px';
+      board.style.top = (rect.top - stageRect.top) + 'px';
+      drag = {
+        pointerId: event.pointerId,
+        offsetX: event.clientX - rect.left,
+        offsetY: event.clientY - rect.top
+      };
+      handle.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    handle.addEventListener('pointermove', function (event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      const stageRect = stage.getBoundingClientRect();
+      const maxLeft = Math.max(0, stage.clientWidth - board.offsetWidth);
+      const maxTop = Math.max(0, Math.max(stage.clientHeight, board.offsetHeight + 48) - board.offsetHeight);
+      const left = Math.min(Math.max(0, event.clientX - stageRect.left - drag.offsetX), maxLeft);
+      const top = Math.min(Math.max(0, event.clientY - stageRect.top - drag.offsetY), maxTop);
+      board.style.left = left + 'px';
+      board.style.top = top + 'px';
+    });
+    function endDrag(event) {
+      if (!drag || event.pointerId !== drag.pointerId) return;
+      drag = null;
+      board.classList.remove('is-dragging');
+      try { handle.releasePointerCapture(event.pointerId); } catch (error) {}
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+
+    board.querySelectorAll('[data-board-action]').forEach(function (btn) {
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const action = btn.getAttribute('data-board-action');
+        if (action === 'reset') {
+          resetBoard();
+        } else if (action === 'minimize') {
+          board.classList.toggle('is-collapsed');
+          board.classList.remove('is-max');
+        } else if (action === 'maximize') {
+          board.classList.remove('is-collapsed');
+          if (board.classList.contains('is-max')) {
+            resetBoard();
+          } else {
+            resetBoard();
+            board.classList.add('is-max');
+          }
+        }
+      });
+    });
   }
   function closeAcceptModal() {
     if (!modalEl) return;
@@ -336,8 +455,10 @@ page_head('Demandes de présence', 'attestation');
     modalEl.hidden = false;
   }
   function actionCell(id) {
-    return '<button type="button" class="btn btn-sm btn-success" data-accept-demande="' + Number(id) + '">Accepter</button> '
-      + '<form method="post" class="d-inline"><input type="hidden" name="csrf_token" value="' + escapeText(csrf) + '"><input type="hidden" name="id_demande" value="' + Number(id) + '"><button class="btn btn-sm btn-danger" name="action" value="refusee">Refuser</button></form>';
+    return '<div class="macos-row-actions">'
+      + '<button type="button" class="btn btn-sm btn-success macos-chip macos-chip-ok" data-accept-demande="' + Number(id) + '">Accepter</button>'
+      + '<form method="post"><input type="hidden" name="csrf_token" value="' + escapeText(csrf) + '"><input type="hidden" name="id_demande" value="' + Number(id) + '"><button class="btn btn-sm btn-danger macos-chip macos-chip-no" name="action" value="refusee">Refuser</button></form>'
+      + '</div>';
   }
   function draw(data) {
     if (!tbody) return;
@@ -346,17 +467,17 @@ page_head('Demandes de présence', 'attestation');
       summary.textContent = rows.length + ' demande' + (rows.length > 1 ? 's' : '') + ' en attente.';
     }
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-5">Aucune demande en attente.</td></tr>';
+      tbody.innerHTML = '<tr class="is-empty"><td colspan="5" class="text-center text-secondary py-5">Aucune demande en attente.</td></tr>';
       closeAcceptModal();
       return;
     }
     tbody.innerHTML = rows.map(function (row) {
       return '<tr>'
-        + '<td>' + escapeText(row.name) + '</td>'
-        + '<td>' + escapeText(row.cin) + '</td>'
-        + '<td>' + escapeText(row.date) + '</td>'
-        + '<td>' + escapeText(row.motif) + '</td>'
-        + '<td class="text-end">' + actionCell(row.id) + '</td></tr>';
+        + '<td data-label="Étudiant"><div class="macos-person"><span class="macos-avatar" aria-hidden="true">' + escapeText(initials(row.name)) + '</span><span>' + escapeText(row.name) + '</span></div></td>'
+        + '<td data-label="CIN"><span class="macos-mono">' + escapeText(row.cin) + '</span></td>'
+        + '<td data-label="Date"><span class="macos-date-pill">' + escapeText(row.date) + '</span></td>'
+        + '<td data-label="Motif"><span class="macos-motif">' + escapeText(row.motif) + '</span></td>'
+        + '<td class="text-end" data-label="Actions">' + actionCell(row.id) + '</td></tr>';
     }).join('');
   }
   window.attestationLiveReload = draw;
@@ -404,6 +525,7 @@ page_head('Demandes de présence', 'attestation');
   }
   enableDialogDrag(modalEl);
   enableDialogDrag(downloadEl);
+  enableBoardWindow(document.querySelector('[data-attestation-board]'));
   if (toggleForm && toggle) {
     toggle.addEventListener('change', function () {
       if (!toggle.checked && !confirm('Désactiver le service effacera toutes les demandes d’attestation. Continuer ?')) {

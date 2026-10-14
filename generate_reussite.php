@@ -37,7 +37,9 @@ $section = $phpWord->addSection([
     'marginRight' => 1100,
 ]);
 
-$section->addImage(__DIR__ . '/images/no_bg_logo.png', [
+$brand = institution_brand();
+$logoFile = institution_logo_file();
+$section->addImage($logoFile['path'], [
     'width' => 460,
     'height' => 85,
     'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER,
@@ -49,7 +51,7 @@ $section->addText('ATTESTATION DE RÉUSSITE', [
 ], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 700]);
 
 $section->addText(
-    'Le Secrétaire général de l\'Université privée des sciences infirmières et de la santé de Gabès atteste par la présente que :',
+    'Le Secrétaire général ' . $brand['sec_generale'] . ' de ' . $brand['name_inline'] . ' atteste par la présente que :',
     ['size' => 12],
     ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::BOTH, 'spaceAfter' => 250]
 );
@@ -110,5 +112,8 @@ try {
     readfile($tempFile);
 } finally {
     unlink($tempFile);
+    if (!empty($logoFile['temporary']) && is_file($logoFile['path'])) {
+        unlink($logoFile['path']);
+    }
 }
 

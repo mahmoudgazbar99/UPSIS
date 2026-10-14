@@ -2,6 +2,7 @@
 // C:\xampp\htdocs\webapp\generate_word.php
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/certificate_export.php';
 require_once __DIR__ . '/vendor/autoload.php';
 require_admin();
 
@@ -60,24 +61,26 @@ try {
     $currentYear = (int)date('Y');
     $templateProcessor->setValue('annee_univ', $currentYear . '/' . ($currentYear + 1));
     $templateProcessor->setValue('date_du_jour', date('d/m/Y'));
+    institution_apply_signatories($templateProcessor);
 
-    // 6. Génération et téléchargement du fichier Word
-    $fileName = 'Certificat_Inscription_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $student['cin_passeport']) . '.docx';
+    $fileBase = 'Certificat_Inscription_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $student['cin_passeport']);
     $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord');
-    $templateProcessor->saveAs($tempFile);
+    if ($tempFile === false) {
+        exit('Erreur : impossible de créer le fichier temporaire.');
+    }
+    $docxPath = $tempFile . '.docx';
+    unlink($tempFile);
+    $templateProcessor->saveAs($docxPath);
 
     $preview = ($_GET['preview'] ?? '') === '1';
-
-    // Use the same generated DOCX for the embedded preview and final download.
-    header('Content-Description: File Transfer');
-    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    header('Content-Disposition: ' . ($preview ? 'inline' : 'attachment') . '; filename="' . $fileName . '"');
-    header('Content-Transfer-Encoding: binary');
-    header('Cache-Control: no-store, no-cache, must-revalidate');
-    header('Content-Length: ' . filesize($tempFile));
-
-    readfile($tempFile);
-    unlink($tempFile);
+    $asPdf = !$preview && certificate_wants_pdf();
+    try {
+        certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview);
+    } finally {
+        if (is_file($docxPath)) {
+            unlink($docxPath);
+        }
+    }
     exit;
 
 } catch (Exception $e) {

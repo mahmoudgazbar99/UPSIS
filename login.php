@@ -91,8 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Connexion</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="assets/style.css?v=73" rel="stylesheet">
-  <link href="assets/macos.css?v=28" rel="stylesheet">
+  <link href="assets/style.css?v=75" rel="stylesheet">
+  <link href="assets/macos.css?v=32" rel="stylesheet">
   <script>
   (function () {
     try {
@@ -154,9 +154,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="macos-window-body">
   <div class="login-shell">
     <aside class="login-brand-pane">
-      <img src="images/no_bg_logo.png?v=2" class="login-logo" alt="Logo">
+      <img src="<?= e(institution_logo_src()) ?>" class="login-logo" alt="Logo">
       <h1 class="login-brand-title">Connexion</h1>
-      <p class="login-brand-school mb-0">École de Santé Gabès</p>
+      <p class="login-brand-school mb-0"><?php foreach (institution_name_lines() as $index => $institutionLine): ?><?= $index > 0 ? '<br>' : '' ?><?= e($institutionLine) ?><?php endforeach; ?></p>
     </aside>
     <div class="card shadow-lg login-card">
       <div class="card-body p-5">

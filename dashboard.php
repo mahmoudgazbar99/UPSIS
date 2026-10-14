@@ -179,7 +179,7 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Espace étudiant | École de Santé Gabès</title>
+  <title>Espace étudiant | <?= e(institution_name_inline()) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
@@ -187,9 +187,9 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
 </head>
 <body class="student-space">
   <header class="student-space-bar">
-    <img src="images/no_bg_logo.png?v=2" alt="Logo de l'école">
+    <img src="<?= e(institution_logo_src()) ?>" alt="Logo de l'école">
     <div>
-      <p>École de Santé Gabès</p>
+      <p><?= e(institution_name_inline()) ?></p>
       <strong><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
     </div>
     <div class="student-space-bar-actions">

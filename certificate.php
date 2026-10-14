@@ -50,11 +50,16 @@ function certificate_page(string $type, string $title, bool $arabic = false): vo
         };
         ?>
         <section class="docx-preview-shell mb-4">
-            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
                 <h2 class="h5 mb-0"><?= e($docxTitle) ?></h2>
-                <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>" class="btn btn-primary">
-                    Télécharger en Word (.docx)
-                </a>
+                <div class="certificate-download-actions d-flex flex-wrap gap-2">
+                    <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>" class="btn btn-primary">
+                        Télécharger Word
+                    </a>
+                    <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>&amp;format=pdf" class="btn btn-outline-danger">
+                        Télécharger PDF
+                    </a>
+                </div>
             </div>
             <div id="docx-preview" class="docx-preview" aria-live="polite">
                 Chargement de l’aperçu du document…

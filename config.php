@@ -201,16 +201,7 @@ function level_label(string $level): string {
     return ['1' => '1er', '2' => '2ème', '3' => '3ème'][$level] ?? $level;
 }
 function calculated_note(array $mark): ?float {
-    if ($mark['note_rattrapage'] !== null) return (float) $mark['note_rattrapage'];
-    if ($mark['note_cours'] === null || $mark['note_td'] === null) {
-        return $mark['note'] === null ? null : (float) $mark['note'];
-    }
-    $cc = (float) $mark['note_cours'];
-    $exam = (float) $mark['note_td'];
-    if ((float) ($mark['volume_tp'] ?? 0) > 0 && $mark['note_tp'] !== null) {
-        return round($cc * 0.25 + $exam * 0.5 + (float) $mark['note_tp'] * 0.25, 2);
-    }
-    return round($cc * 0.3 + $exam * 0.7, 2);
+    return institution_subject_average($mark);
 }
 
 function enforce_stage_route_isolation(): void {
@@ -878,3 +869,5 @@ function audit_record(string $category, string $action, string $summary): void
         /* A journal failure must not block the original action. */
     }
 }
+
+require_once __DIR__ . '/institution.php';

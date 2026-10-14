@@ -44,15 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Espace étudiant</title>
+  <title>Espace étudiant | <?= e(institution_name_inline()) ?></title>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
   <link href="assets/student-login.css?v=4" rel="stylesheet">
 </head>
 <body class="student-gate">
   <main class="student-gate-card">
-    <img src="images/no_bg_logo.png?v=2" class="student-gate-logo" alt="Logo de l'école">
+    <img src="<?= e(institution_logo_src()) ?>" class="student-gate-logo" alt="Logo de l'école">
     <h1>Espace étudiant</h1>
-    <p class="student-gate-school">École de Santé Gabès</p>
+    <p class="student-gate-school"><?php foreach (institution_name_lines() as $index => $institutionLine): ?><?= $index > 0 ? '<br>' : '' ?><?= e($institutionLine) ?><?php endforeach; ?></p>
     <?php if ($error !== ''): ?><div class="alert" role="alert"><?= e($error) ?></div><?php endif; ?>
     <form method="post" action="connexion_etudiant.php" autocomplete="on">
       <label for="cin">CIN / passeport</label>

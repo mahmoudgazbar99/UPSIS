@@ -98,11 +98,11 @@ function page_head(string $title, string $active = ''): void {
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-        <title><?= e($title) ?> | École de Santé Gabès</title>
+        <title><?= e($title) ?> | <?= e(institution_name_inline()) ?></title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link href="assets/style.css?v=73" rel="stylesheet">
-        <link href="assets/macos.css?v=28" rel="stylesheet">
+        <link href="assets/style.css?v=75" rel="stylesheet">
+        <link href="assets/macos.css?v=32" rel="stylesheet">
         <script>
         (function () {
             try {
@@ -155,8 +155,8 @@ function page_head(string $title, string $active = ''): void {
                         <button type="button" class="macos-dot macos-dot-max" data-macos-action="maximize" aria-label="Agrandir la fenêtre" title="Agrandir"></button>
                     </div>
                     <a class="navbar-brand navbar-institution" href="index.php" title="Tableau de bord">
-                        <img src="images/no_bg_logo.png?v=2" alt="Logo" class="navbar-logo">
-                        <span class="navbar-institution-name"><span>Université privée des sciences infirmières et de santé</span><span>de Gabès</span></span>
+                        <img src="<?= e(institution_logo_src()) ?>" alt="Logo" class="navbar-logo">
+                        <span class="navbar-institution-name"><?php foreach (institution_name_lines() as $institutionLine): ?><span><?= e($institutionLine) ?></span><?php endforeach; ?></span>
                     </a>
                 </div>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Ouvrir le menu">
@@ -234,7 +234,7 @@ function page_head(string $title, string $active = ''): void {
                                         </select>
                                     </li>
                                     <li class="macos-only-control"><hr class="dropdown-divider"></li>
-                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="changer_mot_de_passe.php">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
+                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php">Nom et logo de l’université</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
                                     <li><a class="dropdown-item text-danger" href="logout.php">Déconnexion</a></li>
                                 </ul>
                             </div>
@@ -742,7 +742,7 @@ function page_foot(): void {
                 frame.addEventListener('load', function () {
                     try {
                         const frameTitle = frame.contentDocument && frame.contentDocument.title;
-                        if (frameTitle) setTitle(frameTitle.replace(/\s*\|\s*École de Santé Gabès\s*$/, ''));
+                        if (frameTitle) setTitle(frameTitle.replace(/\s*\|[^|]*$/, ''));
                     } catch (error) {}
                 });
             });
@@ -773,6 +773,44 @@ function page_foot(): void {
                 });
             }
 
+            function activateMenuForHref(href) {
+                var match = null;
+                document.querySelectorAll('.dashboard-menu-item').forEach(function (el) {
+                    el.classList.remove('is-active');
+                    el.removeAttribute('aria-current');
+                    if (el.getAttribute('href') === href) match = el;
+                });
+                if (!match) return;
+                match.classList.add('is-active');
+                match.setAttribute('aria-current', 'page');
+                var group = match.closest('[data-accounts-group]');
+                if (group) {
+                    group.classList.add('is-open');
+                    var toggle = group.querySelector('[data-accounts-toggle]');
+                    var sub = group.querySelector('.dashboard-menu-sub');
+                    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+                    if (sub) sub.hidden = false;
+                }
+            }
+
+            function openCommandTarget(item) {
+                closeCommand();
+                restoreWindow();
+                if (!item || !item.href) return;
+                var frame = document.querySelector('iframe[name="dashboard-content"]');
+                var homePanel = document.querySelector('.dashboard-home-panel');
+                var inDashboard = !!(frame && (item.target === 'dashboard-content' || item.href.indexOf('embed=1') !== -1));
+                if (inDashboard) {
+                    if (homePanel) homePanel.hidden = true;
+                    frame.hidden = false;
+                    frame.src = item.href;
+                    setTitle(item.label);
+                    activateMenuForHref(item.href);
+                    return;
+                }
+                window.location.assign(item.href);
+            }
+
             function renderCommands(query) {
                 if (!commandList) return;
                 const q = (query || '').toLowerCase();
@@ -784,9 +822,9 @@ function page_foot(): void {
                     const a = document.createElement('a');
                     a.href = item.href;
                     a.textContent = item.label;
-                    if (item.target) a.target = item.target;
-                    a.addEventListener('click', function () {
-                        closeCommand();
+                    a.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        openCommandTarget(item);
                     });
                     li.appendChild(a);
                     commandList.appendChild(li);
@@ -818,6 +856,12 @@ function page_foot(): void {
             if (commandInput) {
                 commandInput.addEventListener('input', function () {
                     renderCommands(commandInput.value);
+                });
+                commandInput.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    var first = commandList && commandList.querySelector('a');
+                    if (first) first.click();
                 });
             }
             document.addEventListener('keydown', function (event) {

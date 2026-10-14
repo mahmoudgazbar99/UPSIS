@@ -218,6 +218,11 @@ function dashboard_menu(): void {
         </div>
       </div>
       <?php
+      dashboard_menu_item('responsables.php?poste=secretaire&embed=1', 'Secrétaire général', 'Nom français et arabe des attestations', 'sec', $num());
+      dashboard_menu_item('responsables.php?poste=directeur&embed=1', 'Directeur', 'Nom français et arabe des attestations', 'dir', $num());
+      dashboard_menu_item('formule_calcul.php?embed=1', 'Formule de calcul', 'Moyenne, moyenne générale et crédits', 'formula', $num());
+      dashboard_menu_item('ajouter_unite.php?embed=1', 'Ajouter unité', 'Créer une unité d’enseignement', 'unity', $num());
+      dashboard_menu_item('ajouter_matiere.php?embed=1', 'Ajouter matière', 'Coefficient et unité, sans doublon', 'subject', $num());
       dashboard_menu_item('promotion.php?embed=1', 'Promotion / archivage', 'Valider la fin d\'année et le rollover finance', 'promo', $num(), true);
       dashboard_menu_item('archive_export.php?embed=1', 'Exporter les archives', 'Télécharger les données choisies en CSV ou PDF', 'archive', $num());
       dashboard_menu_item('emploi_temps.php?embed=1', 'Emploi du temps', 'Choisir un groupe et télécharger son planning PDF', 'schedule', $num());
@@ -377,7 +382,7 @@ page_head('Tableau de bord', 'home');
         <article class="macos-panel macos-chart-panel">
           <h3>Répartition des étudiants</h3>
           <div class="macos-chart-body">
-            <div class="macos-donut" style="background: conic-gradient(<?= e($donutCss) ?>);">
+            <div class="macos-donut" style="background: conic-gradient(from -90deg, <?= e($donutCss) ?>);">
               <span><strong><?= (int) $niveauTotal ?></strong><small>étudiants</small></span>
             </div>
             <ul class="macos-legend">
@@ -506,22 +511,34 @@ page_head('Tableau de bord', 'home');
   ?>
   <div class="dashboard-home-panel finance-dashboard">
     <div class="finance-rings">
-      <article class="finance-ring">
-        <div class="finance-ring-dial" style="--pct: <?= $financeCollected > 0 ? 100 : 0 ?>; --ring: #3dd6a5">
+      <article class="finance-ring finance-ring--mint">
+        <div class="finance-ring-dial" style="--pct: <?= $financeCollected > 0 ? 100 : 0 ?>">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="finance-ring-track" cx="60" cy="60" r="52"></circle>
+            <circle class="finance-ring-value" cx="60" cy="60" r="52"></circle>
+          </svg>
           <span><strong><?= e($financeMoney($financeCollected)) ?></strong><small>DT</small></span>
         </div>
         <h2>Encaissé ce mois</h2>
         <p><?= e($financeMonthLabel) ?> · <?= $financeMonthCount ?> versement<?= $financeMonthCount > 1 ? 's' : '' ?></p>
       </article>
-      <article class="finance-ring">
-        <div class="finance-ring-dial" style="--pct: <?= (int) max(0, min(100, round(($financeRemaining / $financeExpected) * 100))) ?>; --ring: #f0a36b">
+      <article class="finance-ring finance-ring--amber">
+        <div class="finance-ring-dial" style="--pct: <?= (int) max(0, min(100, round(($financeRemaining / $financeExpected) * 100))) ?>">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="finance-ring-track" cx="60" cy="60" r="52"></circle>
+            <circle class="finance-ring-value" cx="60" cy="60" r="52"></circle>
+          </svg>
           <span><strong><?= e($financeMoney($financeRemaining)) ?></strong><small>DT</small></span>
         </div>
         <h2>Reste à encaisser</h2>
         <p><?= $financePaidPct ?> % déjà encaissé sur l’ensemble</p>
       </article>
-      <article class="finance-ring">
-        <div class="finance-ring-dial" style="--pct: <?= $financeLatePct ?>; --ring: #ff6b6b">
+      <article class="finance-ring finance-ring--rose">
+        <div class="finance-ring-dial" style="--pct: <?= $financeLatePct ?>">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="finance-ring-track" cx="60" cy="60" r="52"></circle>
+            <circle class="finance-ring-value" cx="60" cy="60" r="52"></circle>
+          </svg>
           <span><strong><?= $financeLate ?></strong><small>étudiants</small></span>
         </div>
         <h2>Paiements en retard</h2>

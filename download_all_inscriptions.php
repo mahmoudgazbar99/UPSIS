@@ -217,6 +217,7 @@ try {
         $currentYear = (int) date('Y');
         $processor->setValue('annee_univ', $currentYear . '/' . ($currentYear + 1));
         $processor->setValue('date_du_jour', date('d/m/Y'));
+        institution_apply_signatories($processor);
 
         $safeCin = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);
         $docPath = $workDir . DIRECTORY_SEPARATOR . 'Certificat_Inscription_' . $safeCin . '.docx';

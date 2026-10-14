@@ -506,6 +506,11 @@ main.container {
   .dashboard-menu-item[data-menu-icon="sheet"] .dashboard-menu-icon::before { content: "☰"; }
   .dashboard-menu-item[data-menu-icon="alert"] .dashboard-menu-icon::before { content: "!"; font-weight: 800; }
   .dashboard-menu-item[data-menu-icon="docs"] .dashboard-menu-icon::before { content: "▤"; }
+  .dashboard-menu-item[data-menu-icon="sec"] .dashboard-menu-icon::before { content: "§"; }
+  .dashboard-menu-item[data-menu-icon="dir"] .dashboard-menu-icon::before { content: "★"; }
+  .dashboard-menu-item[data-menu-icon="formula"] .dashboard-menu-icon::before { content: "Σ"; }
+  .dashboard-menu-item[data-menu-icon="unity"] .dashboard-menu-icon::before { content: "▣"; }
+  .dashboard-menu-item[data-menu-icon="subject"] .dashboard-menu-icon::before { content: "≡"; }
 
   .dashboard-content-panel {
     min-height: 60vh;
@@ -4360,6 +4365,11 @@ body.theme-light .table-dark {
   .dashboard-menu-item[data-menu-icon="sheet"] .dashboard-menu-icon::before { content: "☰"; }
   .dashboard-menu-item[data-menu-icon="alert"] .dashboard-menu-icon::before { content: "!"; font-weight: 800; }
   .dashboard-menu-item[data-menu-icon="docs"] .dashboard-menu-icon::before { content: "▤"; }
+  .dashboard-menu-item[data-menu-icon="sec"] .dashboard-menu-icon::before { content: "§"; }
+  .dashboard-menu-item[data-menu-icon="dir"] .dashboard-menu-icon::before { content: "★"; }
+  .dashboard-menu-item[data-menu-icon="formula"] .dashboard-menu-icon::before { content: "Σ"; }
+  .dashboard-menu-item[data-menu-icon="unity"] .dashboard-menu-icon::before { content: "▣"; }
+  .dashboard-menu-item[data-menu-icon="subject"] .dashboard-menu-icon::before { content: "≡"; }
   .dashboard-menu-item[data-menu-icon="teachers"] .dashboard-menu-icon::before { content: "♟"; }
   .dashboard-menu-item[data-menu-icon="assign"] .dashboard-menu-icon::before { content: "⇄"; }
   .dashboard-menu-item[data-menu-icon="finance"] .dashboard-menu-icon::before { content: "₫"; }
@@ -4575,49 +4585,100 @@ body.theme-light .table-dark {
 @media (max-width: 991.98px) {
   .teacher-home-grid,
   .finance-month,
-  .finance-late-list {
+  .finance-late-list,
+  .finance-rings {
     grid-template-columns: 1fr;
   }
 }
 
 .finance-rings {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  flex-wrap: wrap;
-  gap: 2.25rem 3rem;
-  padding: 1.25rem 0 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+  padding: 0.35rem 0 0.6rem;
 }
 
 .finance-ring {
-  width: 16rem;
+  --ring: var(--app-accent);
+  --ring-2: var(--app-accent-2);
+  --ring-len: 326.73;
+  width: auto;
+  min-width: 0;
   display: grid;
   justify-items: center;
+  gap: 0.15rem;
   text-align: center;
+  padding: 1.2rem 1rem 1.15rem;
+  border-radius: 1.45rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ring) 16%, transparent), transparent 42%),
+    color-mix(in srgb, var(--app-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ring) 28%, var(--app-border));
+  box-shadow:
+    0 18px 40px color-mix(in srgb, var(--ring) 12%, rgba(0, 0, 0, 0.16)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
+.finance-ring--mint { --ring: #3ee0ad; --ring-2: #12b886; }
+.finance-ring--amber { --ring: #ffb14a; --ring-2: #f08c00; }
+.finance-ring--rose { --ring: #ff6b81; --ring-2: #e0314f; }
+
 .finance-ring-dial {
-  width: 13.75rem;
-  height: 13.75rem;
-  margin-bottom: 1rem;
-  border-radius: 50%;
+  position: relative;
+  width: 9.6rem;
+  height: 9.6rem;
+  margin: 0.15rem 0 0.7rem;
   display: grid;
   place-items: center;
-  background: conic-gradient(var(--ring, var(--app-accent)) calc(var(--pct, 0) * 1%), color-mix(in srgb, var(--ring, var(--app-accent)) 24%, var(--app-bg)) 0);
+  background: none;
+}
+
+.finance-ring-dial svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+
+.finance-ring-track,
+.finance-ring-value {
+  fill: none;
+  stroke-width: 9;
+}
+
+.finance-ring-track {
+  stroke: color-mix(in srgb, var(--app-text) 12%, transparent);
+}
+
+.finance-ring-value {
+  stroke: var(--ring);
+  stroke-linecap: round;
+  stroke-dasharray: var(--ring-len);
+  stroke-dashoffset: calc(var(--ring-len) - (var(--ring-len) * var(--pct, 0) / 100));
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ring) 55%, transparent));
+  animation: finance-ring-draw 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .finance-ring-dial > span {
-  width: 10.55rem;
-  height: 10.55rem;
+  position: absolute;
+  inset: 18%;
+  width: auto;
+  height: auto;
   border-radius: 50%;
   display: grid;
   align-content: center;
   justify-items: center;
-  gap: .1rem;
-  padding: .75rem;
-  background: var(--app-bg);
+  gap: 0.12rem;
+  padding: 0.45rem 0.4rem;
+  background: color-mix(in srgb, var(--app-surface-strong) 78%, transparent);
   color: var(--app-text);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--app-text) 14%, transparent);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ring) 22%, transparent),
+    0 8px 18px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .schedule-grid-wrap {
@@ -4784,8 +4845,11 @@ body.theme-atlas .dashboard-menu-sub .dashboard-menu-item {
 
 .finance-ring-dial strong {
   color: var(--app-text);
-  font-size: 1.15rem;
-  line-height: 1.15;
+  font-size: clamp(0.78rem, 1.7vw, 1.05rem);
+  line-height: 1.12;
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 
 .finance-ring-dial small,
@@ -4793,14 +4857,71 @@ body.theme-atlas .dashboard-menu-sub .dashboard-menu-item {
   color: var(--app-muted);
 }
 
+.finance-ring-dial small {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 650;
+  color: color-mix(in srgb, var(--ring) 72%, var(--app-text));
+}
+
 .finance-ring h2 {
-  margin: 0 0 .25rem;
-  font-size: 1.05rem;
+  margin: 0 0 .2rem;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
 }
 
 .finance-ring p {
   margin: 0;
-  font-size: .88rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  max-width: 16rem;
+}
+
+@keyframes finance-ring-draw {
+  from { stroke-dashoffset: var(--ring-len); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finance-ring-value { animation: none; }
+}
+
+body.theme-light .finance-ring {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ring) 14%, #fff), #fff 46%);
+  border-color: color-mix(in srgb, var(--ring) 22%, rgba(20, 30, 50, 0.1));
+  box-shadow: 0 16px 34px color-mix(in srgb, var(--ring) 14%, rgba(30, 40, 60, 0.08));
+}
+
+body.theme-light .finance-ring-track {
+  stroke: color-mix(in srgb, var(--ring) 16%, rgba(20, 30, 50, 0.08));
+}
+
+body.theme-light .finance-ring-dial > span {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--ring) 18%, transparent),
+    0 8px 16px rgba(30, 40, 70, 0.08);
+}
+
+body.theme-atlas .finance-ring--mint { --ring: #2f9e7a; --ring-2: #1f7a5c; }
+body.theme-atlas .finance-ring--amber { --ring: #d08a2a; --ring-2: #b56b12; }
+body.theme-atlas .finance-ring--rose { --ring: #c44c5c; --ring-2: #9e3140; }
+
+body.theme-glass .finance-ring {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ring) 18%, rgba(255, 248, 236, 0.12)), rgba(255, 248, 236, 0.08));
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+body.theme-glass.theme-light .finance-ring {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--ring) 12%, rgba(255, 255, 255, 0.72)), rgba(255, 252, 246, 0.78));
+}
+
+body.theme-glass .finance-ring-dial {
+  border-color: transparent;
 }
 
 .finance-hub {
@@ -4846,14 +4967,14 @@ body.theme-atlas .dashboard-menu-sub .dashboard-menu-item {
     grid-template-columns: 1fr;
   }
 
-  .finance-ring-dial {
-    width: 11.5rem;
-    height: 11.5rem;
+  .finance-rings {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
-  .finance-ring-dial > span {
-    width: 8.7rem;
-    height: 8.7rem;
+  .finance-ring-dial {
+    width: 8.4rem;
+    height: 8.4rem;
   }
 }
 
@@ -5550,7 +5671,7 @@ body.theme-glass .btn-close {
 }
 
 body.theme-glass .finance-ring-dial {
-  border-color: rgba(243, 215, 161, 0.45);
+  border-color: transparent;
 }
 
 @media print {
@@ -5900,4 +6021,14 @@ body.embedded-view {
     height: calc(100dvh - 11rem);
     max-height: calc(100dvh - 11rem);
   }
+}
+
+.brand-logo-preview {
+  display: block;
+  max-width: 220px;
+  max-height: 84px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px;
 }
