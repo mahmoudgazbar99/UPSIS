@@ -41,7 +41,7 @@ $macosFeatureActive = false;
 $macosNiveaux = [];
 $macosPendingRows = [];
 $macosActivity = [];
-if (is_admin()) {
+if (is_admin() || is_scolarite()) {
     try {
         $macosTeacherCount = (int) db()->query('SELECT COUNT(*) FROM enseignant')->fetchColumn();
         $macosGroupCount = (int) db()->query('SELECT COUNT(*) FROM groupe')->fetchColumn();
@@ -133,11 +133,11 @@ if (is_finance()) {
     $financeMonthCount = (int) ($monthRow['payments'] ?? 0);
     $financeStudentCount = (int) db()->query('SELECT COUNT(*) FROM etudiant')->fetchColumn();
     $financeRemaining = (float) db()->query(
-        'SELECT COALESCE(SUM(GREATEST(9800 - COALESCE(fs.total_paye, 0), 0)), 0)
+        'SELECT COALESCE(SUM(GREATEST(' . institution_fee_amount() . ' - COALESCE(fs.total_paye, 0), 0)), 0)
          FROM etudiant e LEFT JOIN finance_solde fs ON fs.id_etudiant = e.id_etudiant'
     )->fetchColumn();
     $financeLate = (int) db()->query(
-        'SELECT COUNT(*) FROM etudiant e LEFT JOIN finance_solde fs ON fs.id_etudiant = e.id_etudiant WHERE COALESCE(fs.total_paye, 0) < 9800'
+        'SELECT COUNT(*) FROM etudiant e LEFT JOIN finance_solde fs ON fs.id_etudiant = e.id_etudiant WHERE COALESCE(fs.total_paye, 0) < ' . institution_fee_amount()
     )->fetchColumn();
 }
 
@@ -154,14 +154,19 @@ function dashboard_menu_item(
     string $icon,
     string $number,
     bool $accent = false,
-    int $badgeCount = 0
+    int $badgeCount = 0,
+    bool $download = false,
+    string $downloadQuestion = ''
 ): void {
     $isHome = str_starts_with($href, '#');
     $classes = 'dashboard-menu-item' . ($accent ? ' dashboard-menu-item-accent' : '') . ($isHome ? ' is-active' : '');
-    $target = $isHome ? '' : ' target="dashboard-content"';
+    $target = ($isHome || $download) ? '' : ' target="dashboard-content"';
     $homeAttr = $isHome ? ' data-dashboard-home aria-current="page"' : '';
+    $downloadAttr = $download
+        ? ' data-file-download="1" data-download-question="' . e($downloadQuestion !== '' ? $downloadQuestion : 'Voulez-vous télécharger ce fichier ?') . '"'
+        : '';
     ?>
-    <a class="<?= e($classes) ?>" href="<?= e($href) ?>" title="<?= e($title) ?>"<?= $target ?><?= $homeAttr ?> data-menu-icon="<?= e($icon) ?>"<?= $badgeCount > 0 ? ' data-alert-count="' . $badgeCount . '"' : '' ?>>
+    <a class="<?= e($classes) ?>" href="<?= e($href) ?>" title="<?= e($title) ?>"<?= $target ?><?= $homeAttr ?><?= $downloadAttr ?> data-menu-icon="<?= e($icon) ?>"<?= $badgeCount > 0 ? ' data-alert-count="' . $badgeCount . '"' : '' ?>>
       <span class="dashboard-menu-icon" aria-hidden="true"></span>
       <?php if ($number !== ''): ?><span class="dashboard-menu-number"><?= e($number) ?></span><?php endif; ?>
       <span class="dashboard-menu-copy">
@@ -187,12 +192,17 @@ function dashboard_menu(): void {
   <div class="dashboard-menu-list dashboard-menu-rail">
     <?php
     dashboard_menu_item('#dashboard-content', 'Tableau de bord', 'Vue générale des étudiants', 'home', $num());
-    if (is_admin()) {
+    if (is_admin() || is_scolarite()) {
       dashboard_menu_item('inscription.php?embed=1', 'Inscrire', 'Ajouter ou modifier un étudiant', 'enroll', $num());
       dashboard_menu_item('groupes.php?embed=1', 'Groupes', 'Consulter et organiser les groupes', 'groups', $num());
     }
     if (is_admin() || is_teacher()) {
       dashboard_menu_item('gestion_notes.php?embed=1', 'Notes', 'Saisir les notes autorisées', 'grades', $num());
+    }
+    if (is_scolarite()) {
+      dashboard_menu_item('demandes_presence.php?embed=1', 'Demandes de présence', 'Attestations demandées par les étudiants', 'attestation', $num());
+      dashboard_menu_item('releve_notes.php?embed=1', 'Relevé de notes', 'Consulter un dossier', 'grades', $num());
+      dashboard_menu_item('etudiants_export.php', 'Exporter les étudiants', 'Liste CSV du dossier actuel', 'archive', $num());
     }
     if (is_finance()) {
       dashboard_menu_item('finance.php?embed=1', 'Suivi des paiements', 'Rechercher un étudiant et enregistrer son paiement', 'finance', $num(), true);
@@ -223,6 +233,28 @@ function dashboard_menu(): void {
       dashboard_menu_item('formule_calcul.php?embed=1', 'Formule de calcul', 'Moyenne, moyenne générale et crédits', 'formula', $num());
       dashboard_menu_item('ajouter_unite.php?embed=1', 'Ajouter unité', 'Créer une unité d’enseignement', 'unity', $num());
       dashboard_menu_item('ajouter_matiere.php?embed=1', 'Ajouter matière', 'Coefficient et unité, sans doublon', 'subject', $num());
+      ?>
+      <div class="dashboard-menu-group" data-accounts-group>
+        <button type="button" class="dashboard-menu-item dashboard-menu-parent" data-accounts-toggle data-menu-icon="accounts" aria-expanded="false">
+          <span class="dashboard-menu-icon" aria-hidden="true"></span>
+          <span class="dashboard-menu-number"><?= e($num()) ?></span>
+          <span class="dashboard-menu-copy">
+            <strong>Configuration</strong>
+            <small>Structure, frais, règles</small>
+          </span>
+        </button>
+        <div class="dashboard-menu-sub" hidden>
+          <?php
+          dashboard_menu_item('structure_academique.php?embed=1', 'Structure académique', 'Programmes, niveaux, périodes', 'groups', '');
+          dashboard_menu_item('specialites.php?embed=1', 'Spécialités', 'Créer ou désactiver', 'enroll', '');
+          dashboard_menu_item('frais_scolarite.php?embed=1', 'Frais de scolarité', 'Montant et devise', 'finance', '');
+          dashboard_menu_item('politique_promotion.php?embed=1', 'Seuil de promotion', 'Admission et niveau final', 'promo', '');
+          dashboard_menu_item('politique_presence.php?embed=1', 'Règles de présence', 'Absences et volume horaire', 'presence', '');
+          dashboard_menu_item('identite.php?embed=1', 'Pièces d’identité', 'CIN et passeport', 'accounts', '');
+          ?>
+        </div>
+      </div>
+      <?php
       dashboard_menu_item('promotion.php?embed=1', 'Promotion / archivage', 'Valider la fin d\'année et le rollover finance', 'promo', $num(), true);
       dashboard_menu_item('archive_export.php?embed=1', 'Exporter les archives', 'Télécharger les données choisies en CSV ou PDF', 'archive', $num());
       dashboard_menu_item('emploi_temps.php?embed=1', 'Emploi du temps', 'Choisir un groupe et télécharger son planning PDF', 'schedule', $num());
@@ -242,7 +274,7 @@ function dashboard_menu(): void {
       dashboard_menu_item(
         'alertes_elimination.php?embed=1',
         'Alertes d’élimination',
-        'Absences matière (≥4) et semestre S1 (≥10%)',
+        'Absences selon la politique de présence publiée',
         'alert',
         $num(),
         true,
@@ -264,7 +296,17 @@ function dashboard_menu(): void {
         'archive',
         $num()
       );
-      dashboard_menu_item('download_all_inscriptions.php', 'Toutes les attestations', 'Télécharger un PDF unique pour l\'impression', 'docs', $num(), true);
+      dashboard_menu_item(
+        'download_all_inscriptions.php',
+        'Toutes les attestations',
+        'Télécharger un PDF unique pour l\'impression',
+        'docs',
+        $num(),
+        true,
+        0,
+        true,
+        'Voulez-vous télécharger toutes les attestations d’inscription dans un seul fichier PDF ?'
+      );
     }
     ?>
   </div>
@@ -297,7 +339,19 @@ page_head('Tableau de bord', 'home');
     </div>
   </header>
   <p class="macos-crumb macos-only-control"><span>Accueil</span><span data-macos-title>Tableau de bord</span></p>
-  <?php if (is_admin()): ?>
+  <?php if (is_admin() || is_scolarite()): ?>
+  <?php if (is_scolarite()): ?>
+  <div class="row g-3 mb-4">
+    <?php
+      $bySpec = db()->query('SELECT COALESCE(s.nom_spec, "Sans spécialité") AS nom, COUNT(*) AS total FROM etudiant e LEFT JOIN specialite s ON s.id_spec = e.id_spec GROUP BY s.nom_spec ORDER BY total DESC')->fetchAll();
+      $recentOffice = db()->query('SELECT nom, prenom FROM etudiant ORDER BY date_inscrit DESC, id_etudiant DESC LIMIT 1')->fetch();
+    ?>
+    <div class="col-md-4"><div class="card app-card"><div class="card-body"><span class="text-secondary">Étudiants inscrits</span><strong class="d-block fs-3"><?= (int) $totalStudents ?></strong></div></div></div>
+    <div class="col-md-4"><div class="card app-card"><div class="card-body"><span class="text-secondary">Demandes en attente</span><strong class="d-block fs-3"><?= (int) $macosPendingPresence ?></strong></div></div></div>
+    <div class="col-md-4"><div class="card app-card"><div class="card-body"><span class="text-secondary">Dernière inscription</span><strong class="d-block"><?= $recentOffice ? e($recentOffice['prenom'] . ' ' . $recentOffice['nom']) : '—' ?></strong></div></div></div>
+    <div class="col-12"><div class="card app-card"><div class="card-body"><h2 class="h6">Par spécialité</h2><ul class="mb-0"><?php foreach ($bySpec as $specRow): ?><li><?= e((string) $specRow['nom']) ?> · <?= (int) $specRow['total'] ?></li><?php endforeach; ?></ul></div></div></div>
+  </div>
+  <?php endif; ?>
   <div class="dashboard-home-panel">
     <?php
       $niveauTotal = 0;
@@ -432,7 +486,7 @@ page_head('Tableau de bord', 'home');
           <small class="text-secondary"><?= e($student['email']) ?></small>
         </td>
         <td><?= e($student['nom_spec'] ?? '—') ?></td><td><?= e(level_label($student['niveau'])) ?></td><td><?= e($student['cin_passeport']) ?></td>
-        <td class="text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-1"><a class="btn btn-sm btn-outline-info" href="attestation_inscription.php?cin=<?= urlencode($student['cin_passeport']) ?>">Inscription</a><a class="btn btn-sm btn-outline-warning" href="attestation_presence.php?cin=<?= urlencode($student['cin_passeport']) ?>">Présence</a><a class="btn btn-sm btn-outline-success" href="attestation_reussite.php?cin=<?= urlencode($student['cin_passeport']) ?>">Réussite</a><a class="btn btn-sm btn-outline-primary" href="releve_notes.php?cin=<?= urlencode($student['cin_passeport']) ?>">Relevé</a><a class="btn btn-sm btn-outline-light" href="inscription.php?id=<?= (int) $student['id_etudiant'] ?>">Modifier</a></div></td>
+        <td class="text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-1"><a class="btn btn-sm btn-outline-info" target="dashboard-content" href="attestation_inscription.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Inscription</a><a class="btn btn-sm btn-outline-warning" target="dashboard-content" href="attestation_presence.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Présence</a><a class="btn btn-sm btn-outline-success" target="dashboard-content" href="attestation_reussite.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Réussite</a><a class="btn btn-sm btn-outline-primary" target="dashboard-content" href="releve_notes.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Relevé</a><a class="btn btn-sm btn-outline-light" target="dashboard-content" href="inscription.php?embed=1&amp;id=<?= (int) $student['id_etudiant'] ?>">Modifier</a></div></td>
       </tr><?php endforeach; ?>
       <?php if (!$students): ?><tr><td colspan="6" class="text-center text-secondary py-5">Aucun étudiant ne correspond à cette recherche.</td></tr><?php endif; ?>
       </tbody>
@@ -503,7 +557,7 @@ page_head('Tableau de bord', 'home');
   </div>
   <?php elseif (is_finance()): ?>
   <?php
-    $financeExpected = max(1, $financeStudentCount * 9800);
+    $financeExpected = max(1, $financeStudentCount * institution_fee_amount());
     $financePaidPct = (int) max(0, min(100, round((($financeExpected - $financeRemaining) / $financeExpected) * 100)));
     $financeLatePct = $financeStudentCount > 0 ? (int) min(100, round(($financeLate / $financeStudentCount) * 100)) : 0;
     $financeMonthLabel = (['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'][(int) date('n') - 1]) . ' ' . date('Y');
@@ -551,42 +605,55 @@ page_head('Tableau de bord', 'home');
     <p class="mb-0 text-center">Sélectionnez un module dans le menu pour commencer.</p>
   </div>
   <?php endif; ?>
-  <?php if (!is_admin() && !is_teacher() && !is_finance()): ?>
-  <iframe name="dashboard-content" title="Contenu du module" loading="lazy"></iframe>
-  <?php endif; ?>
+  <iframe name="dashboard-content" title="Contenu du module" hidden></iframe>
 </section>
 </div>
 <?php
 // Keep the home panel able to open modules in-panel when menu items are clicked.
-if (is_admin() || is_teacher() || is_finance()): ?>
+if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
 <script>
 (function () {
   const panel = document.getElementById('dashboard-content');
   if (!panel) return;
-  const homePanel = panel.querySelector('.dashboard-home-panel');
   let frame = panel.querySelector('iframe[name="dashboard-content"]');
-  if (!frame) {
-    frame = document.createElement('iframe');
-    frame.name = 'dashboard-content';
-    frame.title = 'Contenu du module';
-    frame.loading = 'lazy';
-    frame.hidden = true;
-    panel.appendChild(frame);
+  if (!frame) frame = document.querySelector('iframe[name="dashboard-content"]');
+  if (!frame) return;
+  if (frame.parentElement !== panel) panel.appendChild(frame);
+  function modulePieces() {
+    return panel.querySelectorAll(':scope > :not(iframe)');
   }
-  document.querySelectorAll('.dashboard-menu-item[target="dashboard-content"], .teacher-home a[target="dashboard-content"]').forEach(function (link) {
-    link.addEventListener('click', function () {
-      if (homePanel) homePanel.hidden = true;
-      frame.hidden = false;
-    });
-  });
-  document.querySelectorAll('[data-dashboard-home]').forEach(function (link) {
-    link.addEventListener('click', function (event) {
+  function showModule() {
+    modulePieces().forEach(function (piece) { piece.hidden = true; });
+    frame.hidden = false;
+    document.body.classList.add('module-open');
+  }
+  function showHome() {
+    modulePieces().forEach(function (piece) { piece.hidden = false; });
+    frame.hidden = true;
+    frame.removeAttribute('src');
+    document.body.classList.remove('module-open');
+  }
+  document.addEventListener('click', function (event) {
+    const link = event.target.closest('a[href]');
+    if (!link || link.hasAttribute('data-accounts-toggle') || link.hasAttribute('download') || link.hasAttribute('data-file-download')) return;
+    if (link.getAttribute('target') === '_blank') return;
+    if (link.hasAttribute('data-dashboard-home')) {
       event.preventDefault();
-      if (homePanel) homePanel.hidden = false;
-      frame.hidden = true;
-      frame.removeAttribute('src');
+      showHome();
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+      return;
+    }
+    const opensModule = link.getAttribute('target') === 'dashboard-content'
+      || (link.getAttribute('href') || '').indexOf('embed=1') !== -1
+      || (!!link.closest('.macos-dock') && (link.getAttribute('href') || '').indexOf('index.php') === -1);
+    if (!opensModule || !frame) return;
+    if ((link.getAttribute('href') || '').indexOf('logout.php') !== -1) return;
+    event.preventDefault();
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin) return;
+    url.searchParams.set('embed', '1');
+    frame.src = url.href;
+    showModule();
   });
 })();
 </script>

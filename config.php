@@ -113,7 +113,8 @@ function require_login(): void {
     if (!logged_in()) { header('Location: login.php'); exit; }
     if (is_stage()) {
         validate_stage_session();
-        if (basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) !== 'stage_portal.php') {
+        $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        if (!stage_script_allowed($script)) {
             header('Location: stage_portal.php');
             exit;
         }
@@ -196,9 +197,9 @@ function e(?string $value): string {
     }
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
-function arabic_year(string $level): string { return ['1' => 'السنة الأولى', '2' => 'السنة الثانية', '3' => 'السنة الثالثة'][$level] ?? $level; }
+function arabic_year(string $level): string { return study_level_label_ar($level); }
 function level_label(string $level): string {
-    return ['1' => '1er', '2' => '2ème', '3' => '3ème'][$level] ?? $level;
+    return study_level_label($level);
 }
 function calculated_note(array $mark): ?float {
     return institution_subject_average($mark);
@@ -207,9 +208,13 @@ function calculated_note(array $mark): ?float {
 function enforce_stage_route_isolation(): void {
     if (!is_stage()) return;
     $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if (in_array($script, ['stage_portal.php', 'logout.php'], true)) return;
+    if (stage_script_allowed($script)) {
+        validate_stage_session();
+        return;
+    }
     require_login();
 }
+require_once __DIR__ . '/access_roles.php';
 enforce_stage_route_isolation();
 
 function enforce_student_route_isolation(): void {
@@ -539,12 +544,7 @@ function assign_tronc_commun_groups(PDO $pdo, int $studentId): void {
 }
 
 function assign_student_to_academic_groups(PDO $pdo, int $studentId, string $level): void {
-    $semestersByLevel = [
-        '1' => ['S1', 'S2'],
-        '2' => ['S3', 'S4'],
-        '3' => ['S5', 'S6'],
-    ];
-    $semesters = $semestersByLevel[$level] ?? null;
+    $semesters = study_level_periods($level);
     if ($semesters === null) {
         throw new RuntimeException('Le niveau académique sélectionné est invalide.');
     }
@@ -600,7 +600,8 @@ const PRESENCE_SEMESTER_CODE = 'S1';
 
 function presence_semester_absence_limit_hours(): float
 {
-    return PRESENCE_SEMESTER_TOTAL_HOURS * PRESENCE_SEMESTER_ABSENCE_RATIO;
+    $policy = attendance_policy();
+    return (float) $policy['expected_hours'] * ((float) $policy['missed_percent'] / 100);
 }
 
 function presence_ensure_table(PDO $pdo): void
@@ -654,7 +655,7 @@ function presence_resolve_session_hours(PDO $pdo, int $groupId, int $matId): flo
     if ($average !== false && $average !== null && (float) $average > 0) {
         return round((float) $average, 2);
     }
-    return PRESENCE_DEFAULT_SESSION_HOURS;
+    return (float) attendance_policy()['session_hours'];
 }
 
 function presence_group_label(array $group): string
@@ -702,8 +703,10 @@ function presence_elimination_alerts(PDO $pdo): array
 {
     presence_ensure_table($pdo);
     $overrides = elimination_override_map($pdo);
+    $attendance = attendance_policy();
     $limitHours = presence_semester_absence_limit_hours();
-    $matiereLimit = PRESENCE_MATIERE_ABSENCE_LIMIT;
+    $matiereLimit = (int) $attendance['max_absences_subject'];
+    $semesterCode = (string) $attendance['semester_code'];
 
     $matiereQuery = $pdo->prepare(
         'SELECT e.id_etudiant, e.nom, e.prenom, e.cin_passeport, e.num_inscription, e.niveau,
@@ -734,7 +737,7 @@ function presence_elimination_alerts(PDO $pdo): array
          HAVING SUM(p.duree_heures) >= ?
          ORDER BY heures_absentes DESC, e.nom, e.prenom'
     );
-    $semestreQuery->execute([PRESENCE_SEMESTER_CODE, $limitHours]);
+    $semestreQuery->execute([$semesterCode, $limitHours]);
     $semestreRows = $semestreQuery->fetchAll();
     $matiereRows = array_values(array_filter(
         $matiereRows,
@@ -742,7 +745,9 @@ function presence_elimination_alerts(PDO $pdo): array
     ));
     $semestreRows = array_values(array_filter(
         $semestreRows,
-        static fn (array $row): bool => !isset($overrides['semestre:' . (int) $row['id_etudiant'] . ':' . PRESENCE_SEMESTER_CODE])
+        static function (array $row) use ($overrides, $semesterCode): bool {
+            return !isset($overrides['semestre:' . (int) $row['id_etudiant'] . ':' . $semesterCode]);
+        }
     ));
 
     $studentIds = [];
@@ -764,10 +769,10 @@ function presence_elimination_alerts(PDO $pdo): array
         'limits' => [
             'matiere_absences' => $matiereLimit,
             'semestre_hours' => $limitHours,
-            'semestre_total_hours' => PRESENCE_SEMESTER_TOTAL_HOURS,
-            'semestre_ratio' => PRESENCE_SEMESTER_ABSENCE_RATIO,
-            'semestre_code' => PRESENCE_SEMESTER_CODE,
-            'session_hours' => PRESENCE_DEFAULT_SESSION_HOURS,
+            'semestre_total_hours' => (float) $attendance['expected_hours'],
+            'semestre_ratio' => ((float) $attendance['missed_percent']) / 100,
+            'semestre_code' => $semesterCode,
+            'session_hours' => (float) $attendance['session_hours'],
         ],
     ];
 }
@@ -824,7 +829,7 @@ function ensure_teacher_active(PDO $pdo): void
 
 function audit_record(string $category, string $action, string $summary): void
 {
-    if (!in_array($category, ['note', 'paiement', 'presence', 'compte'], true)) {
+    if (!in_array($category, ['note', 'paiement', 'presence', 'compte', 'reglage', 'stage'], true)) {
         return;
     }
     try {
@@ -871,3 +876,4 @@ function audit_record(string $category, string $action, string $summary): void
 }
 
 require_once __DIR__ . '/institution.php';
+require_once __DIR__ . '/academic_policy.php';

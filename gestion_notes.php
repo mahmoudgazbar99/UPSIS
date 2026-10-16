@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $componentMarks[$component] = $value === '' ? null : $value;
             }
-            if (!$studentId || !$subjectId || !in_array($semester, ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'], true) || ($mainMark === '' && !array_filter($componentMarks, static fn($value): bool => $value !== null)) || ($mainMark !== '' && (!is_numeric($mainMark) || (float) $mainMark < 0 || (float) $mainMark > 20)) || ($retakeMark !== '' && (!is_numeric($retakeMark) || (float) $retakeMark < 0 || (float) $retakeMark > 20))) throw new RuntimeException('Sélectionnez l’étudiant, la matière et saisissez au moins une note Cours, TD, TP ou une note finale manuelle.');
+            if (!$studentId || !$subjectId || !academic_period_valid($semester) || ($mainMark === '' && !array_filter($componentMarks, static fn($value): bool => $value !== null)) || ($mainMark !== '' && (!is_numeric($mainMark) || (float) $mainMark < 0 || (float) $mainMark > 20)) || ($retakeMark !== '' && (!is_numeric($retakeMark) || (float) $retakeMark < 0 || (float) $retakeMark > 20))) throw new RuntimeException('Sélectionnez l’étudiant, la matière et saisissez au moins une note Cours, TD, TP ou une note finale manuelle.');
             if ($groupId) {
                 $groupTypeQuery = $pdo->prepare('SELECT type_groupe FROM groupe WHERE id_groupe = ?');
                 $groupTypeQuery->execute([$groupId]);

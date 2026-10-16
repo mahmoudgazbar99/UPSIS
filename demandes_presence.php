@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/layout.php';
-require_admin();
+require_permission('requests.manage');
 
 $pdo = db();
 attestation_ensure_tables($pdo);
@@ -276,8 +276,8 @@ $attestationActions = static function (int $id): void {
     <div class="attestation-accept-footer">
       <button type="button" class="btn btn-outline-secondary macos-chip macos-chip-neutral" data-download-close>Fermer</button>
       <?php if ($downloadCin !== ''): ?>
-        <a class="btn btn-success macos-chip macos-chip-ok" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>" target="_blank" rel="noopener">Word</a>
-        <a class="btn btn-outline-danger macos-chip" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>&amp;format=pdf" target="_blank" rel="noopener">PDF</a>
+        <a class="btn btn-success macos-chip macos-chip-ok" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>" data-file-download="1" data-download-question="Voulez-vous télécharger cette attestation de présence au format Word ?">Word</a>
+        <a class="btn btn-outline-danger macos-chip" href="generate_presence.php?cin=<?= urlencode($downloadCin) ?>&amp;format=pdf" data-file-download="1" data-download-question="Voulez-vous télécharger cette attestation de présence au format PDF ?">PDF</a>
       <?php endif; ?>
     </div>
   </div>

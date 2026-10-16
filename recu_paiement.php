@@ -11,7 +11,7 @@ if (is_finance()) {
     require_finance();
 }
 
-const RECEIPT_TOTAL_FEES = 9800.00;
+$receiptTotal = institution_fee_amount();
 $paymentId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
 if ($paymentId < 1) {
     http_response_code(400);
@@ -37,9 +37,9 @@ if (!$payment) {
 }
 
 $paid = (float) $payment['total_paye'];
-$remaining = max(0, RECEIPT_TOTAL_FEES - $paid);
+$remaining = max(0, $receiptTotal - $paid);
 $escape = static fn (string $value): string => htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-$money = static fn (float $value): string => number_format($value, 2, ',', ' ') . ' DT';
+$money = static fn (float $value): string => institution_money($value);
 $method = $payment['mode_paiement'] === 'virement' ? 'Virement' : 'Espèce';
 $status = $remaining <= 0 ? 'Paiement terminé' : 'Paiement partiel';
 
@@ -53,7 +53,7 @@ $html = '<html><head><meta charset="UTF-8"><style>
   td:first-child { color: #5c6b83; width: 42%; }
   .total { font-size: 18px; font-weight: bold; }
 </style></head><body>
-  <p class="muted">Université privée des sciences infirmières et de santé de Gabès</p>
+  <p class="muted">' . $escape(institution_name_inline()) . '</p>
   <h1>Reçu de paiement</h1>
   <p class="muted">N° ' . $escape((string) $payment['id_finance_paiement']) . ' · ' . $escape(date('d/m/Y H:i', strtotime((string) $payment['created_at']))) . '</p>
   <div class="box">

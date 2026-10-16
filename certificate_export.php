@@ -83,6 +83,66 @@ function certificate_word_attr(DOMElement $element, string $namespace, string $l
     $element->setAttributeNS($namespace, 'w:' . $localName, $value);
 }
 
+function certificate_compact_inscription_body(DOMXPath $xpath, string $namespace): void
+{
+    foreach (iterator_to_array($xpath->query('//w:noWrap')) as $noWrap) {
+        $noWrap->parentNode?->removeChild($noWrap);
+    }
+
+    foreach (iterator_to_array($xpath->query('//w:p')) as $paragraph) {
+        if (!$paragraph instanceof DOMElement) {
+            continue;
+        }
+        if (trim($paragraph->textContent) !== '') {
+            continue;
+        }
+        if ($xpath->query('.//w:drawing|.//w:pict|.//w:object', $paragraph)->length > 0) {
+            continue;
+        }
+        $parent = $paragraph->parentNode;
+        if ($parent instanceof DOMElement && in_array($parent->localName, ['tc', 'body'], true)) {
+            $parent->removeChild($paragraph);
+        }
+    }
+
+    foreach ($xpath->query('/w:document/w:body/w:tbl/w:tr/w:tc/w:p') as $paragraph) {
+        if (!$paragraph instanceof DOMElement) {
+            continue;
+        }
+        $text = trim($paragraph->textContent);
+        $properties = $xpath->query('./w:pPr', $paragraph)->item(0);
+        if (!$properties instanceof DOMElement) {
+            $properties = $paragraph->ownerDocument->createElementNS($namespace, 'w:pPr');
+            $paragraph->insertBefore($properties, $paragraph->firstChild);
+        }
+        foreach ($xpath->query('./w:spacing', $properties) as $spacing) {
+            $properties->removeChild($spacing);
+        }
+        $spacing = $paragraph->ownerDocument->createElementNS($namespace, 'w:spacing');
+        $before = str_starts_with($text, 'Gabès') || str_starts_with($text, 'Gabes') ? '80' : '0';
+        $after = str_starts_with($text, 'CERTIFICAT') ? '60' : '20';
+        certificate_word_attr($spacing, $namespace, 'before', $before);
+        certificate_word_attr($spacing, $namespace, 'after', $after);
+        certificate_word_attr($spacing, $namespace, 'line', '220');
+        certificate_word_attr($spacing, $namespace, 'lineRule', 'auto');
+        $properties->appendChild($spacing);
+    }
+
+    foreach ($xpath->query('/w:document/w:body/w:tbl/w:tr') as $row) {
+        if (!$row instanceof DOMElement) {
+            continue;
+        }
+        $properties = $xpath->query('./w:trPr', $row)->item(0);
+        if (!$properties instanceof DOMElement) {
+            $properties = $row->ownerDocument->createElementNS($namespace, 'w:trPr');
+            $row->insertBefore($properties, $row->firstChild);
+        }
+        if ($xpath->query('./w:cantSplit', $properties)->length === 0) {
+            $properties->appendChild($row->ownerDocument->createElementNS($namespace, 'w:cantSplit'));
+        }
+    }
+}
+
 function certificate_table_width(DOMXPath $xpath, DOMElement $table): int
 {
     $width = $xpath->query('./w:tblPr/w:tblW', $table)->item(0);
@@ -188,10 +248,11 @@ function certificate_prepare_docx_for_libreoffice(string $docxPath): void
     $xpath = new DOMXPath($document);
     $wordNamespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
     $xpath->registerNamespace('w', $wordNamespace);
+    certificate_compact_inscription_body($xpath, $wordNamespace);
 
     $pageWidth = 16838;
-    $pageHeight = 14500;
-    $margin = 360;
+    $pageHeight = 11906;
+    $margin = 420;
 
     foreach ($xpath->query('//w:sectPr') as $section) {
         $pageSize = $xpath->query('./w:pgSz', $section)->item(0);

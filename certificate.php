@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/layout.php'; 
-require_admin();
+require_permission('documents.issue');
 
 function certificate_page(string $type, string $title, bool $arabic = false): void {
     $cin = trim($_GET['cin'] ?? '');
@@ -53,10 +53,10 @@ function certificate_page(string $type, string $title, bool $arabic = false): vo
             <div class="d-flex justify-content-between align-items-center gap-3 mb-3 flex-wrap">
                 <h2 class="h5 mb-0"><?= e($docxTitle) ?></h2>
                 <div class="certificate-download-actions d-flex flex-wrap gap-2">
-                    <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>" class="btn btn-primary">
+                    <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>" class="btn btn-primary" data-file-download="1" data-download-question="Voulez-vous télécharger cette attestation au format Word ?">
                         Télécharger Word
                     </a>
-                    <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>&amp;format=pdf" class="btn btn-outline-danger">
+                    <a href="<?= e($docxGenerator) ?>?cin=<?= urlencode($cin) ?>&amp;format=pdf" class="btn btn-outline-danger" data-file-download="1" data-download-question="Voulez-vous télécharger cette attestation au format PDF ?">
                         Télécharger PDF
                     </a>
                 </div>

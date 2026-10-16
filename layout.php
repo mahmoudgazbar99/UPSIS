@@ -44,6 +44,16 @@ function app_user_identity(): array {
             } catch (Throwable $error) {
                 $name = 'Finance';
             }
+        } elseif (is_scolarite()) {
+            $role = 'Scolarité';
+            try {
+                $query = db()->prepare('SELECT nom, username FROM scolarite_user WHERE id_scolarite = ? LIMIT 1');
+                $query->execute([current_scolarite_id()]);
+                $row = $query->fetch() ?: [];
+                $name = trim((string) ($row['nom'] ?? '')) ?: (string) ($row['username'] ?? 'Scolarité');
+            } catch (Throwable $error) {
+                $name = 'Scolarité';
+            }
         } elseif (is_stage()) {
             $name = 'Service des stages';
             $role = 'Stages';
@@ -63,21 +73,21 @@ function macos_dock(): void {
     };
     ?>
         <nav class="macos-dock no-print" data-macos-dock aria-label="Raccourcis">
-            <a class="macos-dock-item" href="index.php" data-dock="home" title="Tableau de bord" aria-label="Tableau de bord"><?= $icon('<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/>') ?></a>
-            <?php if (is_admin()): ?>
-            <a class="macos-dock-item" href="inscription.php" data-dock="enroll" title="Inscrire" aria-label="Inscrire"><?= $icon('<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/>') ?></a>
+            <a class="macos-dock-item" href="index.php" data-dashboard-home data-dock="home" title="Tableau de bord" aria-label="Tableau de bord"><?= $icon('<path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/>') ?></a>
+            <?php if (is_admin() || is_scolarite()): ?>
+            <a class="macos-dock-item" href="inscription.php?embed=1" target="dashboard-content" data-dock="enroll" title="Inscrire" aria-label="Inscrire"><?= $icon('<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/>') ?></a>
             <?php endif; ?>
             <?php if (is_admin() || is_teacher()): ?>
-            <a class="macos-dock-item" href="gestion_notes.php" data-dock="grades" title="Notes" aria-label="Notes"><?= $icon('<path d="M7 4h10v16H7z"/><path d="M10 8h4M10 12h4M10 16h2"/>') ?></a>
-            <a class="macos-dock-item" href="presence_etudiants.php" data-dock="presence" title="Présence" aria-label="Présence"><?= $icon('<path d="M8 12.5 10.5 15 16 9"/><rect x="4" y="4" width="16" height="16" rx="3"/>') ?></a>
+            <a class="macos-dock-item" href="gestion_notes.php?embed=1" target="dashboard-content" data-dock="grades" title="Notes" aria-label="Notes"><?= $icon('<path d="M7 4h10v16H7z"/><path d="M10 8h4M10 12h4M10 16h2"/>') ?></a>
+            <a class="macos-dock-item" href="presence_etudiants.php?embed=1" target="dashboard-content" data-dock="presence" title="Présence" aria-label="Présence"><?= $icon('<path d="M8 12.5 10.5 15 16 9"/><rect x="4" y="4" width="16" height="16" rx="3"/>') ?></a>
             <?php endif; ?>
             <?php if (is_finance()): ?>
-            <a class="macos-dock-item" href="finance.php" data-dock="finance" title="Finance" aria-label="Suivi des paiements"><?= $icon('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.5c.7-1 4.3-1 5 1s-1.5 2.5-2.5 2.5"/>') ?></a>
+            <a class="macos-dock-item" href="finance.php?embed=1" target="dashboard-content" data-dock="finance" title="Finance" aria-label="Suivi des paiements"><?= $icon('<circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10.5c.7-1 4.3-1 5 1s-1.5 2.5-2.5 2.5"/>') ?></a>
             <?php endif; ?>
             <?php if (is_admin()): ?>
-            <a class="macos-dock-item" href="demandes_presence.php" data-dock="attestation" title="Demandes de présence" aria-label="Demandes de présence"><?= $icon('<path d="M7 4h10a2 2 0 0 1 2 2v14l-7-3-7 3V6a2 2 0 0 1 2-2z"/>') ?></a>
+            <a class="macos-dock-item" href="demandes_presence.php?embed=1" target="dashboard-content" data-dock="attestation" title="Demandes de présence" aria-label="Demandes de présence"><?= $icon('<path d="M7 4h10a2 2 0 0 1 2 2v14l-7-3-7 3V6a2 2 0 0 1 2-2z"/>') ?></a>
             <span class="macos-dock-sep" aria-hidden="true"></span>
-            <a class="macos-dock-item" href="changer_mot_de_passe.php" data-dock="settings" title="Réglages" aria-label="Réglages"><?= $icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/>') ?></a>
+            <a class="macos-dock-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content" data-dock="settings" title="Réglages" aria-label="Réglages"><?= $icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/>') ?></a>
             <?php endif; ?>
         </nav>
         <button type="button" class="macos-restore-hint no-print" data-macos-restore>Restaurer la fenêtre</button>
@@ -101,8 +111,8 @@ function page_head(string $title, string $active = ''): void {
         <title><?= e($title) ?> | <?= e(institution_name_inline()) ?></title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link href="assets/style.css?v=75" rel="stylesheet">
-        <link href="assets/macos.css?v=32" rel="stylesheet">
+        <link href="assets/style.css?v=86" rel="stylesheet">
+        <link href="assets/macos.css?v=40" rel="stylesheet">
         <script>
         (function () {
             try {
@@ -185,8 +195,8 @@ function page_head(string $title, string $active = ''): void {
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <?php if (is_admin()): ?>
-                                    <li><a class="dropdown-item" href="demandes_presence.php">Demandes de présence</a></li>
-                                    <li><a class="dropdown-item" href="alertes_elimination.php">Alertes d’élimination</a></li>
+                                    <li><a class="dropdown-item" href="demandes_presence.php?embed=1" target="dashboard-content">Demandes de présence</a></li>
+                                    <li><a class="dropdown-item" href="alertes_elimination.php?embed=1" target="dashboard-content">Alertes d’élimination</a></li>
                                     <?php else: ?>
                                     <li><span class="dropdown-item-text">Aucune notification</span></li>
                                     <?php endif; ?>
@@ -234,7 +244,7 @@ function page_head(string $title, string $active = ''): void {
                                         </select>
                                     </li>
                                     <li class="macos-only-control"><hr class="dropdown-divider"></li>
-                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php">Nom et logo de l’université</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
+                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php?embed=1" target="dashboard-content">Nom et logo de l’université</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
                                     <li><a class="dropdown-item text-danger" href="logout.php">Déconnexion</a></li>
                                 </ul>
                             </div>
@@ -251,7 +261,7 @@ function page_head(string $title, string $active = ''): void {
                                     <svg class="macos-profile-caret" viewBox="0 0 12 8" aria-hidden="true"><path d="M2 2.2 6 6.1 10 2.2" fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
-                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="changer_mot_de_passe.php">Changer le mot de passe</a></li><?php endif; ?>
+                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><?php endif; ?>
                                     <li><a class="dropdown-item text-danger" href="logout.php">Déconnexion</a></li>
                                 </ul>
                             </div>
@@ -448,7 +458,7 @@ function page_foot(): void {
                 }, true);
 
                 function preserveEmbeddedLink(link) {
-                    if (link.hasAttribute('download') || !link.href) {
+                    if (link.hasAttribute('download') || link.hasAttribute('data-file-download') || !link.href) {
                         return;
                     }
 
@@ -759,7 +769,9 @@ function page_foot(): void {
                     items.push({
                         href: link.getAttribute('href'),
                         label: ((link.querySelector('strong') && link.querySelector('strong').textContent) || link.title || '').trim(),
-                        target: link.getAttribute('target') || ''
+                        target: link.getAttribute('target') || '',
+                        download: link.hasAttribute('data-file-download'),
+                        question: link.getAttribute('data-download-question') || ''
                     });
                 });
                 document.querySelectorAll('[data-macos-dock] a').forEach(function (link) {
@@ -797,11 +809,18 @@ function page_foot(): void {
                 closeCommand();
                 restoreWindow();
                 if (!item || !item.href) return;
+                if (item.download && typeof window.appAskDownload === 'function') {
+                    window.appAskDownload(item.href, item.question);
+                    return;
+                }
                 var frame = document.querySelector('iframe[name="dashboard-content"]');
                 var homePanel = document.querySelector('.dashboard-home-panel');
                 var inDashboard = !!(frame && (item.target === 'dashboard-content' || item.href.indexOf('embed=1') !== -1));
                 if (inDashboard) {
-                    if (homePanel) homePanel.hidden = true;
+                    document.body.classList.add('module-open');
+                    document.querySelectorAll('#dashboard-content > :not(iframe)').forEach(function (piece) {
+                        piece.hidden = true;
+                    });
                     frame.hidden = false;
                     frame.src = item.href;
                     setTitle(item.label);
@@ -875,6 +894,213 @@ function page_foot(): void {
                     closeCommand();
                 }
             });
+        })();
+        </script>
+        <div class="attestation-accept-overlay" id="downloadConfirmOverlay" hidden>
+            <div class="attestation-accept-dialog" role="dialog" aria-modal="true" aria-labelledby="downloadConfirmTitle">
+                <div class="attestation-accept-header" data-dialog-drag>
+                    <div class="macos-traffic macos-only-control">
+                        <button type="button" class="macos-dot macos-dot-close" data-download-answer="no" aria-label="Non" title="Non"></button>
+                        <span class="macos-dot macos-dot-min" aria-hidden="true"></span>
+                        <span class="macos-dot macos-dot-max" aria-hidden="true"></span>
+                    </div>
+                    <h2 class="h5 mb-0" id="downloadConfirmTitle">Téléchargement</h2>
+                    <button type="button" class="btn-close" data-download-answer="no" aria-label="Fermer"></button>
+                </div>
+                <div class="attestation-accept-body">
+                    <table class="download-confirm-table">
+                        <tbody>
+                            <tr>
+                                <th scope="row">Question</th>
+                                <td id="downloadConfirmQuestion">Voulez-vous télécharger ce fichier ?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="download-confirm-status" id="downloadConfirmStatus" hidden></p>
+                </div>
+                <div class="attestation-accept-footer">
+                    <button type="button" class="btn btn-outline-secondary macos-chip macos-chip-neutral" id="downloadConfirmNo" data-download-answer="no">Non</button>
+                    <button type="button" class="btn btn-primary macos-chip macos-chip-ok" id="downloadConfirmYes" data-download-answer="yes">Oui</button>
+                </div>
+            </div>
+        </div>
+        <script>
+        (function () {
+            const overlay = document.getElementById('downloadConfirmOverlay');
+            const dialog = overlay ? overlay.querySelector('.attestation-accept-dialog') : null;
+            const questionEl = document.getElementById('downloadConfirmQuestion');
+            const statusEl = document.getElementById('downloadConfirmStatus');
+            const yesBtn = document.getElementById('downloadConfirmYes');
+            const noBtn = document.getElementById('downloadConfirmNo');
+            if (!overlay || !dialog || !questionEl || !yesBtn) return;
+
+            let pendingUrl = '';
+            let busy = false;
+            let controller = null;
+
+            function resetPosition() {
+                dialog.classList.remove('is-moved', 'is-dragging');
+                dialog.style.left = '';
+                dialog.style.top = '';
+                dialog.style.transform = '';
+            }
+
+            function closePrompt() {
+                if (busy) {
+                    if (controller) controller.abort();
+                    return;
+                }
+                overlay.hidden = true;
+                pendingUrl = '';
+                resetPosition();
+            }
+
+            function fileNameFrom(disposition, blobType) {
+                const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition || '');
+                if (encoded) {
+                    try { return decodeURIComponent(encoded[1].replace(/["']/g, '')); } catch (error) { /* keep looking */ }
+                }
+                const plain = /filename="?([^";]+)"?/i.exec(disposition || '');
+                if (plain) return plain[1];
+                return blobType.indexOf('pdf') !== -1 ? 'attestation.pdf' : 'attestation.docx';
+            }
+
+            async function saveFile(url, signal) {
+                const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', signal: signal });
+                const blob = await response.blob();
+                const head = new Uint8Array(await blob.slice(0, 5).arrayBuffer());
+                const signature = Array.from(head).map(function (byte) { return String.fromCharCode(byte); }).join('');
+                const isFile = signature.indexOf('%PDF') === 0 || signature.indexOf('PK') === 0;
+                if (!response.ok || !isFile) {
+                    const text = (await blob.text()).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+                    throw new Error(text.slice(0, 280) || 'Le téléchargement a échoué.');
+                }
+                const objectUrl = URL.createObjectURL(blob);
+                const anchor = document.createElement('a');
+                anchor.href = objectUrl;
+                anchor.download = fileNameFrom(response.headers.get('content-disposition') || '', blob.type || '');
+                document.body.appendChild(anchor);
+                anchor.click();
+                anchor.remove();
+                setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 1500);
+            }
+
+            window.appAskDownload = function (url, question) {
+                if (!url || busy) return;
+                pendingUrl = url;
+                questionEl.textContent = question || 'Voulez-vous télécharger ce fichier ?';
+                statusEl.hidden = true;
+                statusEl.textContent = '';
+                statusEl.classList.remove('is-error');
+                yesBtn.disabled = false;
+                yesBtn.textContent = 'Oui';
+                if (noBtn) noBtn.disabled = false;
+                resetPosition();
+                overlay.hidden = false;
+            };
+
+            overlay.addEventListener('click', function (event) {
+                if (event.target === overlay) closePrompt();
+            });
+            overlay.querySelectorAll('[data-download-answer="no"]').forEach(function (button) {
+                button.addEventListener('click', closePrompt);
+            });
+            yesBtn.addEventListener('click', async function () {
+                if (!pendingUrl || busy) return;
+                busy = true;
+                yesBtn.disabled = true;
+                yesBtn.textContent = 'Préparation…';
+                if (noBtn) noBtn.disabled = true;
+                statusEl.hidden = false;
+                statusEl.classList.remove('is-error');
+                statusEl.textContent = 'Préparation du fichier…';
+                try {
+                    controller = new AbortController();
+                    await saveFile(pendingUrl, controller.signal);
+                    busy = false;
+                    controller = null;
+                    if (noBtn) noBtn.disabled = false;
+                    closePrompt();
+                } catch (error) {
+                    busy = false;
+                    controller = null;
+                    if (error && error.name === 'AbortError') {
+                        if (noBtn) noBtn.disabled = false;
+                        closePrompt();
+                        return;
+                    }
+                    yesBtn.disabled = false;
+                    yesBtn.textContent = 'Oui';
+                    if (noBtn) noBtn.disabled = false;
+                    statusEl.hidden = false;
+                    statusEl.classList.add('is-error');
+                    statusEl.textContent = error && error.message ? error.message : 'Le téléchargement a échoué.';
+                }
+            });
+
+            const handle = overlay.querySelector('[data-dialog-drag]');
+            if (handle) {
+                let drag = null;
+                handle.addEventListener('pointerdown', function (event) {
+                    if (event.button !== 0 || event.target.closest('button, a, input')) return;
+                    const bounds = overlay.getBoundingClientRect();
+                    const rect = dialog.getBoundingClientRect();
+                    dialog.classList.add('is-moved', 'is-dragging');
+                    dialog.style.left = (rect.left - bounds.left) + 'px';
+                    dialog.style.top = (rect.top - bounds.top) + 'px';
+                    dialog.style.transform = 'none';
+                    drag = {
+                        pointerId: event.pointerId,
+                        offsetX: event.clientX - rect.left,
+                        offsetY: event.clientY - rect.top
+                    };
+                    handle.setPointerCapture(event.pointerId);
+                });
+                handle.addEventListener('pointermove', function (event) {
+                    if (!drag || drag.pointerId !== event.pointerId) return;
+                    const bounds = overlay.getBoundingClientRect();
+                    const width = dialog.offsetWidth;
+                    const height = dialog.offsetHeight;
+                    const left = Math.min(Math.max(0, event.clientX - drag.offsetX - bounds.left), Math.max(0, bounds.width - width));
+                    const top = Math.min(Math.max(0, event.clientY - drag.offsetY - bounds.top), Math.max(0, bounds.height - height));
+                    dialog.style.left = left + 'px';
+                    dialog.style.top = top + 'px';
+                });
+                function endDrag(event) {
+                    if (!drag || (event && drag.pointerId !== event.pointerId)) return;
+                    drag = null;
+                    dialog.classList.remove('is-dragging');
+                }
+                handle.addEventListener('pointerup', endDrag);
+                handle.addEventListener('pointercancel', endDrag);
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && !overlay.hidden) closePrompt();
+            });
+
+            function isDownloadLink(link) {
+                if (!link || link.hasAttribute('data-dashboard-home')) return false;
+                if (link.hasAttribute('data-file-download')) return true;
+                const href = link.getAttribute('href') || '';
+                return /(?:^|\/)(?:download_all_inscriptions|generate_word|generate_presence|generate_reussite|generate_feuille_presence|recu_paiement|etudiants_export)\.php(?:\?|#|$)/.test(href);
+            }
+
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!isDownloadLink(link)) return;
+                event.preventDefault();
+                event.stopPropagation();
+                const host = window.parent && window.parent !== window && typeof window.parent.appAskDownload === 'function'
+                    ? window.parent
+                    : window;
+                let question = link.getAttribute('data-download-question') || '';
+                if (!question) {
+                    const label = (link.textContent || link.getAttribute('title') || '').replace(/\s+/g, ' ').trim();
+                    question = label ? ('Voulez-vous télécharger « ' + label + ' » ?') : 'Voulez-vous télécharger ce fichier ?';
+                }
+                host.appAskDownload(link.href, question);
+            }, true);
         })();
         </script>
     </body>

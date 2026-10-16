@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/layout.php';
-require_admin();
+require_permission('students.view');
 
 
 $cin = trim((string) ($_GET['cin'] ?? ''));
@@ -141,7 +141,7 @@ page_head('Relevé de notes', 'transcript');
   <?php endforeach; ?>
 
   <section class="transcript-summary"><div><b>Moyenne générale :</b> <?= $generalAverage === null ? '—' : transcript_number($generalAverage) ?></div><div><b>Crédits totaux :</b> <?= transcript_number($creditsTotal) ?></div><div><b>Crédits acquis :</b> <?= transcript_number($creditsAcquired) ?></div><div><b>Mention :</b> <?= e(transcript_mention($generalAverage)) ?></div><div><b>Décision de jury :</b> <?= e($decision) ?></div></section>
-  <footer class="transcript-footer"><p><b>NB :</b> Le calcul des moyennes et des crédits est effectué selon la formule définie par l’établissement.</p><div><p>Gabès, le <?= date('d/m/Y') ?></p><strong>Le secrétaire général</strong><b><?= e(institution_brand()['sec_generale']) ?></b><span>Signature et cachet</span></div></footer>
+  <footer class="transcript-footer"><p><b>NB :</b> Le calcul des moyennes et des crédits est effectué selon la formule définie par l’établissement.</p><div><p><?= e(institution_place_fr()) ?></p><strong>Le secrétaire général</strong><b><?= e(institution_brand()['sec_generale']) ?></b><span>Signature et cachet</span></div></footer>
 </article>
 <?php endif; ?>
 

@@ -1,9 +1,9 @@
 <?php
 require_once __DIR__ . '/layout.php';
-require_admin();
+require_permission('students.edit');
 
 $fields = ['nom', 'prenom', 'nom_ar', 'prenom_ar', 'date_naissance', 'lieu_naissance', 'lieu_naissance_ar', 'sexe', 'nationalite', 'etat_civil', 'cin_passeport', 'num_tel', 'adresse', 'email', 'date_inscrit', 'id_spec', 'niveau', 'annee_bac', 'specialite_bac'];
-$specs = db()->query('SELECT * FROM specialite ORDER BY nom_spec')->fetchAll();
+$specs = db()->query('SELECT * FROM specialite WHERE active = 1 ORDER BY nom_spec')->fetchAll();
 $data = array_fill_keys($fields, '');
 $data['date_inscrit'] = date('Y-m-d');
 $data['niveau'] = '1';
@@ -66,10 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data[$field] = trim((string) ($_POST[$field] ?? ''));
     }
 
-    if ($identityType === 'cin' && !preg_match('/^\d{8}$/', $cinValue)) {
-        $error = 'Le CIN doit contenir exactement 8 chiffres.';
-    } elseif ($identityType === 'passport' && !preg_match('/^[A-Za-z0-9]{7}$/', $passportValue)) {
-        $error = 'Le passeport doit contenir exactement 7 caractères alphanumériques.';
+    if ($identityType === 'cin' && !identity_matches('cin', $cinValue)) {
+        $error = identity_error('cin');
+    } elseif ($identityType === 'passport' && !identity_matches('passeport', $passportValue)) {
+        $error = identity_error('passeport');
     }
 
     foreach ($specs as $spec) {
@@ -214,8 +214,8 @@ page_head($editing ? 'Modifier un étudiant' : 'Inscription étudiant', 'registe
       <label><input type="radio" name="identity_type" value="cin" <?= $identityType === 'cin' ? 'checked' : '' ?>> CIN</label>
       <label><input type="radio" name="identity_type" value="passport" <?= $identityType === 'passport' ? 'checked' : '' ?>> Passeport</label>
     </div>
-    <input class="form-control mb-2" id="cin-value" name="cin_value" value="<?= $identityType === 'cin' ? e($data['cin_passeport']) : '' ?>" inputmode="numeric" minlength="8" maxlength="8" pattern="[0-9]{8}" placeholder="CIN : 8 chiffres" <?= $identityType === 'cin' ? 'required' : 'disabled' ?>>
-    <input class="form-control" id="passport-value" name="passport_value" value="<?= $identityType === 'passport' ? e($data['cin_passeport']) : '' ?>" maxlength="7" pattern="[A-Za-z0-9]{7}" placeholder="Passeport : 7 caractères" <?= $identityType === 'passport' ? 'required' : 'disabled' ?>>
+    <input class="form-control mb-2" id="cin-value" name="cin_value" value="<?= $identityType === 'cin' ? e($data['cin_passeport']) : '' ?>" inputmode="numeric" minlength="<?= (int) identity_rule('cin')['min_length'] ?>" maxlength="<?= (int) identity_rule('cin')['max_length'] ?>" pattern="<?= e(identity_pattern('cin')) ?>" placeholder="<?= e(identity_error('cin')) ?>" <?= $identityType === 'cin' ? 'required' : 'disabled' ?>>
+    <input class="form-control" id="passport-value" name="passport_value" value="<?= $identityType === 'passport' ? e($data['cin_passeport']) : '' ?>" minlength="<?= (int) identity_rule('passeport')['min_length'] ?>" maxlength="<?= (int) identity_rule('passeport')['max_length'] ?>" pattern="<?= e(identity_pattern('passeport')) ?>" placeholder="<?= e(identity_error('passeport')) ?>" <?= $identityType === 'passport' ? 'required' : 'disabled' ?>>
     <input type="hidden" name="cin_passeport" value="<?= e($data['cin_passeport']) ?>">
   </div>
   <div class="col-md-6"><label class="form-label">Téléphone *</label><input class="form-control" name="num_tel" value="<?= e($data['num_tel']) ?>" required></div>
@@ -228,7 +228,7 @@ page_head($editing ? 'Modifier un étudiant' : 'Inscription étudiant', 'registe
   <div class="col-md-4">
     <label class="form-label">Niveau *</label>
     <select id="niveau-select" class="form-select" name="<?= $troncCommunForced ? '' : 'niveau' ?>" required <?= $troncCommunForced ? 'disabled aria-disabled="true"' : '' ?>>
-      <?php foreach (['1' => '1er', '2' => '2ème', '3' => '3ème'] as $value => $label): ?>
+      <?php foreach (study_levels() as $levelOption): $value = (string) $levelOption['code']; $label = (string) $levelOption['label']; ?>
         <option value="<?= $value ?>" <?= $data['niveau'] === $value ? 'selected' : '' ?>><?= $label ?></option>
       <?php endforeach; ?>
     </select>

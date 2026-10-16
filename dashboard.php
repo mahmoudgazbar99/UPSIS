@@ -118,11 +118,10 @@ try {
     // Étape 3 — Une seule semaine type, limitée aux semestres du niveau.
     // Le groupe TD conserve un emploi différent chaque semaine ; tout afficher
     // produisait plus de 200 lignes dès l'ouverture de la session.
-    $levelSemesters = [
-        '1' => ['S1', 'S2'],
-        '2' => ['S3', 'S4'],
-        '3' => ['S5', 'S6'],
-    ][(string) $profile['niveau']] ?? ['S1', 'S2'];
+    $levelSemesters = study_level_periods((string) $profile['niveau']);
+    if ($levelSemesters === []) {
+        $levelSemesters = ['S1', 'S2'];
+    }
     $semesterMarks = implode(',', array_fill(0, count($levelSemesters), '?'));
     $timetableQuery = $pdo->prepare(
         'SELECT et.jour, et.heure_debut, et.heure_fin, et.type_seance,

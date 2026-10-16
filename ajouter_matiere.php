@@ -60,7 +60,7 @@ page_head('Ajouter une matière', 'grades');
       <div class="col-md-3" id="semester-field" hidden>
         <label class="form-label" for="semestre">Semestre</label>
         <select class="form-select" id="semestre" name="semestre" disabled>
-          <?php foreach (['S1', 'S2', 'S3', 'S4', 'S5', 'S6'] as $semester): ?>
+          <?php foreach (academic_period_codes() as $semester): ?>
             <option value="<?= e($semester) ?>"><?= e($semester) ?></option>
           <?php endforeach; ?>
         </select>

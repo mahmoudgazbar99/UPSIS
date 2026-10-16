@@ -54,7 +54,7 @@ if ($selected && $isExporting) {
 $archiveSelect = 'SELECT ea.id_archive, ea.id_etudiant, ea.annee_scolaire, ea.niveau, ea.nom_spec,
             ea.num_inscription, ea.cin_passeport, ea.decision, ea.moyenne_generale,
             ea.finance_total_paye, ea.student_payload, ea.transcript_payload,
-            9800 - ea.finance_total_paye AS remaining_balance
+            COALESCE(ea.frais_reference, 9800) - ea.finance_total_paye AS remaining_balance
      FROM etudiant_archive ea';
 $archiveQuery = $pdo->prepare(
     $archiveSelect . '
@@ -268,7 +268,7 @@ if ($exportAction !== '') {
             .summary{margin-top:8mm;border:1px solid #9aa8b5;padding:4mm;font-weight:bold;line-height:1.8}
             .footer{margin-top:14mm;text-align:right}
         </style></head><body>
-            <div class="institution">Université privée des sciences infirmières et de santé de Gabès</div>
+            <div class="institution">' . $escape(institution_name_inline()) . '</div>
             <h1>HISTORIQUE DES PAIEMENTS</h1>
             <div class="student"><strong>Étudiant :</strong> ' . $escape($studentName) . '<br>
                 <strong>CIN / Passeport :</strong> ' . $escape((string) $archive['cin_passeport']) . '<br>
@@ -278,7 +278,7 @@ if ($exportAction !== '') {
                 <tbody>' . $rows . '</tbody></table>
             <div class="summary">Total payé : ' . $escape(number_format((float) $archive['finance_total_paye'], 2, ',', ' ')) . ' DT<br>
                 Reste à payer : ' . $escape(number_format(max(0, (float) $archive['remaining_balance']), 2, ',', ' ')) . ' DT</div>
-            <div class="footer">Gabès, le ' . date('d/m/Y') . '</div>
+            <div class="footer">' . $escape(institution_place_fr()) . '</div>
         </body></html>';
         $dompdf = new \Dompdf\Dompdf();
         $dompdf->loadHtml($html, 'UTF-8');
@@ -328,7 +328,7 @@ if ($format !== '') {
             fputcsv($output, [
                 $archive['annee_scolaire'], $payload['nom'] ?? '', $payload['prenom'] ?? '',
                 $payload['date_naissance'] ?? '', $payload['lieu_naissance'] ?? '',
-                $archive['cin_passeport'], $archive['num_inscription'], 'Licence en sciences infirmières',
+                $archive['cin_passeport'], $archive['num_inscription'], institution_award_title(),
                 $archive['nom_spec'], $archive['niveau'], $archive['decision'],
                 $archive['moyenne_generale'], $archive['finance_total_paye'],
                 max(0, (float) $archive['remaining_balance']),
@@ -357,7 +357,7 @@ if ($format !== '') {
             $statusText = (float) $archive['remaining_balance'] <= 0 ? 'Paiement terminé' : 'Paiement non terminé';
             $html .= '<section class="student-section"><h1>ARCHIVE COMPLÈTE — ' . e($year) . '</h1><h2>' . e($name) . ' — ' . e($archive['cin_passeport']) . '</h2>';
             $html .= '<h3>Attestation d’inscription — modèle template_inscription_2.docx</h3><div class="certificate"><p class="certificate-head"><img class="certificate-logo" src="' . e($logoUri) . '"> CERTIFICAT D’INSCRIPTION</p><p class="certificate-head">' . e(institution_name_inline()) . '</p><p>Le secrétaire général de l’Université certifie que l’étudiant :</p>';
-            $html .= '<p><b>Nom et prénom :</b> ' . e((string) ($payload['prenom'] ?? '') . ' ' . (string) ($payload['nom'] ?? '')) . '</p><p><b>Date et lieu de naissance :</b> ' . e($birthDate) . ' à ' . e((string) ($payload['lieu_naissance'] ?? '')) . '</p><p><b>N° CIN / N° Passeport :</b> ' . e($archive['cin_passeport']) . '</p><p><b>Diplôme :</b> Licence en sciences infirmières</p><p><b>Filière / Spécialité :</b> ' . e($archive['nom_spec']) . '</p><p><b>Niveau d’études :</b> ' . e(level_label((string) $archive['niveau'])) . '</p><p><b>Numéro d’inscription :</b> ' . e($archive['num_inscription']) . '</p><p>est inscrit(e) au sein de l’établissement au titre de l’année universitaire ' . e($archive['annee_scolaire']) . '.</p><p>Gabès, le ' . date('d/m/Y') . '</p><p><b>Le Secrétaire général</b><br>' . e(institution_brand()['sec_generale']) . '</p></div>';
+            $html .= '<p><b>Nom et prénom :</b> ' . e((string) ($payload['prenom'] ?? '') . ' ' . (string) ($payload['nom'] ?? '')) . '</p><p><b>Date et lieu de naissance :</b> ' . e($birthDate) . ' à ' . e((string) ($payload['lieu_naissance'] ?? '')) . '</p><p><b>N° CIN / N° Passeport :</b> ' . e($archive['cin_passeport']) . '</p><p><b>Diplôme :</b> ' . e(institution_award_title()) . '</p><p><b>Filière / Spécialité :</b> ' . e($archive['nom_spec']) . '</p><p><b>Niveau d’études :</b> ' . e(level_label((string) $archive['niveau'])) . '</p><p><b>Numéro d’inscription :</b> ' . e($archive['num_inscription']) . '</p><p>est inscrit(e) au sein de l’établissement au titre de l’année universitaire ' . e($archive['annee_scolaire']) . '.</p><p>' . e(institution_place_fr()) . '</p><p><b>Le Secrétaire général</b><br>' . e(institution_brand()['sec_generale']) . '</p></div>';
             $html .= '<h3>Relevé de notes complet</h3><div class="transcript-head"><span>RELEVÉ DE NOTES — ' . e($archive['annee_scolaire']) . '</span><span>Moyenne générale : ' . e((string) ($archive['moyenne_generale'] ?? '—')) . '</span></div>';
             $marks = json_decode((string) $archive['transcript_payload'], true);
             $marks = is_array($marks) ? $marks : [];

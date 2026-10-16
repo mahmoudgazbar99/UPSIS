@@ -117,7 +117,7 @@ $html = '<!doctype html><html lang="fr"><head><meta charset="UTF-8"><style>
     . $studentRows .
     '</tbody></table>
     <div class="footer">NB : Les enseignants sont priés de faire l’appel et de relever les absences.</div>
-    <div class="institution">Université privée des sciences infirmières et de santé de Gabès</div>
+    <div class="institution">' . $escape(institution_name_inline()) . '</div>
     <div class="signature"><div class="signature-line"></div><div>Signature de l’enseignant</div></div>
     </body></html>';
 

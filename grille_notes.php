@@ -84,7 +84,7 @@ $html = '<html><head><meta charset="UTF-8"><style>
   th { background: #e8eef6; text-align: left; }
   td:nth-child(n+4), th:nth-child(n+4) { text-align: center; width: 58px; }
 </style></head><body>
-  <p class="muted">Université privée des sciences infirmières et de santé de Gabès</p>
+  <p class="muted">' . $escape(institution_name_inline()) . '</p>
   <h1>Feuille de notes</h1>
   <h2>' . $escape($title) . ' · ' . $escape($subtitle) . '</h2>
   <p class="muted">CC, Examen, TP, finale manuelle et rattrapage. Le résultat suit le calcul déjà utilisé dans les relevés. Imprimé le ' . $escape(date('d/m/Y')) . '.</p>

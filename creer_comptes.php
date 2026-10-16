@@ -7,6 +7,7 @@ $types = [
     'enseignant' => 'Enseignant',
     'finance' => 'Finance',
     'stage' => 'Stage',
+    'scolarite' => 'Scolarité',
 ];
 $type = (string) ($_GET['type'] ?? $_POST['type'] ?? '');
 if (!isset($types[$type])) {
@@ -15,6 +16,7 @@ if (!isset($types[$type])) {
 $message = '';
 $error = '';
 ensure_teacher_active(db());
+access_ensure();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
@@ -33,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (in_array('', $data, true) || $password === '') {
                 throw new RuntimeException('Veuillez remplir tous les champs.');
             }
-            if (!preg_match('/^\d{8}$/', $data['cin'])) {
-                throw new RuntimeException('Le CIN doit contenir exactement 8 chiffres.');
+            if (!identity_matches('cin', $data['cin'])) {
+                throw new RuntimeException(identity_error('cin'));
             }
             if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
                 throw new RuntimeException('Veuillez saisir une adresse e-mail valide.');
@@ -56,15 +58,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Compte finance créé.';
         } elseif ($type === 'stage') {
             $cin = trim((string) ($_POST['cin'] ?? ''));
-            if (!preg_match('/^\d{8}$/', $cin) || strlen($password) < 8 || $password !== $confirm) {
-                throw new RuntimeException('Le CIN doit contenir 8 chiffres et le mot de passe au moins 8 caractères.');
+            if (!identity_matches('cin', $cin) || strlen($password) < 8 || $password !== $confirm) {
+                throw new RuntimeException(identity_error('cin') . ' Le mot de passe doit contenir au moins 8 caractères.');
             }
             if (!stage_accounts_table_exists()) {
                 throw new RuntimeException('La table des comptes stage est absente.');
             }
-            db()->prepare('INSERT INTO stage_user (cin, password) VALUES (?, ?)')->execute([$cin, password_hash($password, PASSWORD_DEFAULT)]);
+            db()->prepare('INSERT INTO stage_user (cin, nom, responsabilite, password) VALUES (?, ?, ?, ?)')->execute([
+                $cin,
+                trim((string) ($_POST['nom'] ?? '')),
+                in_array((string) ($_POST['responsabilite'] ?? ''), ['officer', 'coordinateur', 'superviseur'], true) ? (string) $_POST['responsabilite'] : 'officer',
+                password_hash($password, PASSWORD_DEFAULT),
+            ]);
             audit_record('compte', 'creer', 'Compte stage · CIN ' . $cin);
             $message = 'Compte stage créé.';
+        } elseif ($type === 'scolarite') {
+            access_ensure();
+            $username = trim((string) ($_POST['username'] ?? ''));
+            $nom = trim((string) ($_POST['nom'] ?? ''));
+            if ($username === '' || $nom === '' || strlen($password) < 8 || $password !== $confirm) {
+                throw new RuntimeException('Saisissez le nom, l’identifiant et un mot de passe d’au moins 8 caractères.');
+            }
+            db()->prepare('INSERT INTO scolarite_user (username, nom, password) VALUES (?, ?, ?)')->execute([$username, $nom, password_hash($password, PASSWORD_DEFAULT)]);
+            audit_record('compte', 'creer', 'Compte scolarité ' . $username);
+            $message = 'Compte scolarité créé.';
         }
     } catch (RuntimeException $exception) {
         $error = $exception->getMessage();
@@ -84,7 +101,7 @@ page_head('Créer des comptes', 'accounts');
   <?php foreach ($types as $key => $label): ?>
     <a class="account-type-card <?= $type === $key ? 'is-selected' : '' ?>" href="creer_comptes.php?type=<?= e($key) ?>">
       <span><?= e($label) ?></span>
-      <strong><?= $key === 'enseignant' ? 'CIN et fiche' : ($key === 'finance' ? 'Identifiant' : 'CIN') ?></strong>
+      <strong><?= $key === 'enseignant' ? 'CIN et fiche' : (in_array($key, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN') ?></strong>
     </a>
   <?php endforeach; ?>
 </div>
@@ -97,16 +114,19 @@ page_head('Créer des comptes', 'accounts');
     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
     <input type="hidden" name="type" value="<?= e($type) ?>">
     <?php if ($type === 'enseignant'): ?>
-      <div class="col-md-4"><label class="form-label">CIN *</label><input class="form-control" name="cin" inputmode="numeric" minlength="8" maxlength="8" pattern="[0-9]{8}" required></div>
+      <div class="col-md-4"><label class="form-label">CIN *</label><input class="form-control" name="cin" inputmode="numeric" minlength="<?= (int) identity_rule('cin')['min_length'] ?>" maxlength="<?= (int) identity_rule('cin')['max_length'] ?>" pattern="<?= e(identity_pattern('cin')) ?>" required></div>
       <div class="col-md-4"><label class="form-label">Nom *</label><input class="form-control" name="nom" required></div>
       <div class="col-md-4"><label class="form-label">Prénom *</label><input class="form-control" name="prenom" required></div>
       <div class="col-md-4"><label class="form-label">Téléphone *</label><input class="form-control" name="num_tel" required></div>
       <div class="col-md-4"><label class="form-label">E-mail *</label><input class="form-control" type="email" name="email" required></div>
       <div class="col-md-4"><label class="form-label">Adresse *</label><input class="form-control" name="adresse" required></div>
-    <?php elseif ($type === 'finance'): ?>
+    <?php elseif ($type === 'finance' || $type === 'scolarite'): ?>
       <div class="col-md-4"><label class="form-label">Identifiant *</label><input class="form-control" name="username" required></div>
+      <?php if ($type === 'scolarite'): ?><div class="col-md-4"><label class="form-label">Nom affiché *</label><input class="form-control" name="nom" required></div><?php endif; ?>
     <?php else: ?>
-      <div class="col-md-4"><label class="form-label">CIN *</label><input class="form-control" name="cin" inputmode="numeric" minlength="8" maxlength="8" pattern="[0-9]{8}" required></div>
+      <div class="col-md-4"><label class="form-label">CIN *</label><input class="form-control" name="cin" inputmode="numeric" minlength="<?= (int) identity_rule('cin')['min_length'] ?>" maxlength="<?= (int) identity_rule('cin')['max_length'] ?>" pattern="<?= e(identity_pattern('cin')) ?>" required></div>
+      <div class="col-md-4"><label class="form-label">Nom</label><input class="form-control" name="nom"></div>
+      <div class="col-md-4"><label class="form-label">Responsabilité</label><select class="form-select" name="responsabilite"><option value="officer">Responsable des stages</option><option value="coordinateur">Coordinateur des affectations</option><option value="superviseur">Superviseur</option></select></div>
     <?php endif; ?>
     <div class="col-md-4"><label class="form-label">Mot de passe *</label><input class="form-control" type="password" name="password" minlength="8" required></div>
     <div class="col-md-4"><label class="form-label">Confirmation *</label><input class="form-control" type="password" name="password_confirm" minlength="8" required></div>

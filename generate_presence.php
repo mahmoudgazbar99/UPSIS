@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_admin();
+require_permission('documents.issue');
 require_once __DIR__ . '/certificate_export.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -66,9 +66,9 @@ function preparePresenceTemplate(string $sourcePath): string
                 str_contains($text, '${nom_ar}') => 'اللقب : ${nom_ar}',
                 str_contains($text, '${lieu_naissance_ar}') => 'المولود في : ${date_naissance} بـ ${lieu_naissance_ar}',
                 str_contains($text, '${cin}') => 'صاحب بطاقة تعريف عدد : ${cin}',
-                str_contains($text, 'مرسم') => 'مرسم بالسنة الأولى من الإجازة في علوم التمريض',
+                str_contains($text, 'مرسم') => 'مرسم ب${annee_ar} من ${diplome_ar}',
                 str_contains($text, '${specialite_ar}') => 'الاختصاص : ${specialite_ar}',
-                str_contains($text, '${date_du_jour}') => 'قابس في، ${date_du_jour}',
+                str_contains($text, '${date_du_jour}') => '${lieu_emission}',
                 default => null,
             };
             if ($replacement === null || count($textMatches[0]) === 0) {
@@ -155,6 +155,11 @@ $templateProcessor->setValue('lieu_naissance_ar', $rightToLeft($student['lieu_na
 $templateProcessor->setValue('nom_ar', $rightToLeft($student['nom_ar'] ?? ''));
 $templateProcessor->setValue('prenom_ar', $rightToLeft($student['prenom_ar'] ?? ''));
 $templateProcessor->setValue('specialite_ar', $rightToLeft($student['nom_spec_ar'] ?? $student['nom_spec'] ?? ''));
+$templateProcessor->setValue('annee_ar', study_level_label_ar((string) ($student['niveau'] ?? '1')));
+$templateProcessor->setValue('diplome_ar', institution_award_title_ar());
+$templateProcessor->setValue('lieu_emission', institution_place_ar((string) date('Y/m/d')));
+$templateProcessor->setValue('diplome', institution_award_title());
+$templateProcessor->setValue('universite', institution_name_inline());
 institution_apply_signatories($templateProcessor);
 
 $fileBase = 'Attestation_Presence_' . preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);

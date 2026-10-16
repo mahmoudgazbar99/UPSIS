@@ -857,7 +857,7 @@ body.theme-macos .status-pill[data-status="archived"] {
 body.theme-macos .dropdown-menu {
   border-radius: 14px;
   border: 1px solid var(--glass-border);
-  background: var(--glass-bg-strong);
+  background: rgba(16, 20, 42, 0.94);
   backdrop-filter: blur(var(--blur-lg)) saturate(170%);
   -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(170%);
   box-shadow: var(--glass-shadow);
@@ -3559,5 +3559,134 @@ body.theme-macos.embedded-view {
   body.theme-macos:not(.embedded-view):not(.login-page):not(:has(.dashboard-workspace)) main.app-sheet.container {
     overflow-x: hidden;
     overflow-y: visible;
+  }
+}
+
+body.theme-macos:not(.embedded-view) .dashboard-content-panel:has(> iframe:not([hidden])) {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.theme-macos:not(.embedded-view) .dashboard-content-panel:has(> iframe:not([hidden])) > :not(iframe) {
+  display: none !important;
+}
+
+body.theme-macos .dashboard-content-panel > iframe:not([hidden]) {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+html:has(> body.theme-macos.embedded-view) {
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+body.theme-macos.embedded-view {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding-bottom: 0 !important;
+}
+
+/* Keep the floating dock from sitting on the buttons at the right of each row */
+body.theme-macos:not(.embedded-view):has(.dashboard-workspace) .macos-window {
+  height: calc(100dvh - var(--macos-gap, 1.35rem) - var(--macos-dock-h, 5.4rem) - 4.6rem) !important;
+  max-height: calc(100dvh - var(--macos-gap, 1.35rem) - var(--macos-dock-h, 5.4rem) - 4.6rem) !important;
+  overflow: hidden !important;
+}
+
+body.theme-macos:not(.embedded-view):has(.dashboard-workspace) .macos-window-body,
+body.theme-macos:not(.embedded-view):has(.dashboard-workspace) main.app-sheet.container {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+
+body.theme-macos:not(.embedded-view):has(.dashboard-workspace) .dashboard-workspace {
+  height: 100%;
+  min-height: 0;
+}
+
+body.theme-macos:not(.embedded-view) .dashboard-content-panel {
+  min-height: 0 !important;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+body.theme-macos:not(.embedded-view) .dashboard-home-panel {
+  overflow: auto !important;
+  min-height: 0;
+  max-height: 100%;
+  padding-bottom: 1.5rem !important;
+}
+
+body.theme-macos .macos-dock {
+  z-index: 30;
+}
+
+/* Phone: the page scrolls, and an opened module fills a tall pane */
+@media (max-width: 767.98px) {
+  html:has(> body.theme-macos:not(.embedded-view)) {
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  body.theme-macos:not(.embedded-view):not(.login-page) {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.theme-macos:not(.embedded-view):not(.login-page) .macos-window,
+  body.theme-macos:not(.embedded-view):has(.dashboard-workspace) .macos-window {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.theme-macos:not(.embedded-view):has(.dashboard-workspace) .macos-window-body,
+  body.theme-macos:not(.embedded-view):has(.dashboard-workspace) main.app-sheet.container,
+  body.theme-macos:not(.embedded-view):not(.login-page):not(:has(.dashboard-workspace)) .macos-window-body,
+  body.theme-macos:not(.embedded-view):not(.login-page):not(:has(.dashboard-workspace)) main.app-sheet.container {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  body.theme-macos:not(.embedded-view) .dashboard-workspace,
+  body.theme-macos:not(.embedded-view) .dashboard-menu,
+  body.theme-macos:not(.embedded-view) .dashboard-content-panel,
+  body.theme-macos:not(.embedded-view) .dashboard-home-panel {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.theme-macos:not(.embedded-view) .dashboard-content-panel:has(> iframe:not([hidden])),
+  body.theme-macos:not(.embedded-view) .dashboard-content-panel:has(iframe:not([hidden])) {
+    height: calc(100dvh - 8.2rem) !important;
+    min-height: calc(100dvh - 8.2rem) !important;
+    max-height: calc(100dvh - 8.2rem) !important;
+    overflow: hidden !important;
+  }
+
+  body.theme-macos .dashboard-content-panel > iframe:not([hidden]) {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
   }
 }

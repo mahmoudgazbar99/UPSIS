@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/layout.php';
 require_finance();
 
-const TOTAL_FEES = 9800.00;
+$tuitionCap = institution_fee_amount();
 $error = '';
 $message = '';
 $receiptPaymentId = 0;
@@ -32,9 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $totalCorrection = str_replace(',', '.', trim((string) ($_POST['total_paye_corrige'] ?? '')));
     $editingPayment = $action === 'edit_payment';
     $amountToValidate = $editingPayment ? $totalCorrection : $amount;
-    if (!$studentId || ($editingPayment && ($amountToValidate === '' || !is_numeric($amountToValidate) || (float) $amountToValidate < 0 || (float) $amountToValidate > TOTAL_FEES)) || (!$editingPayment && (!in_array($method, ['virement', 'espece'], true) || $amountToValidate === '' || !is_numeric($amountToValidate) || (float) $amountToValidate <= 0))) {
+    if (!$studentId || ($editingPayment && ($amountToValidate === '' || !is_numeric($amountToValidate) || (float) $amountToValidate < 0 || (float) $amountToValidate > $tuitionCap)) || (!$editingPayment && (!in_array($method, ['virement', 'espece'], true) || $amountToValidate === '' || !is_numeric($amountToValidate) || (float) $amountToValidate <= 0))) {
         $error = $editingPayment
-            ? 'Veuillez saisir un total payé corrigé entre 0 et ' . number_format(TOTAL_FEES, 2, ',', ' ') . ' DT.'
+            ? 'Veuillez saisir un total payé corrigé entre 0 et ' . number_format($tuitionCap, 2, ',', ' ') . ' ' . institution_currency() . '.'
             : 'Veuillez sélectionner un mode de paiement et saisir un montant supérieur à 0.';
         $search = trim((string) ($_POST['search'] ?? ''));
     } else {
@@ -103,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $balanceUpdate->execute([$newTotal, $studentId]);
                 $message = 'Paiement corrigé et solde recalculé.';
             } else {
-                $remaining = TOTAL_FEES - $paid;
+                $remaining = $tuitionCap - $paid;
                 if ((float) $amount > $remaining) {
                     throw new RuntimeException('Le montant ne peut pas dépasser le reste à payer (' . number_format($remaining, 2, ',', ' ') . ' DT).');
                 }
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $statement->execute([$studentId, $method, $amount, (int) ($_SESSION['finance_id'] ?? 0)]);
                 $receiptPaymentId = (int) $pdo->lastInsertId();
                 $balanceUpdate = $pdo->prepare('UPDATE finance_solde SET total_paye = total_paye + ? WHERE id_etudiant = ? AND total_paye + ? <= ?');
-                $balanceUpdate->execute([$amount, $studentId, $amount, TOTAL_FEES]);
+                $balanceUpdate->execute([$amount, $studentId, $amount, $tuitionCap]);
             }
             if ($action !== 'edit_payment' && $balanceUpdate->rowCount() !== 1) {
                 throw new RuntimeException('Le reste à payer a changé. Veuillez rechercher à nouveau cet étudiant.');
@@ -143,8 +143,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $student = null;
 $payment = null;
 $statusSql = match ($statusFilter) {
-    'paye' => 'WHERE COALESCE(fs.total_paye, 0) >= ' . TOTAL_FEES,
-    'partiel' => 'WHERE COALESCE(fs.total_paye, 0) > 0 AND COALESCE(fs.total_paye, 0) < ' . TOTAL_FEES,
+    'paye' => 'WHERE COALESCE(fs.total_paye, 0) >= ' . $tuitionCap,
+    'partiel' => 'WHERE COALESCE(fs.total_paye, 0) > 0 AND COALESCE(fs.total_paye, 0) < ' . $tuitionCap,
     'impaye' => 'WHERE COALESCE(fs.total_paye, 0) <= 0',
     default => '',
 };
@@ -179,7 +179,7 @@ $completedPaymentsQuery = db()->query(
             fs.total_paye
      FROM etudiant e
      JOIN finance_solde fs ON fs.id_etudiant = e.id_etudiant
-     WHERE fs.total_paye >= ' . TOTAL_FEES . '
+     WHERE fs.total_paye >= ' . $tuitionCap . '
      ORDER BY e.nom, e.prenom'
 );
 $completedPayments = $completedPaymentsQuery->fetchAll();
@@ -188,7 +188,7 @@ $incompletePaymentsQuery = db()->query(
             COALESCE(fs.total_paye, 0) AS total_paye
      FROM etudiant e
      LEFT JOIN finance_solde fs ON fs.id_etudiant = e.id_etudiant
-     WHERE COALESCE(fs.total_paye, 0) < ' . TOTAL_FEES . '
+     WHERE COALESCE(fs.total_paye, 0) < ' . $tuitionCap . '
      ORDER BY e.nom, e.prenom'
 );
 $incompletePayments = $incompletePaymentsQuery->fetchAll();
@@ -238,7 +238,7 @@ if ($historyStudentId) {
     }
 }
 
-$money = static fn (float $value): string => number_format($value, 2, ',', ' ') . ' DT';
+$money = static fn (float $value): string => institution_money($value);
 $cinStudent = null;
 $cinPayments = [];
 if (($view === 'historique' || $view === 'recu') && $cinSearch !== '') {
@@ -298,7 +298,7 @@ page_head('Service finance', 'finance');
 <?php if ($search !== '' && !$student): ?><div class="alert alert-warning">Aucun étudiant trouvé avec ce CIN / passeport.</div><?php elseif ($search !== '' && $student): ?>
 <div class="card app-card mb-4 border-primary"><div class="card-body p-4"><h2 class="h4 mb-3">Paiement de <?= e($student['nom'] . ' ' . $student['prenom']) ?></h2>
 <form method="post" class="row g-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="id_etudiant" value="<?= (int) $student['id_etudiant'] ?>"><input type="hidden" name="search" value="<?= e($search) ?>">
-<div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>CIN / passeport</th><th>Nom</th><th>Prénom</th><th>Téléphone</th><th>Mode de paiement</th><th>Versement</th><th>Total payé</th><th>Reste à payer</th></tr></thead><tbody><tr><td><?= e($student['cin_passeport']) ?></td><td><?= e($student['nom']) ?></td><td><?= e($student['prenom']) ?></td><td><?= e($student['num_tel']) ?></td><td><div class="d-flex gap-3"><label><input type="radio" name="mode_paiement" value="virement" required> Virement</label><label><input type="radio" name="mode_paiement" value="espece"> Par espèce</label></div></td><td><input class="form-control" name="montant_paye" type="number" min="0.01" max="<?= TOTAL_FEES ?>" step="0.01" required></td><td><?= e(number_format((float) ($payment['total_paye'] ?? 0), 2, ',', ' ')) ?> DT</td><td><?php $remaining = max(0, TOTAL_FEES - (float) ($payment['total_paye'] ?? 0)); ?><?php if ($remaining <= 0): ?><span class="text-success fw-bold">Paiement terminé</span><?php else: ?><?= e(number_format($remaining, 2, ',', ' ')) ?> DT<?php endif; ?></td></tr></tbody></table></div><div class="col-12 mt-3"><button class="btn btn-primary" type="submit" <?= $remaining <= 0 ? 'disabled' : '' ?>>Enregistrer le paiement</button></div></form></div></div>
+<div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>CIN / passeport</th><th>Nom</th><th>Prénom</th><th>Téléphone</th><th>Mode de paiement</th><th>Versement</th><th>Total payé</th><th>Reste à payer</th></tr></thead><tbody><tr><td><?= e($student['cin_passeport']) ?></td><td><?= e($student['nom']) ?></td><td><?= e($student['prenom']) ?></td><td><?= e($student['num_tel']) ?></td><td><div class="d-flex gap-3"><label><input type="radio" name="mode_paiement" value="virement" required> Virement</label><label><input type="radio" name="mode_paiement" value="espece"> Par espèce</label></div></td><td><input class="form-control" name="montant_paye" type="number" min="0.01" max="<?= $tuitionCap ?>" step="0.01" required></td><td><?= e(number_format((float) ($payment['total_paye'] ?? 0), 2, ',', ' ')) ?> DT</td><td><?php $remaining = max(0, $tuitionCap - (float) ($payment['total_paye'] ?? 0)); ?><?php if ($remaining <= 0): ?><span class="text-success fw-bold">Paiement terminé</span><?php else: ?><?= e(number_format($remaining, 2, ',', ' ')) ?> DT<?php endif; ?></td></tr></tbody></table></div><div class="col-12 mt-3"><button class="btn btn-primary" type="submit" <?= $remaining <= 0 ? 'disabled' : '' ?>>Enregistrer le paiement</button></div></form></div></div>
 <?php endif; ?>
 <?php if ($view === 'historique' || $view === 'recu'): ?>
 <div class="card app-card mb-4"><div class="card-body p-4">
@@ -329,7 +329,7 @@ page_head('Service finance', 'finance');
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($historyStudent && $view !== 'historique'): ?><div class="card app-card mb-4"><div class="card-body p-4"><h2 class="h4">Historique des paiements</h2><p class="text-secondary mb-3"><?= e($historyStudent['nom'] . ' ' . $historyStudent['prenom']) ?> — <?= e($historyStudent['cin_passeport']) ?></p><div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0 finance-sheet"><thead><tr><th>Date du paiement</th><th>Mode</th><th>Montant</th><th>Enregistré par</th><th>Statut</th><th>Actions</th></tr></thead><tbody><?php foreach ($paymentHistory as $history): ?><tr><td><?= e(date('d/m/Y H:i', strtotime($history['created_at']))) ?></td><td><?= $history['mode_paiement'] === 'virement' ? 'Virement' : 'Espèce' ?></td><td class="finance-money"><?= e($money((float) $history['montant_paye'])) ?></td><td><?= e($history['username'] ?? '—') ?></td><td><?php if ($history['updated_at']): ?><span class="text-warning fw-bold">Modifié</span><?php else: ?><span class="text-success fw-bold">Original</span><?php endif; ?></td><td><div class="finance-actions finance-actions-single"><a class="btn btn-sm btn-outline-success" href="recu_paiement.php?id=<?= (int) $history['id_finance_paiement'] ?>" target="_blank" rel="noopener">Reçu</a></div></td></tr><?php endforeach; ?><?php if (!$paymentHistory): ?><tr><td colspan="6" class="text-center text-secondary py-4">Aucun versement.</td></tr><?php endif; ?></tbody></table></div></div></div><?php elseif ($historyStudentId && !$historyStudent): ?><div class="alert alert-warning">Aucun historique de paiement trouvé.</div><?php endif; ?>
-<?php if ($editPayment): ?><div class="card app-card mb-4"><div class="card-body p-4"><h2 class="h4">Corriger le total payé de <?= e($editPayment['nom'] . ' ' . $editPayment['prenom']) ?></h2><p class="text-secondary">CIN / passeport : <?= e($editPayment['cin_passeport']) ?>. Saisissez le total réellement payé, par exemple <strong>8800</strong> si le reste dû est 1000 DT.</p><form method="post" class="row g-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit_payment"><input type="hidden" name="id_finance_paiement" value="<?= (int) $editPayment['id_finance_paiement'] ?>"><input type="hidden" name="id_etudiant" value="<?= (int) $editPayment['id_etudiant'] ?>"><input type="hidden" name="search" value="<?= e($search) ?>"><div class="col-md-4"><label class="form-label">Mode de paiement du dernier versement</label><select class="form-select" name="mode_paiement" required><option value="virement" <?= $editPayment['mode_paiement'] === 'virement' ? 'selected' : '' ?>>Virement</option><option value="espece" <?= $editPayment['mode_paiement'] === 'espece' ? 'selected' : '' ?>>Par espèce</option></select></div><div class="col-md-4"><label class="form-label">Total payé corrigé</label><input class="form-control" name="total_paye_corrige" type="number" min="0" max="<?= TOTAL_FEES ?>" step="0.01" value="<?= e((string) $editPayment['total_paye']) ?>" required></div><div class="col-md-4 d-flex align-items-end gap-2"><button class="btn btn-warning" type="submit">Enregistrer la correction</button><a class="btn btn-outline-light" href="finance.php">Annuler</a></div></form></div></div><?php endif; ?>
+<?php if ($editPayment): ?><div class="card app-card mb-4"><div class="card-body p-4"><h2 class="h4">Corriger le total payé de <?= e($editPayment['nom'] . ' ' . $editPayment['prenom']) ?></h2><p class="text-secondary">CIN / passeport : <?= e($editPayment['cin_passeport']) ?>. Saisissez le total réellement payé, par exemple <strong>8800</strong> si le reste dû est 1000 DT.</p><form method="post" class="row g-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="edit_payment"><input type="hidden" name="id_finance_paiement" value="<?= (int) $editPayment['id_finance_paiement'] ?>"><input type="hidden" name="id_etudiant" value="<?= (int) $editPayment['id_etudiant'] ?>"><input type="hidden" name="search" value="<?= e($search) ?>"><div class="col-md-4"><label class="form-label">Mode de paiement du dernier versement</label><select class="form-select" name="mode_paiement" required><option value="virement" <?= $editPayment['mode_paiement'] === 'virement' ? 'selected' : '' ?>>Virement</option><option value="espece" <?= $editPayment['mode_paiement'] === 'espece' ? 'selected' : '' ?>>Par espèce</option></select></div><div class="col-md-4"><label class="form-label">Total payé corrigé</label><input class="form-control" name="total_paye_corrige" type="number" min="0" max="<?= $tuitionCap ?>" step="0.01" value="<?= e((string) $editPayment['total_paye']) ?>" required></div><div class="col-md-4 d-flex align-items-end gap-2"><button class="btn btn-warning" type="submit">Enregistrer la correction</button><a class="btn btn-outline-light" href="finance.php">Annuler</a></div></form></div></div><?php endif; ?>
 <?php if ($view === 'statut'): ?>
 <div class="finance-filters mb-4">
   <a class="btn <?= $etat === 'termine' ? 'btn-primary' : 'btn-outline-light' ?>" href="finance.php?vue=statut&amp;etat=termine">Terminés</a>
@@ -337,7 +337,7 @@ page_head('Service finance', 'finance');
 </div>
 <?php endif; ?>
 <?php if ($view === 'statut' && $etat === 'termine'): ?>
-<div class="card app-card mb-4"><div class="card-body pb-0"><div class="d-flex justify-content-between align-items-center gap-3 mb-3"><div><h2 class="h4 mb-1">Paiements terminés</h2><p class="text-secondary mb-0">Étudiants ayant payé la totalité des 9 800 DT.</p></div><span class="badge text-bg-success"><?= count($completedPayments) ?> terminé<?= count($completedPayments) > 1 ? 's' : '' ?></span></div></div><div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0 finance-sheet">
+<div class="card app-card mb-4"><div class="card-body pb-0"><div class="d-flex justify-content-between align-items-center gap-3 mb-3"><div><h2 class="h4 mb-1">Paiements terminés</h2><p class="text-secondary mb-0">Étudiants ayant payé la totalité des <?= e(institution_money($tuitionCap)) ?>.</p></div><span class="badge text-bg-success"><?= count($completedPayments) ?> terminé<?= count($completedPayments) > 1 ? 's' : '' ?></span></div></div><div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0 finance-sheet">
   <thead><tr><th>Étudiant</th><th>Total payé</th><th>Statut</th><th>Actions</th></tr></thead>
   <tbody>
   <?php foreach ($completedPayments as $completedStudent): ?>
@@ -353,14 +353,14 @@ page_head('Service finance', 'finance');
 </table></div></div>
 <?php endif; ?>
 <?php if ($view === 'debiteurs' || ($view === 'statut' && $etat === 'non')): ?>
-<div class="card app-card mb-4 <?= $view === 'debiteurs' ? '' : 'border-danger' ?>"><div class="card-body pb-0"><div class="d-flex justify-content-between align-items-center gap-3 mb-3"><div><h2 class="h4 mb-1 <?= $view === 'debiteurs' ? '' : 'text-danger' ?>"><?= $view === 'debiteurs' ? 'Étudiants encore débiteurs' : 'Paiements non terminés' ?></h2><p class="text-secondary mb-0"><?= $view === 'debiteurs' ? 'Étudiants dont il reste un montant à encaisser.' : 'Étudiants dont le paiement est inférieur à 9 800 DT.' ?></p></div><span class="badge <?= $view === 'debiteurs' ? 'text-bg-warning' : 'text-bg-danger' ?>"><?= count($incompletePayments) ?></span></div></div><div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0 finance-sheet">
+<div class="card app-card mb-4 <?= $view === 'debiteurs' ? '' : 'border-danger' ?>"><div class="card-body pb-0"><div class="d-flex justify-content-between align-items-center gap-3 mb-3"><div><h2 class="h4 mb-1 <?= $view === 'debiteurs' ? '' : 'text-danger' ?>"><?= $view === 'debiteurs' ? 'Étudiants encore débiteurs' : 'Paiements non terminés' ?></h2><p class="text-secondary mb-0"><?= $view === 'debiteurs' ? 'Étudiants dont il reste un montant à encaisser.' : 'Étudiants dont le paiement est inférieur à ' . e(institution_money($tuitionCap)) . '.' ?></p></div><span class="badge <?= $view === 'debiteurs' ? 'text-bg-warning' : 'text-bg-danger' ?>"><?= count($incompletePayments) ?></span></div></div><div class="table-responsive"><table class="table table-dark table-hover align-middle mb-0 finance-sheet">
   <thead><tr><th>Étudiant</th><th>Total payé</th><th>Reste à payer</th><th>Statut</th><th>Actions</th></tr></thead>
   <tbody>
   <?php foreach ($incompletePayments as $incompleteStudent): ?>
     <tr>
       <td class="finance-student"><strong><?= e($incompleteStudent['nom'] . ' ' . $incompleteStudent['prenom']) ?></strong><small><?= e($incompleteStudent['cin_passeport']) ?> · <?= e($incompleteStudent['num_tel']) ?></small></td>
       <td class="finance-money"><?= e($money((float) $incompleteStudent['total_paye'])) ?></td>
-      <td class="finance-money"><?= e($money(TOTAL_FEES - (float) $incompleteStudent['total_paye'])) ?></td>
+      <td class="finance-money"><?= e($money($tuitionCap - (float) $incompleteStudent['total_paye'])) ?></td>
       <td class="finance-status"><span class="text-danger fw-bold">Paiement non terminé</span></td>
       <td><div class="finance-actions finance-actions-single"><a class="btn btn-sm btn-outline-danger" href="finance.php?search=<?= urlencode($incompleteStudent['cin_passeport']) ?>">Ouvrir</a></div></td>
     </tr>

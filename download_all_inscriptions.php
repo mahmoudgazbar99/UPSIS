@@ -2,9 +2,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/certificate_export.php';
 require_once __DIR__ . '/vendor/autoload.php';
-
-require_admin();
 
 use PhpOffice\PhpWord\TemplateProcessor;
 
@@ -49,108 +48,37 @@ function prepare_certificate_page(string $docPath): void
         throw new RuntimeException('La structure du certificat est invalide.');
     }
 
-    $printableWidth = 16551;
-
-    $certificateProperties = $xpath->query('./w:tblPr', $certificateTable)->item(0);
-    $tableWidth = $xpath->query('./w:tblW', $certificateProperties)->item(0);
-    if ($tableWidth instanceof DOMElement) {
-        $tableWidth->setAttributeNS($wordNamespace, 'w:w', (string) $printableWidth);
-        $tableWidth->setAttributeNS($wordNamespace, 'w:type', 'dxa');
+    foreach ($xpath->query('//w:tblpPr') as $float) {
+        $float->parentNode?->removeChild($float);
     }
-    $tableIndent = $xpath->query('./w:tblInd', $certificateProperties)->item(0);
-    if ($tableIndent instanceof DOMElement) {
-        $tableIndent->setAttributeNS($wordNamespace, 'w:w', '-1281');
+    certificate_compact_inscription_body($xpath, $wordNamespace);
+
+    foreach ($xpath->query('//w:noWrap') as $noWrap) {
+        $noWrap->parentNode?->removeChild($noWrap);
     }
 
-    $certificateGrid = $xpath->query('./w:tblGrid', $certificateTable)->item(0);
-    $gridColumns = $certificateGrid instanceof DOMElement
-        ? $xpath->query('./w:gridCol', $certificateGrid)
-        : null;
-    $originalGridWidth = 0;
-    if ($gridColumns) {
-        foreach ($gridColumns as $gridColumn) {
-            $originalGridWidth += (int) $gridColumn->getAttributeNS($wordNamespace, 'w');
-        }
-    }
-    if (!$gridColumns || $originalGridWidth === 0) {
-        $archive->close();
-        throw new RuntimeException('Les colonnes du certificat sont invalides.');
-    }
-
-    $columnWidths = [];
-    $remainingWidth = $printableWidth;
-    foreach ($gridColumns as $index => $gridColumn) {
-        $columnWidth = $index === $gridColumns->length - 1
-            ? $remainingWidth
-            : (int) round($printableWidth * (int) $gridColumn->getAttributeNS($wordNamespace, 'w') / $originalGridWidth);
-        $remainingWidth -= $columnWidth;
-        $columnWidths[] = $columnWidth;
-        $gridColumn->setAttributeNS($wordNamespace, 'w:w', (string) $columnWidth);
-    }
-
-    foreach ($xpath->query('./w:tr', $certificateTable) as $tableRow) {
-        foreach ($xpath->query('./w:tc', $tableRow) as $index => $cell) {
-            if (!isset($columnWidths[$index])) {
-                continue;
-            }
-            $cellWidth = $xpath->query('./w:tcPr/w:tcW', $cell)->item(0);
-            if ($cellWidth instanceof DOMElement) {
-                $cellWidth->setAttributeNS($wordNamespace, 'w:w', (string) $columnWidths[$index]);
-                $cellWidth->setAttributeNS($wordNamespace, 'w:type', 'dxa');
-            }
-        }
-    }
-
-    foreach ($xpath->query('./w:tr[1]/w:tc', $certificateRow) as $cellIndex => $certificateCell) {
-        $cellWidth = $columnWidths[$cellIndex];
-        foreach ($xpath->query('.//w:tbl', $certificateCell) as $nestedTable) {
-            $nestedWidth = $xpath->query('./w:tblPr/w:tblW', $nestedTable)->item(0);
-            if ($nestedWidth instanceof DOMElement) {
-                $nestedWidth->setAttributeNS($wordNamespace, 'w:w', (string) $cellWidth);
-                $nestedWidth->setAttributeNS($wordNamespace, 'w:type', 'dxa');
-            }
-
-            $nestedGridColumns = $xpath->query('./w:tblGrid/w:gridCol', $nestedTable);
-            $nestedOriginalWidth = 0;
-            foreach ($nestedGridColumns as $gridColumn) {
-                $nestedOriginalWidth += (int) $gridColumn->getAttributeNS($wordNamespace, 'w');
-            }
-            if ($nestedOriginalWidth > 0) {
-                $nestedRemainingWidth = $cellWidth;
-                foreach ($nestedGridColumns as $index => $gridColumn) {
-                    $nestedColumnWidth = $index === $nestedGridColumns->length - 1
-                        ? $nestedRemainingWidth
-                        : (int) round($cellWidth * (int) $gridColumn->getAttributeNS($wordNamespace, 'w') / $nestedOriginalWidth);
-                    $nestedRemainingWidth -= $nestedColumnWidth;
-                    $gridColumn->setAttributeNS($wordNamespace, 'w:w', (string) $nestedColumnWidth);
-                    foreach ($xpath->query('./w:tr/w:tc[' . ($index + 1) . ']/w:tcPr/w:tcW', $nestedTable) as $nestedCellWidth) {
-                        $nestedCellWidth->setAttributeNS($wordNamespace, 'w:w', (string) $nestedColumnWidth);
-                        $nestedCellWidth->setAttributeNS($wordNamespace, 'w:type', 'dxa');
-                    }
-                }
-            }
-        }
-    }
-
+    $pageWidth = 16838;
+    $margin = 420;
     foreach ($xpath->query('//w:sectPr') as $section) {
         $pageSize = $xpath->query('./w:pgSz', $section)->item(0);
         if ($pageSize instanceof DOMElement) {
-            $pageSize->setAttributeNS($wordNamespace, 'w:w', '16838');
+            $pageSize->setAttributeNS($wordNamespace, 'w:w', (string) $pageWidth);
             $pageSize->setAttributeNS($wordNamespace, 'w:h', '11906');
             $pageSize->setAttributeNS($wordNamespace, 'w:orient', 'landscape');
         }
-
         $pageMargins = $xpath->query('./w:pgMar', $section)->item(0);
         if ($pageMargins instanceof DOMElement) {
-            $pageMargins->setAttributeNS($wordNamespace, 'w:top', '1000');
-            $pageMargins->setAttributeNS($wordNamespace, 'w:bottom', '1000');
+            foreach (['top', 'bottom', 'left', 'right'] as $side) {
+                $pageMargins->setAttributeNS($wordNamespace, 'w:' . $side, (string) $margin);
+            }
         }
-
         $columns = $xpath->query('./w:cols', $section)->item(0);
         if ($columns instanceof DOMElement) {
             $columns->setAttributeNS($wordNamespace, 'w:num', '1');
         }
     }
+
+    certificate_resize_table($xpath, $wordNamespace, $certificateTable, $pageWidth - (2 * $margin));
 
     $body = $xpath->query('/w:document/w:body')->item(0);
     if ($body instanceof DOMElement) {
@@ -173,7 +101,12 @@ function prepare_certificate_page(string $docPath): void
     $archive->close();
 }
 
+if (!defined('INSCRIPTION_EXPORT_AS_LIBRARY')) {
+require_admin();
+set_time_limit(300);
+
 $templatePath = getenv('INSCRIPTION_TEMPLATE') ?: __DIR__ . '/templates/template_inscription_2.docx';
+$templatePath = is_file($templatePath) ? institution_personalize_docx($templatePath) : $templatePath;
 if (!is_file($templatePath)) {
     http_response_code(500);
     exit('Erreur : le modèle d’inscription est introuvable.');
@@ -218,6 +151,8 @@ try {
         $processor->setValue('annee_univ', $currentYear . '/' . ($currentYear + 1));
         $processor->setValue('date_du_jour', date('d/m/Y'));
         institution_apply_signatories($processor);
+        $processor->setValue('diplome', institution_award_title());
+        $processor->setValue('universite', institution_name_inline());
 
         $safeCin = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);
         $docPath = $workDir . DIRECTORY_SEPARATOR . 'Certificat_Inscription_' . $safeCin . '.docx';
@@ -289,6 +224,12 @@ try {
     header('Content-Length: ' . filesize($pdfPath));
     header('Cache-Control: no-store, no-cache, must-revalidate');
     readfile($pdfPath);
+} catch (Throwable $exception) {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+    }
+    echo $exception->getMessage();
 } finally {
     if (is_dir($workDir)) {
         $iterator = new RecursiveIteratorIterator(
@@ -306,5 +247,6 @@ try {
     if (is_dir($workDir)) {
         rmdir($workDir);
     }
+}
 }
 

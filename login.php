@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($role === 'admin' && password_verify($password, admin_password_hash())) {
         session_regenerate_id(true);
         $_SESSION['user_role'] = 'admin';
-        unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation']);
-        unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['id_etudiant']);
+        unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty']);
+        unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
         header('Location: index.php');
         exit;
     }
@@ -40,8 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             session_regenerate_id(true);
             $_SESSION['user_role'] = 'enseignant';
             $_SESSION['teacher_id'] = (int) $teacher['id_enseignant'];
-            unset($_SESSION['stage_id'], $_SESSION['stage_auth_generation']);
-            unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['id_etudiant']);
+            unset($_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty']);
+            unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
             header('Location: index.php');
             exit;
         }
@@ -50,7 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!stage_accounts_table_exists()) {
             $error = 'Le compte stage est temporairement indisponible. Contactez l’administrateur pour appliquer stage_accounts_migration.sql sur la base utilisée par cette application.';
         } else {
-            $stmt = db()->prepare('SELECT id_stage, password, auth_generation FROM stage_user WHERE cin = ? AND active = 1 LIMIT 1');
+            access_ensure();
+            $stmt = db()->prepare('SELECT id_stage, password, auth_generation, responsabilite FROM stage_user WHERE cin = ? AND active = 1 LIMIT 1');
             $stmt->execute([trim((string) ($_POST['cin'] ?? ''))]);
             $stage = $stmt->fetch();
             if ($stage && password_verify($password, (string) $stage['password'])) {
@@ -58,7 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_role'] = 'stage';
                 $_SESSION['stage_id'] = (int) $stage['id_stage'];
                 $_SESSION['stage_auth_generation'] = (int) $stage['auth_generation'];
-                unset($_SESSION['teacher_id'], $_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['id_etudiant']);
+                $_SESSION['stage_duty'] = (string) ($stage['responsabilite'] ?? 'officer');
+                unset($_SESSION['teacher_id'], $_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
                 header('Location: stage_portal.php');
                 exit;
             }
@@ -73,7 +75,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_role'] = 'finance';
             $_SESSION['finance_id'] = (int) $finance['id_finance'];
             $_SESSION['finance_auth_generation'] = (int) $finance['auth_generation'];
-            unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['id_etudiant']);
+            unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
+            header('Location: index.php');
+            exit;
+        }
+    }
+    if ($role === 'scolarite') {
+        access_ensure();
+        $stmt = db()->prepare('SELECT id_scolarite, password, auth_generation FROM scolarite_user WHERE username = ? AND active = 1 LIMIT 1');
+        $stmt->execute([trim((string) ($_POST['username'] ?? ''))]);
+        $office = $stmt->fetch();
+        if ($office && password_verify($password, (string) $office['password'])) {
+            session_regenerate_id(true);
+            $_SESSION['user_role'] = 'scolarite';
+            $_SESSION['scolarite_id'] = (int) $office['id_scolarite'];
+            $_SESSION['scolarite_auth_generation'] = (int) $office['auth_generation'];
+            unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty'], $_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['id_etudiant']);
             header('Location: index.php');
             exit;
         }
@@ -163,9 +180,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
         <form method="post" action="login.php">
           <label class="form-label" for="role">Se connecter en tant que</label>
-          <select class="form-select form-select-lg mb-3" id="role" name="role" required><option value="admin">Administrateur</option><option value="enseignant">Enseignant</option><option value="stage">Service des stages</option><option value="finance">Service finance</option></select>
-          <div id="cin-field" hidden><label class="form-label" id="cin-label" for="cin">CIN enseignant</label><input class="form-control form-control-lg mb-3" id="cin" name="cin" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" disabled></div>
-          <div id="username-field" hidden><label class="form-label" for="username">Identifiant finance</label><input class="form-control form-control-lg mb-3" id="username" name="username" disabled></div>
+          <select class="form-select form-select-lg mb-3" id="role" name="role" required><option value="admin">Administrateur</option><option value="scolarite">Scolarité</option><option value="enseignant">Enseignant</option><option value="stage">Service des stages</option><option value="finance">Service finance</option></select>
+          <div id="cin-field" hidden><label class="form-label" id="cin-label" for="cin">CIN enseignant</label><input class="form-control form-control-lg mb-3" id="cin" name="cin" inputmode="numeric" maxlength="<?= (int) identity_rule('cin')['max_length'] ?>" pattern="<?= e(identity_pattern('cin')) ?>" disabled></div>
+          <div id="username-field" hidden><label class="form-label" id="username-label" for="username">Identifiant</label><input class="form-control form-control-lg mb-3" id="username" name="username" disabled></div>
           <label class="form-label" for="password">Mot de passe</label>
           <div class="password-field mb-4">
             <input class="form-control form-control-lg" id="password" name="password" type="password" required autofocus autocomplete="current-password">
@@ -196,15 +213,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       toggle.querySelector('[data-theme-label]').textContent = light ? 'Sombre' : 'Clair';
     }
     function updateRole() {
-      const cinLogin = role.value === 'enseignant' || role.value === 'stage', finance = role.value === 'finance';
+      const cinLogin = role.value === 'enseignant' || role.value === 'stage', named = role.value === 'finance' || role.value === 'scolarite';
       cinField.hidden = !cinLogin; cin.disabled = !cinLogin; cin.required = cinLogin;
       cinLabel.textContent = role.value === 'stage' ? 'CIN du compte stage' : 'CIN enseignant';
-      cin.maxLength = 8;
-      cin.pattern = '[0-9]{8}';
+      cin.maxLength = <?= (int) identity_rule('cin')['max_length'] ?>;
+      cin.pattern = <?= json_encode(identity_pattern('cin'), JSON_THROW_ON_ERROR) ?>;
       cin.inputMode = 'numeric';
-      usernameField.hidden = !finance; username.disabled = !finance; username.required = finance;
+      usernameField.hidden = !named; username.disabled = !named; username.required = named;
+      document.querySelector('#username-label').textContent = role.value === 'scolarite' ? 'Identifiant scolarité' : 'Identifiant finance';
       if (!cinLogin) cin.value = '';
-      if (!finance) username.value = '';
+      if (!named) username.value = '';
     }
     function normalizeStyle(value) {
       if (value === 'atlas' || value === 'alternate') return 'atlas';

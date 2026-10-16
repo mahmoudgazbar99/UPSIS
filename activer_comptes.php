@@ -8,6 +8,7 @@ $types = [
     'enseignant' => 'Enseignant',
     'finance' => 'Finance',
     'stage' => 'Stage',
+    'scolarite' => 'Scolarité',
 ];
 $type = (string) ($_GET['type'] ?? $_POST['type'] ?? '');
 if (!isset($types[$type])) {
@@ -30,7 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type !== '') {
             } elseif ($type === 'finance') {
                 db()->prepare('UPDATE finance_user SET active = ?, auth_generation = auth_generation + 1 WHERE id_finance = ?')->execute([$active, $accountId]);
                 $label = 'Finance #' . $accountId;
+            } elseif ($type === 'scolarite') {
+                access_ensure();
+                db()->prepare('UPDATE scolarite_user SET active = ?, auth_generation = auth_generation + 1 WHERE id_scolarite = ?')->execute([$active, $accountId]);
+                $label = 'Scolarité #' . $accountId;
             } else {
+                access_ensure();
                 db()->prepare('UPDATE stage_user SET active = ?, auth_generation = auth_generation + 1 WHERE id_stage = ?')->execute([$active, $accountId]);
                 $label = 'Stage #' . $accountId;
             }
@@ -47,6 +53,9 @@ if ($type === 'enseignant') {
     $accounts = db()->query('SELECT id_enseignant AS id, CONCAT(prenom, " ", nom) AS label, cin AS login, active FROM enseignant ORDER BY nom, prenom')->fetchAll();
 } elseif ($type === 'finance') {
     $accounts = db()->query('SELECT id_finance AS id, username AS label, username AS login, active FROM finance_user ORDER BY username')->fetchAll();
+} elseif ($type === 'scolarite') {
+    access_ensure();
+    $accounts = db()->query('SELECT id_scolarite AS id, nom AS label, username AS login, active FROM scolarite_user ORDER BY username')->fetchAll();
 } elseif ($type === 'stage' && stage_accounts_table_exists()) {
     $accounts = db()->query('SELECT id_stage AS id, cin AS label, cin AS login, active FROM stage_user ORDER BY cin')->fetchAll();
 }

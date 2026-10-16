@@ -1,0 +1,16 @@
+-- Applied automatically by academic_policy_ensure() on the next page load.
+-- Safe to inspect. Do not import this file over a database that the application
+-- has already migrated: the PHP migration is idempotent and records
+-- schema_migration.version = 2026_10_14_academic_policy_v1.
+--
+-- Backup before the first load of the updated application:
+--   docker exec myapp_db mysqldump -umyapp_user -pmyapp_password ecole_sante_gabes > backup.sql
+-- Rollback of the new catalogs is DROP TABLE of program, study_level,
+-- academic_year, academic_period, fee_plan, progression_policy,
+-- attendance_policy, identity_document_type, schema_migration
+-- after restoring etudiant.niveau / semestre ENUM columns from the backup
+-- if a downgrade is required. Existing student rows are not deleted.
+--
+-- Defaults seeded when missing: city Gabès, fee 9800 DT, pass mark 10,
+-- levels 1/2/3, periods S1-S6, attendance 4 absences and 10% of 444 hours,
+-- CIN 8 digits, passport 7 alphanumeric characters.

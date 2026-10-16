@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
-require_admin();
+require_permission('documents.issue');
+require_once __DIR__ . '/certificate_export.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
 use PhpOffice\PhpWord\IOFactory;
@@ -62,15 +63,20 @@ $table = $section->addTable([
     'cellMargin' => 100,
 ]);
 $rows = [
-    ['Nom et prénom', $student['nom'] . ' ' . $student['prenom']],
-    ['CIN / Passeport', $student['cin_passeport']],
-    ['Date et lieu de naissance', date('d/m/Y', strtotime($student['date_naissance'])) . ' à ' . $student['lieu_naissance']],
-    ['Numéro d’inscription', $student['num_inscription']],
+    ['Nom et prénom', trim($student['nom'] . ' ' . $student['prenom'])],
+    ['CIN / Passeport', (string) $student['cin_passeport']],
+    ['Date et lieu de naissance', trim(
+        (!empty($student['date_naissance']) && strtotime((string) $student['date_naissance'])
+            ? date('d/m/Y', strtotime((string) $student['date_naissance']))
+            : (string) ($student['date_naissance'] ?? ''))
+        . (!empty($student['lieu_naissance']) ? ' à ' . $student['lieu_naissance'] : '')
+    )],
+    ['Numéro d’inscription', (string) ($student['num_inscription'] ?? '')],
 ];
 foreach ($rows as [$label, $value]) {
-    $cells = $table->addRow()->getCells();
-    $cells[0]->addText($label, ['bold' => true]);
-    $cells[1]->addText((string) $value);
+    $row = $table->addRow();
+    $row->addCell(4200)->addText($label, ['bold' => true]);
+    $row->addCell(6200)->addText($value);
 }
 
 $section->addText(
@@ -94,24 +100,31 @@ $footer->addText('Référence : ' . $student['num_inscription'] . ' — Fait le 
     'size' => 10,
 ], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
 
-$fileName = 'Attestation_Reussite_' . preg_replace('/[^A-Za-z0-9_-]/', '_', $student['cin_passeport']) . '.docx';
+$fileBase = 'Attestation_Reussite_' . preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);
 $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord');
 if ($tempFile === false) {
     http_response_code(500);
     exit('Erreur : impossible de créer le fichier temporaire.');
 }
+$docxPath = $tempFile . '.docx';
+unlink($tempFile);
 
 try {
     $writer = IOFactory::createWriter($phpWord, 'Word2007');
-    $writer->save($tempFile);
+    $writer->save($docxPath);
     $preview = ($_GET['preview'] ?? '') === '1';
-    header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    header('Content-Disposition: ' . ($preview ? 'inline' : 'attachment') . '; filename="' . $fileName . '"');
-    header('Content-Length: ' . filesize($tempFile));
-    header('Cache-Control: no-store, no-cache, must-revalidate');
-    readfile($tempFile);
+    $asPdf = !$preview && certificate_wants_pdf();
+    certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview);
+} catch (Throwable $exception) {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: text/plain; charset=UTF-8');
+    }
+    echo 'Erreur lors de la génération du document : ' . $exception->getMessage();
 } finally {
-    unlink($tempFile);
+    if (is_file($docxPath)) {
+        unlink($docxPath);
+    }
     if (!empty($logoFile['temporary']) && is_file($logoFile['path'])) {
         unlink($logoFile['path']);
     }

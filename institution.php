@@ -721,7 +721,7 @@ function academic_add_unity(string $code, string $name, string $semester, float 
     if ($name === '' || mb_strlen($name) > 255) {
         throw new InvalidArgumentException('Saisissez le nom de l’unité.');
     }
-    if (!in_array($semester, ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'], true)) {
+    if (!academic_period_valid($semester)) {
         throw new InvalidArgumentException('Choisissez un semestre.');
     }
     if ($coefficient <= 0 || $coefficient > 99) {
@@ -786,7 +786,7 @@ function academic_add_subject(array $input): void
     }
 
     if ($withoutUnity) {
-        if (!in_array($semester, ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'], true)) {
+        if (!academic_period_valid($semester)) {
             throw new InvalidArgumentException('Choisissez le semestre de la matière.');
         }
         $unity = [

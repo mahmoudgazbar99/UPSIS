@@ -4,7 +4,7 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/certificate_export.php';
 require_once __DIR__ . '/vendor/autoload.php';
-require_admin();
+require_permission('documents.issue');
 
 use PhpOffice\PhpWord\TemplateProcessor;
 
@@ -37,7 +37,8 @@ try {
         exit('Erreur : Le modèle Word "templates/template_inscription_2.docx" est introuvable.');
     }
 
-    $templateProcessor = new TemplateProcessor($templatePath);
+    $brandedTemplate = institution_personalize_docx($templatePath);
+    $templateProcessor = new TemplateProcessor($brandedTemplate);
 
     // 4. Formate la date de naissance (au format jj/mm/aaaa si elle est stockée aaaa-mm-jj)
     $dateNaissanceFormatted = '';
@@ -62,6 +63,8 @@ try {
     $templateProcessor->setValue('annee_univ', $currentYear . '/' . ($currentYear + 1));
     $templateProcessor->setValue('date_du_jour', date('d/m/Y'));
     institution_apply_signatories($templateProcessor);
+    $templateProcessor->setValue('diplome', institution_award_title());
+    $templateProcessor->setValue('universite', institution_name_inline());
 
     $fileBase = 'Certificat_Inscription_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $student['cin_passeport']);
     $tempFile = tempnam(sys_get_temp_dir(), 'PHPWord');
