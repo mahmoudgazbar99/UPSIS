@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/layout.php';
+if (!logged_in()) {
+    header('Location: accueil.php');
+    exit;
+}
 require_login();
 
 $search = trim((string) ($_GET['search'] ?? ''));

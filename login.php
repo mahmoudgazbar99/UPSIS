@@ -180,7 +180,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
         <form method="post" action="login.php">
           <label class="form-label" for="role">Se connecter en tant que</label>
-          <select class="form-select form-select-lg mb-3" id="role" name="role" required><option value="admin">Administrateur</option><option value="scolarite">Scolarité</option><option value="enseignant">Enseignant</option><option value="stage">Service des stages</option><option value="finance">Service finance</option></select>
+          <?php
+          $loginRoles = ['admin' => 'Administrateur', 'scolarite' => 'Scolarité', 'enseignant' => 'Enseignant', 'stage' => 'Service des stages', 'finance' => 'Service finance'];
+          $loginRole = (string) ($_POST['role'] ?? $_GET['role'] ?? 'admin');
+          if (!isset($loginRoles[$loginRole])) {
+              $loginRole = 'admin';
+          }
+          ?>
+          <select class="form-select form-select-lg mb-3" id="role" name="role" required><?php foreach ($loginRoles as $roleValue => $roleLabel): ?><option value="<?= e($roleValue) ?>"<?= $roleValue === $loginRole ? ' selected' : '' ?>><?= e($roleLabel) ?></option><?php endforeach; ?></select>
           <div id="cin-field" hidden><label class="form-label" id="cin-label" for="cin">CIN enseignant</label><input class="form-control form-control-lg mb-3" id="cin" name="cin" inputmode="numeric" maxlength="<?= (int) identity_rule('cin')['max_length'] ?>" pattern="<?= e(identity_pattern('cin')) ?>" disabled></div>
           <div id="username-field" hidden><label class="form-label" id="username-label" for="username">Identifiant</label><input class="form-control form-control-lg mb-3" id="username" name="username" disabled></div>
           <label class="form-label" for="password">Mot de passe</label>
