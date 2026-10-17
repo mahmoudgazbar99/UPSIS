@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/student_theme.php';
 
 if (logged_in()) {
     header('Location: ' . (is_student() ? 'dashboard.php' : 'index.php'));
@@ -44,11 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?php student_theme_head(); ?>
   <title>Espace étudiant | <?= e(institution_name_inline()) ?></title>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-  <link href="assets/student-login.css?v=4" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="assets/student-login.css?v=5" rel="stylesheet">
+  <link href="assets/student-theme.css?v=2" rel="stylesheet">
 </head>
 <body class="student-gate">
+  <?php student_theme_select(); ?>
   <main class="student-gate-card">
     <img src="<?= e(institution_logo_src()) ?>" class="student-gate-logo" alt="Logo de l'école">
     <h1>Espace étudiant</h1>
@@ -61,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input id="password" name="password" type="password" required autocomplete="current-password">
       <button type="submit">Entrer</button>
     </form>
+    <a class="student-gate-home" href="accueil.php">Accueil</a>
     <p class="student-gate-links">
       <a href="creer_espace_etudiant.php">Créer mon espace</a>
       <a href="login.php">Personnel</a>

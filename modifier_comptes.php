@@ -4,6 +4,7 @@ require_once __DIR__ . '/layout.php';
 require_admin();
 
 $types = [
+    'etudiant' => 'Étudiant',
     'enseignant' => 'Enseignant',
     'stage' => 'Stage',
     'scolarite' => 'Scolarité',
@@ -29,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Type ou compte invalide.';
     } elseif ($login === '') {
         $error = 'Veuillez saisir l’identifiant du compte.';
+    } elseif ($type === 'etudiant' && (student_normalize_cin($login) === '' || mb_strlen(student_normalize_cin($login)) > 40)) {
+        $error = 'Indiquez le CIN ou le passeport de l’étudiant.';
     } elseif (in_array($type, ['enseignant', 'stage'], true) && !identity_matches('cin', $login)) {
         $error = identity_error('cin');
     } elseif (in_array($type, ['finance', 'scolarite'], true) && mb_strlen($login) > 80) {
@@ -41,7 +44,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Le mot de passe administrateur est incorrect.';
     } else {
         try {
-            if ($type === 'enseignant') {
+            if ($type === 'etudiant') {
+                ensure_etudiant_compte_table(db());
+                $cin = student_normalize_cin($login);
+                $owned = db()->prepare('SELECT id_etudiant FROM etudiant_compte WHERE id_compte = ? LIMIT 1');
+                $owned->execute([$accountId]);
+                $studentId = (int) $owned->fetchColumn();
+                if ($studentId < 1) {
+                    throw new RuntimeException('Compte introuvable.');
+                }
+                $other = student_find_by_cin($cin);
+                if ($other && (int) $other['id_etudiant'] !== $studentId) {
+                    throw new RuntimeException('Cet identifiant est déjà utilisé.');
+                }
+                db()->prepare('UPDATE etudiant SET cin_passeport = ? WHERE id_etudiant = ?')->execute([$cin, $studentId]);
+                if ($password !== '') {
+                    db()->prepare('UPDATE etudiant_compte SET password = ? WHERE id_compte = ?')->execute([
+                        password_hash($password, PASSWORD_DEFAULT),
+                        $accountId,
+                    ]);
+                }
+            } elseif ($type === 'enseignant') {
                 $query = 'UPDATE enseignant SET cin = ?';
                 $parameters = [$login];
                 if ($password !== '') {
@@ -85,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $query .= ' WHERE id_finance = ?';
                 $parameters[] = $accountId;
             }
+            if ($type !== 'etudiant') {
             $statement = db()->prepare($query);
             $statement->execute($parameters);
             if ($statement->rowCount() === 0) {
@@ -99,6 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!$exists->fetchColumn()) {
                     throw new RuntimeException('Compte introuvable.');
                 }
+            }
             }
             $message = 'Identifiants modifiés avec succès. Les affectations et les autres données du compte sont conservées.';
             audit_record('compte', 'modifier', $types[$type] . ' #' . $accountId . ' · identifiant ' . $login . ($password !== '' ? ' · mot de passe changé' : ''));
@@ -119,7 +144,12 @@ if ($type === 'stage' && !$stageTableAvailable) {
     $error = 'La table des comptes stage est absente. Sauvegardez la base puis exécutez stage_accounts_migration.sql sur la base utilisée par cette application.';
 }
 if (isset($types[$type]) && $stageTableAvailable) {
-    if ($type === 'enseignant') {
+    if ($type === 'etudiant') {
+        ensure_etudiant_compte_table(db());
+        $sql = 'SELECT c.id_compte AS account_id, e.cin_passeport AS login, CONCAT(e.prenom, " ", e.nom, IF(c.active = 1, " · Actif", " · Inactif")) AS detail FROM etudiant_compte c INNER JOIN etudiant e ON e.id_etudiant = c.id_etudiant';
+        $order = ' ORDER BY e.nom, e.prenom';
+        $loginColumn = 'e.cin_passeport';
+    } elseif ($type === 'enseignant') {
         $sql = 'SELECT id_enseignant AS account_id, cin AS login, CONCAT(prenom, " ", nom) AS detail FROM enseignant';
         $order = ' ORDER BY nom, prenom';
         $loginColumn = 'cin';
@@ -153,6 +183,7 @@ if (isset($types[$type]) && $stageTableAvailable) {
     }
     if ($editId > 0) {
         $editSql = [
+            'etudiant' => 'SELECT c.id_compte AS account_id, e.cin_passeport AS login FROM etudiant_compte c INNER JOIN etudiant e ON e.id_etudiant = c.id_etudiant WHERE c.id_compte = ?',
             'enseignant' => 'SELECT id_enseignant AS account_id, cin AS login FROM enseignant WHERE id_enseignant = ?',
             'stage' => 'SELECT id_stage AS account_id, cin AS login, responsabilite FROM stage_user WHERE id_stage = ?',
             'scolarite' => 'SELECT id_scolarite AS account_id, username AS login FROM scolarite_user WHERE id_scolarite = ?',
@@ -189,7 +220,7 @@ function account_password_field(string $id, string $name, string $label, string 
   <?php foreach ($types as $key => $label): ?>
     <a class="account-type-card <?= $type === $key ? 'is-selected' : '' ?>" href="modifier_comptes.php?type=<?= e($key) ?>">
       <span><?= e($label) ?></span>
-      <strong><?= in_array($key, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN' ?></strong>
+      <strong><?= $key === 'etudiant' ? 'CIN / passeport' : (in_array($key, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN') ?></strong>
     </a>
   <?php endforeach; ?>
 </div>
@@ -205,8 +236,8 @@ function account_password_field(string $id, string $name, string $label, string 
         <input type="hidden" name="type" value="<?= e($type) ?>">
         <input type="hidden" name="account_id" value="<?= (int) $editAccount['account_id'] ?>">
         <div class="col-md-4">
-          <label class="form-label" for="login"><?= in_array($type, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN' ?> *</label>
-          <input class="form-control" id="login" name="login" value="<?= e($editAccount['login']) ?>" <?= in_array($type, ['finance', 'scolarite'], true) ? 'maxlength="80"' : 'maxlength="' . (int) identity_rule('cin')['max_length'] . '" pattern="' . e(identity_pattern('cin')) . '"' ?> required>
+          <label class="form-label" for="login"><?= $type === 'etudiant' ? 'CIN / passeport' : (in_array($type, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN') ?> *</label>
+          <input class="form-control" id="login" name="login" value="<?= e($editAccount['login']) ?>" <?= $type === 'etudiant' ? 'maxlength="40"' : (in_array($type, ['finance', 'scolarite'], true) ? 'maxlength="80"' : 'maxlength="' . (int) identity_rule('cin')['max_length'] . '" pattern="' . e(identity_pattern('cin')) . '"') ?> required>
         </div>
         <?php if ($type === 'stage'): ?>
         <div class="col-md-4">
@@ -241,7 +272,7 @@ function account_password_field(string $id, string $name, string $label, string 
         <form method="get" class="d-flex gap-2">
           <input type="hidden" name="type" value="<?= e($type) ?>">
           <label class="visually-hidden" for="search">Rechercher par identifiant</label>
-          <input class="form-control" id="search" name="search" value="<?= e($search) ?>" placeholder="<?= $type === 'finance' ? 'Identifiant finance' : 'CIN' ?>">
+          <input class="form-control" id="search" name="search" value="<?= e($search) ?>" placeholder="<?= $type === 'etudiant' ? 'CIN / passeport' : ($type === 'finance' ? 'Identifiant finance' : 'CIN') ?>">
           <button class="btn btn-outline-light" type="submit">Rechercher</button>
         </form>
       </div>

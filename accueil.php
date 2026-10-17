@@ -4,11 +4,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/landing_i18n.php';
 
-if (logged_in()) {
-    header('Location: ' . (is_student() ? 'dashboard.php' : 'index.php'));
-    exit;
-}
-
 $lang = landing_language();
 $dir = LANDING_LANGUAGES[$lang]['dir'];
 $strings = landing_strings($lang);

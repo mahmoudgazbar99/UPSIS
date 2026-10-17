@@ -4,6 +4,7 @@ require_once __DIR__ . '/layout.php';
 require_admin();
 
 $types = [
+    'etudiant' => 'Étudiant',
     'enseignant' => 'Enseignant',
     'finance' => 'Finance',
     'stage' => 'Stage',
@@ -23,7 +24,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string) ($_POST['password'] ?? '');
     $confirm = (string) ($_POST['password_confirm'] ?? '');
     try {
-        if ($type === 'enseignant') {
+        if ($type === 'etudiant') {
+            ensure_etudiant_compte_table(db());
+            $cin = student_normalize_cin((string) ($_POST['cin'] ?? ''));
+            if ($cin === '' || mb_strlen($cin) > 40 || strlen($password) < 8 || strlen($password) > 72 || $password !== $confirm) {
+                throw new RuntimeException('Indiquez le CIN ou le passeport d’un étudiant inscrit et un mot de passe de 8 à 72 caractères.');
+            }
+            $student = student_find_by_cin($cin);
+            if (!$student) {
+                throw new RuntimeException('Aucun étudiant inscrit ne correspond à ce CIN.');
+            }
+            $existing = db()->prepare('SELECT 1 FROM etudiant_compte WHERE id_etudiant = ? LIMIT 1');
+            $existing->execute([(int) $student['id_etudiant']]);
+            if ($existing->fetchColumn()) {
+                throw new RuntimeException('Un espace existe déjà pour cet étudiant. Modifiez-le ou activez-le.');
+            }
+            db()->prepare('INSERT INTO etudiant_compte (id_etudiant, password, active) VALUES (?, ?, 1)')->execute([
+                (int) $student['id_etudiant'],
+                password_hash($password, PASSWORD_DEFAULT),
+            ]);
+            audit_record('compte', 'creer', 'Espace étudiant de ' . trim((string) $student['prenom'] . ' ' . (string) $student['nom']) . ' · ' . $cin);
+            $message = 'Compte étudiant créé.';
+        } elseif ($type === 'enseignant') {
             $data = [
                 'cin' => trim((string) ($_POST['cin'] ?? '')),
                 'nom' => trim((string) ($_POST['nom'] ?? '')),
@@ -101,7 +123,7 @@ page_head('Créer des comptes', 'accounts');
   <?php foreach ($types as $key => $label): ?>
     <a class="account-type-card <?= $type === $key ? 'is-selected' : '' ?>" href="creer_comptes.php?type=<?= e($key) ?>">
       <span><?= e($label) ?></span>
-      <strong><?= $key === 'enseignant' ? 'CIN et fiche' : (in_array($key, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN') ?></strong>
+      <strong><?= $key === 'etudiant' ? 'CIN d’un inscrit' : ($key === 'enseignant' ? 'CIN et fiche' : (in_array($key, ['finance', 'scolarite'], true) ? 'Identifiant' : 'CIN')) ?></strong>
     </a>
   <?php endforeach; ?>
 </div>
@@ -113,7 +135,9 @@ page_head('Créer des comptes', 'accounts');
   <form method="post" class="row g-3">
     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
     <input type="hidden" name="type" value="<?= e($type) ?>">
-    <?php if ($type === 'enseignant'): ?>
+    <?php if ($type === 'etudiant'): ?>
+      <div class="col-md-6"><label class="form-label">CIN / passeport *</label><input class="form-control" name="cin" maxlength="40" required></div>
+    <?php elseif ($type === 'enseignant'): ?>
       <div class="col-md-4"><label class="form-label">CIN *</label><input class="form-control" name="cin" inputmode="numeric" minlength="<?= (int) identity_rule('cin')['min_length'] ?>" maxlength="<?= (int) identity_rule('cin')['max_length'] ?>" pattern="<?= e(identity_pattern('cin')) ?>" required></div>
       <div class="col-md-4"><label class="form-label">Nom *</label><input class="form-control" name="nom" required></div>
       <div class="col-md-4"><label class="form-label">Prénom *</label><input class="form-control" name="prenom" required></div>

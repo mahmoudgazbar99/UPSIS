@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/student_theme.php';
 
 /**
  * Ferme une session qui n'est pas une session étudiante valide.
@@ -178,11 +179,13 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <?php student_theme_head(); ?>
   <title>Espace étudiant | <?= e(institution_name_inline()) ?></title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/student-space.css?v=6" rel="stylesheet">
+  <link href="assets/student-theme.css?v=1" rel="stylesheet">
 </head>
 <body class="student-space">
   <header class="student-space-bar">
@@ -192,6 +195,7 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       <strong><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
     </div>
     <div class="student-space-bar-actions">
+      <?php student_theme_select(); ?>
       <div class="dropdown student-inbox">
         <button class="student-inbox-toggle dropdown-toggle" type="button" id="studentInboxToggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Boîte de réception">
           <i class="bi bi-bell-fill" aria-hidden="true"></i>

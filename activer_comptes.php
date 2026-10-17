@@ -5,6 +5,7 @@ require_admin();
 ensure_teacher_active(db());
 
 $types = [
+    'etudiant' => 'Étudiant',
     'enseignant' => 'Enseignant',
     'finance' => 'Finance',
     'stage' => 'Stage',
@@ -25,7 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type !== '') {
         $error = 'Compte invalide.';
     } else {
         try {
-            if ($type === 'enseignant') {
+            if ($type === 'etudiant') {
+                ensure_etudiant_compte_table(db());
+                db()->prepare('UPDATE etudiant_compte SET active = ? WHERE id_compte = ?')->execute([$active, $accountId]);
+                $label = 'Étudiant #' . $accountId;
+            } elseif ($type === 'enseignant') {
                 db()->prepare('UPDATE enseignant SET active = ? WHERE id_enseignant = ?')->execute([$active, $accountId]);
                 $label = 'Enseignant #' . $accountId;
             } elseif ($type === 'finance') {
@@ -49,7 +54,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $type !== '') {
 }
 
 $accounts = [];
-if ($type === 'enseignant') {
+if ($type === 'etudiant') {
+    ensure_etudiant_compte_table(db());
+    $accounts = db()->query('SELECT c.id_compte AS id, CONCAT(e.prenom, " ", e.nom) AS label, e.cin_passeport AS login, c.active FROM etudiant_compte c INNER JOIN etudiant e ON e.id_etudiant = c.id_etudiant ORDER BY e.nom, e.prenom')->fetchAll();
+} elseif ($type === 'enseignant') {
     $accounts = db()->query('SELECT id_enseignant AS id, CONCAT(prenom, " ", nom) AS label, cin AS login, active FROM enseignant ORDER BY nom, prenom')->fetchAll();
 } elseif ($type === 'finance') {
     $accounts = db()->query('SELECT id_finance AS id, username AS label, username AS login, active FROM finance_user ORDER BY username')->fetchAll();

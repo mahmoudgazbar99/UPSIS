@@ -1,0 +1,313 @@
+html[data-student-skin="nursing"] {
+  color-scheme: dark;
+  --bg: #07111f;
+  --bg-soft: #0a1728;
+  --surface: #0d1b2e;
+  --surface-2: #11233a;
+  --ink: #f1f5f9;
+  --ink-soft: #d3dce8;
+  --muted: #9fb0c6;
+  --line: rgba(148, 163, 184, 0.16);
+  --line-strong: rgba(148, 163, 184, 0.3);
+  --accent: #2dd4bf;
+  --accent-hover: #5eead4;
+  --accent-ink: #042f2e;
+  --accent-soft: rgba(45, 212, 191, 0.12);
+  --grid: rgba(148, 163, 184, 0.07);
+  --shadow: 0 34px 80px -34px rgba(0, 0, 0, 0.78);
+  --shadow-sm: 0 14px 34px -22px rgba(0, 0, 0, 0.7);
+  background: var(--bg);
+}
+
+html[data-student-skin="nursing"][data-theme="light"] {
+  color-scheme: light;
+  --bg: #faf8f4;
+  --bg-soft: #f3f0ea;
+  --surface: #ffffff;
+  --surface-2: #f5f3ee;
+  --ink: #0b1f3a;
+  --ink-soft: #1f3450;
+  --muted: #4a5b70;
+  --line: rgba(11, 31, 58, 0.1);
+  --line-strong: rgba(11, 31, 58, 0.2);
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(15, 118, 110, 0.08);
+  --grid: rgba(11, 31, 58, 0.05);
+  --shadow: 0 34px 70px -38px rgba(11, 31, 58, 0.38);
+  --shadow-sm: 0 14px 30px -22px rgba(11, 31, 58, 0.28);
+  background: var(--bg);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.student-skin-select {
+  position: relative;
+  display: inline-flex;
+  margin: 0;
+}
+
+.student-gate .student-skin-select {
+  position: fixed;
+  z-index: 40;
+  top: 1rem;
+  inset-inline-end: 1rem;
+}
+
+.student-skin-select select {
+  min-height: 2.75rem;
+  max-width: min(16rem, calc(100vw - 2rem));
+  padding: 0.45rem 2rem 0.45rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  background: rgba(12, 16, 22, 0.62);
+  color: #f7f3ea;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+
+.student-skin-select select:focus-visible {
+  outline: 2px solid #f3d7a1;
+  outline-offset: 3px;
+}
+
+html[data-student-skin="nursing"] body.student-gate,
+html[data-student-skin="nursing"] body.student-space {
+  color: var(--ink);
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  background:
+    radial-gradient(42rem 22rem at 100% -8%, var(--accent-soft), transparent 62%),
+    linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 2rem 2rem,
+    var(--bg);
+}
+
+html[data-student-skin="nursing"] .student-gate {
+  padding-top: 4.75rem;
+}
+
+html[data-student-skin="nursing"] .student-gate-card,
+html[data-student-skin="nursing"] .student-space-bar,
+html[data-student-skin="nursing"] .student-space-cards button,
+html[data-student-skin="nursing"] .student-space-sheet {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-gate-card {
+  box-shadow: var(--shadow);
+  border-radius: 1.75rem;
+}
+
+html[data-student-skin="nursing"] .student-gate-logo,
+html[data-student-skin="nursing"] .student-space-bar img {
+  padding: 0.25rem;
+  border-radius: 0.75rem;
+  background: #fff;
+  object-fit: contain;
+}
+
+html[data-student-skin="nursing"] .student-gate-card h1,
+html[data-student-skin="nursing"] .student-space-bar strong,
+html[data-student-skin="nursing"] .student-space-cards button strong,
+html[data-student-skin="nursing"] .student-space-sheet h1,
+html[data-student-skin="nursing"] .student-space-sheet h2,
+html[data-student-skin="nursing"] .student-space-sheet h3,
+html[data-student-skin="nursing"] .student-mail-modal .modal-title {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-gate-school,
+html[data-student-skin="nursing"] .student-space-bar p,
+html[data-student-skin="nursing"] .student-space-cards button small,
+html[data-student-skin="nursing"] .student-space-lead,
+html[data-student-skin="nursing"] .student-space-sheet dt,
+html[data-student-skin="nursing"] .student-space td span,
+html[data-student-skin="nursing"] .student-inbox-empty,
+html[data-student-skin="nursing"] .student-inbox-item span,
+html[data-student-skin="nursing"] .student-mail-headers dt {
+  color: var(--muted);
+}
+
+html[data-student-skin="nursing"] .student-gate label,
+html[data-student-skin="nursing"] .student-space-form label {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+html[data-student-skin="nursing"] .student-gate input,
+html[data-student-skin="nursing"] .student-space-form input,
+html[data-student-skin="nursing"] .student-space-form textarea {
+  border: 1px solid var(--line-strong);
+  border-radius: 0.85rem;
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-gate input:focus,
+html[data-student-skin="nursing"] .student-space-form input:focus,
+html[data-student-skin="nursing"] .student-space-form textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+  background: var(--surface);
+}
+
+html[data-student-skin="nursing"] .student-gate input:-webkit-autofill,
+html[data-student-skin="nursing"] .student-space-form input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  box-shadow: 0 0 0 1000px var(--surface-2) inset;
+}
+
+html[data-student-skin="nursing"] .student-gate button[type="submit"],
+html[data-student-skin="nursing"] .student-space-form button,
+html[data-student-skin="nursing"] .student-space-bar-actions > a {
+  border-radius: 0.85rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+html[data-student-skin="nursing"] .student-gate button[type="submit"]:hover,
+html[data-student-skin="nursing"] .student-space-form button:hover,
+html[data-student-skin="nursing"] .student-space-bar-actions > a:hover {
+  background: var(--accent-hover);
+  color: var(--accent-ink);
+}
+
+html[data-student-skin="nursing"] .student-gate-home {
+  border-color: var(--line-strong);
+  border-radius: 0.85rem;
+  color: var(--ink);
+  background: transparent;
+}
+
+html[data-student-skin="nursing"] .student-gate-home:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+html[data-student-skin="nursing"] .student-gate-links a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+html[data-student-skin="nursing"] .student-gate-links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+html[data-student-skin="nursing"] .student-skin-select select {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  backdrop-filter: none;
+}
+
+html[data-student-skin="nursing"] .student-skin-select select:focus-visible {
+  outline-color: var(--accent);
+}
+
+html[data-student-skin="nursing"] .student-space-cards button span,
+html[data-student-skin="nursing"] .student-space th,
+html[data-student-skin="nursing"] .student-inbox-title,
+html[data-student-skin="nursing"] .student-mail-meta {
+  color: var(--accent);
+}
+
+html[data-student-skin="nursing"] .student-space-cards button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+html[data-student-skin="nursing"] .student-space-sheet dl div,
+html[data-student-skin="nursing"] .student-mail-headers {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+html[data-student-skin="nursing"] .student-space th,
+html[data-student-skin="nursing"] .student-space td {
+  border-bottom-color: var(--line);
+}
+
+html[data-student-skin="nursing"] .student-inbox-toggle {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-inbox-toggle:hover,
+html[data-student-skin="nursing"] .student-inbox-toggle[aria-expanded="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-student-skin="nursing"] .student-inbox-menu,
+html[data-student-skin="nursing"] .student-mail-modal .modal-content {
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+html[data-student-skin="nursing"] .student-inbox-item.is-unread {
+  background: var(--accent-soft);
+}
+
+html[data-student-skin="nursing"] .student-inbox-item.is-read,
+html[data-student-skin="nursing"] .student-inbox-item {
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-inbox-item:hover {
+  background: var(--accent-soft);
+}
+
+html[data-student-skin="nursing"] .student-mail-ribbon {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+html[data-student-skin="nursing"] .student-mail-modal .modal-header,
+html[data-student-skin="nursing"] .student-mail-modal .modal-footer {
+  border-color: var(--line);
+}
+
+html[data-student-skin="nursing"] .student-mail-modal .btn-close {
+  filter: none;
+}
+
+html[data-student-skin="nursing"][data-theme="dark"] .student-mail-modal .btn-close {
+  filter: invert(1);
+}
+
+@media (max-width: 640px) {
+  .student-gate .student-skin-select {
+    top: 0.75rem;
+    inset-inline-end: 0.75rem;
+  }
+
+  .student-skin-select select {
+    max-width: calc(100vw - 1.5rem);
+    font-size: 0.8rem;
+  }
+}

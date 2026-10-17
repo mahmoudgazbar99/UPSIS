@@ -225,19 +225,13 @@ function dashboard_menu(): void {
         </button>
         <div class="dashboard-menu-sub" hidden>
           <?php
-          dashboard_menu_item('modifier_comptes.php?embed=1', 'Modifier les comptes', 'Enseignant, finance, stage', 'accounts', '');
-          dashboard_menu_item('creer_comptes.php?embed=1', 'Créer des comptes', 'Choisir le type sur la page', 'enroll', '');
-          dashboard_menu_item('activer_comptes.php?embed=1', 'Activer / désactiver', 'Finance, enseignant, stage', 'alert', '');
+          dashboard_menu_item('modifier_comptes.php?embed=1', 'Modifier les comptes', 'Étudiant, enseignant, finance, stage', 'accounts', '');
+          dashboard_menu_item('creer_comptes.php?embed=1', 'Créer des comptes', 'Étudiant, enseignant, finance, stage', 'enroll', '');
+          dashboard_menu_item('activer_comptes.php?embed=1', 'Activer / désactiver', 'Étudiant, finance, enseignant, stage', 'alert', '');
           ?>
         </div>
       </div>
-      <?php
-      dashboard_menu_item('responsables.php?poste=secretaire&embed=1', 'Secrétaire général', 'Nom français et arabe des attestations', 'sec', $num());
-      dashboard_menu_item('responsables.php?poste=directeur&embed=1', 'Directeur', 'Nom français et arabe des attestations', 'dir', $num());
-      dashboard_menu_item('formule_calcul.php?embed=1', 'Formule de calcul', 'Moyenne, moyenne générale et crédits', 'formula', $num());
-      dashboard_menu_item('ajouter_unite.php?embed=1', 'Ajouter unité', 'Créer une unité d’enseignement', 'unity', $num());
-      dashboard_menu_item('ajouter_matiere.php?embed=1', 'Ajouter matière', 'Coefficient et unité, sans doublon', 'subject', $num());
-      ?>
+      <?php dashboard_menu_item('ajouter_matiere.php?embed=1', 'Ajouter matière', 'Coefficient et unité, sans doublon', 'subject', $num()); ?>
       <div class="dashboard-menu-group" data-accounts-group>
         <button type="button" class="dashboard-menu-item dashboard-menu-parent" data-accounts-toggle data-menu-icon="accounts" aria-expanded="false">
           <span class="dashboard-menu-icon" aria-hidden="true"></span>
@@ -253,8 +247,12 @@ function dashboard_menu(): void {
           dashboard_menu_item('specialites.php?embed=1', 'Spécialités', 'Créer ou désactiver', 'enroll', '');
           dashboard_menu_item('frais_scolarite.php?embed=1', 'Frais de scolarité', 'Montant et devise', 'finance', '');
           dashboard_menu_item('politique_promotion.php?embed=1', 'Seuil de promotion', 'Admission et niveau final', 'promo', '');
+          dashboard_menu_item('formule_calcul.php?embed=1', 'Formule de calcul', 'Moyenne, moyenne générale et crédits', 'formula', '');
           dashboard_menu_item('politique_presence.php?embed=1', 'Règles de présence', 'Absences et volume horaire', 'presence', '');
           dashboard_menu_item('identite.php?embed=1', 'Pièces d’identité', 'CIN et passeport', 'accounts', '');
+          dashboard_menu_item('ajouter_unite.php?embed=1', 'Ajouter unité', 'Créer une unité d’enseignement', 'unity', '');
+          dashboard_menu_item('responsables.php?poste=directeur&embed=1', 'Directeur', 'Nom français et arabe des attestations', 'dir', '');
+          dashboard_menu_item('responsables.php?poste=secretaire&embed=1', 'Secrétaire général', 'Nom français et arabe des attestations', 'sec', '');
           ?>
         </div>
       </div>
