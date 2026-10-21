@@ -53,7 +53,7 @@ function landing_strings(string $lang): array
         'lang_label' => 'Choisir la langue',
         'hero_kicker' => 'Sciences infirmières · {city}, {country}',
         'hero_title' => 'Former aujourd’hui les professionnels de santé de demain.',
-        'hero_text' => 'Une formation exigeante, une pratique clinique encadrée et un environnement universitaire tourné vers la qualité des soins, la science et l’humain.',
+        'hero_text' => 'Une formation exigeante, une pratique clinique encadrée et une ambition commune : placer la science et l’humain au cœur des soins.',
         'hero_cta_programs' => 'Découvrir nos formations',
         'hero_cta_portal' => 'Accéder au portail universitaire',
         'tag_clinical' => 'Apprentissage clinique',
@@ -193,6 +193,12 @@ function landing_strings(string $lang): array
         'footer_images' => 'Photographies d’illustration, remplaçables par des images de l’établissement.',
         'footer_nav' => 'Liens du pied de page',
         'back_top' => 'Retour en haut',
+        'video_pause' => 'Mettre en pause',
+        'video_play' => 'Lire la vidéo',
+        'close_kicker' => 'L’université',
+        'close_title' => 'Votre vocation peut transformer des vies.',
+        'close_text' => 'Apprenez, expérimentez et construisez votre avenir au service de la santé.',
+        'close_cta' => 'Découvrir l’université',
     ];
 
     $en = [
@@ -215,7 +221,7 @@ function landing_strings(string $lang): array
         'lang_label' => 'Choose language',
         'hero_kicker' => 'Nursing sciences · {city}, {country}',
         'hero_title' => 'Educating today the healthcare professionals of tomorrow.',
-        'hero_text' => 'Demanding studies, supervised clinical practice and a university environment focused on quality of care, science and people.',
+        'hero_text' => 'A demanding education, supervised clinical practice, and a shared ambition: to place science and people at the heart of care.',
         'hero_cta_programs' => 'Explore our programmes',
         'hero_cta_portal' => 'Go to the university portal',
         'tag_clinical' => 'Clinical learning',
@@ -355,6 +361,12 @@ function landing_strings(string $lang): array
         'footer_images' => 'Illustrative photographs, replaceable with images of the institution.',
         'footer_nav' => 'Footer links',
         'back_top' => 'Back to top',
+        'video_pause' => 'Pause video',
+        'video_play' => 'Play video',
+        'close_kicker' => 'The university',
+        'close_title' => 'Your vocation can change lives.',
+        'close_text' => 'Learn, practise and build your future in the service of health.',
+        'close_cta' => 'Discover the university',
     ];
 
     $ar = [
@@ -377,7 +389,7 @@ function landing_strings(string $lang): array
         'lang_label' => 'اختيار اللغة',
         'hero_kicker' => 'علوم التمريض · {city}، {country}',
         'hero_title' => 'نُكوِّن اليوم مهنيّي الصحة للغد.',
-        'hero_text' => 'تكوين متطلّب، وممارسة سريرية مؤطَّرة، وبيئة جامعية موجَّهة نحو جودة العلاج والعلم والإنسان.',
+        'hero_text' => 'تكوين متطلّب، وممارسة سريرية مؤطَّرة، وطموح مشترك: وضع العلم والإنسان في قلب الرعاية.',
         'hero_cta_programs' => 'اكتشف تكويناتنا',
         'hero_cta_portal' => 'الدخول إلى البوابة الجامعية',
         'tag_clinical' => 'التعلّم السريري',
@@ -517,6 +529,12 @@ function landing_strings(string $lang): array
         'footer_images' => 'صور توضيحية قابلة للاستبدال بصور المؤسسة.',
         'footer_nav' => 'روابط تذييل الصفحة',
         'back_top' => 'العودة إلى الأعلى',
+        'video_pause' => 'إيقاف الفيديو',
+        'video_play' => 'تشغيل الفيديو',
+        'close_kicker' => 'الجامعة',
+        'close_title' => 'يمكن لرسالتكم أن تغيّر حياة الآخرين.',
+        'close_text' => 'تعلّموا، وجرّبوا، وابنوا مستقبلكم في خدمة الصحة.',
+        'close_cta' => 'اكتشفوا الجامعة',
     ];
 
     return ['fr' => $fr, 'en' => $en, 'ar' => $ar][$lang] ?? $fr;

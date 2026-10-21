@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
-if (logged_in()) {
+$requestedRole = (string) ($_GET['role'] ?? '');
+if (logged_in() && $requestedRole === '' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ' . (is_student() ? 'dashboard.php' : 'index.php'));
     exit;
 }
@@ -107,16 +108,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Connexion</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="assets/style.css?v=75" rel="stylesheet">
-  <link href="assets/macos.css?v=32" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="assets/style.css?v=77" rel="stylesheet">
+  <link href="assets/institut.css?v=1" rel="stylesheet">
+  <link href="assets/macos.css?v=33" rel="stylesheet">
   <script>
   (function () {
     try {
       var theme = localStorage.getItem('app-theme') || 'dark';
       var style = localStorage.getItem('app-style') || 'original';
       if (style === 'alternate') { style = 'atlas'; localStorage.setItem('app-style', 'atlas'); }
-      if (style !== 'atlas' && style !== 'glass' && style !== 'macos') style = 'original';
+      if (style !== 'atlas' && style !== 'glass' && style !== 'macos' && style !== 'institut') style = 'original';
       document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
       document.documentElement.dataset.appStyle = style;
       document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
@@ -136,6 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     body.classList.toggle('theme-atlas', style === 'atlas');
     body.classList.toggle('theme-glass', style === 'glass');
     body.classList.toggle('theme-macos', style === 'macos');
+    body.classList.toggle('theme-institut', style === 'institut');
     document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
   })();
   </script>
@@ -147,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <option value="atlas">Atlas</option>
         <option value="glass">Glass</option>
         <option value="macos">Mac OS</option>
+        <option value="institut">Institut</option>
       </select>
     </label>
     <button type="button" class="theme-toggle" data-theme-toggle aria-label="Activer le mode clair" title="Activer le mode clair">
@@ -171,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="macos-window-body">
   <div class="login-shell">
     <aside class="login-brand-pane">
-      <img src="<?= e(institution_logo_src()) ?>" class="login-logo" alt="Logo">
+      <div class="login-logo-fit"><img src="<?= e(institution_logo_src()) ?>" class="login-logo" alt="Logo"></div>
       <h1 class="login-brand-title">Connexion</h1>
       <p class="login-brand-school mb-0"><?php foreach (institution_name_lines() as $index => $institutionLine): ?><?= $index > 0 ? '<br>' : '' ?><?= e($institutionLine) ?><?php endforeach; ?></p>
     </aside>
@@ -235,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (value === 'atlas' || value === 'alternate') return 'atlas';
       if (value === 'glass') return 'glass';
       if (value === 'macos' || value === 'mac' || value === 'mac-os') return 'macos';
+      if (value === 'institut' || value === 'accueil') return 'institut';
       return 'original';
     }
     function applyStyle(value) {
@@ -244,6 +249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       body.classList.toggle('theme-atlas', style === 'atlas');
       body.classList.toggle('theme-glass', style === 'glass');
       body.classList.toggle('theme-macos', style === 'macos');
+      body.classList.toggle('theme-institut', style === 'institut');
       document.documentElement.dataset.appStyle = style;
       if (styleSelect && styleSelect.value !== style) styleSelect.value = style;
     }

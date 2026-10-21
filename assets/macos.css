@@ -994,8 +994,10 @@ body.theme-macos.login-page .login-brand-title {
 }
 
 body.theme-macos.login-page .login-logo {
-  width: 4.6rem;
-  max-height: 4.6rem;
+  width: auto;
+  max-width: 8rem;
+  max-height: 8rem;
+  object-position: center center;
 }
 
 body.theme-macos.login-page .login-card {

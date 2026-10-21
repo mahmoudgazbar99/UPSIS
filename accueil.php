@@ -173,10 +173,11 @@ $days = explode('|', $strings['mock_days']);
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="preload" as="image" type="image/webp" href="images/landing/skills-lab.webp" imagesrcset="images/landing/skills-lab-640.webp 640w, images/landing/skills-lab.webp 1152w" imagesizes="(min-width: 960px) 44vw, 92vw">
-  <link href="assets/landing.css?v=22" rel="stylesheet">
+  <link href="assets/landing.css?v=25" rel="stylesheet">
 </head>
 <body>
   <a class="skip" href="#contenu"><?= t('skip') ?></a>
+  <div class="scroll-progress" data-scroll-progress aria-hidden="true"><span></span></div>
 
   <header class="site-header" data-header>
     <div class="header-inner">
@@ -228,9 +229,12 @@ $days = explode('|', $strings['mock_days']);
 
   <main id="contenu" tabindex="-1">
     <section class="hero" id="accueil" aria-labelledby="hero-title">
-      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-bg" aria-hidden="true">
+        <video class="bg-video" muted playsinline loop preload="none" poster="assets/video/landing-hero.jpg" data-src="assets/video/landing-hero.mp4"></video>
+      </div>
+      <button type="button" class="bg-video-toggle" data-bg-toggle hidden data-label-pause="<?= e(t('video_pause')) ?>" data-label-play="<?= e(t('video_play')) ?>"><?= t('video_pause') ?></button>
       <div class="container hero-grid">
-        <div class="hero-copy reveal">
+        <div class="hero-copy hero-enter reveal">
           <p class="kicker"><?= t('hero_kicker') ?></p>
           <h1 id="hero-title"><?= t('hero_title') ?></h1>
           <p class="hero-text"><?= t('hero_text') ?></p>
@@ -267,6 +271,10 @@ $days = explode('|', $strings['mock_days']);
     </section>
 
     <section class="section about" id="institut" aria-labelledby="about-title">
+      <div class="about-bg" aria-hidden="true">
+        <video class="bg-video" muted playsinline loop preload="none" poster="assets/video/landing-about.jpg" data-src="assets/video/landing-about.mp4"></video>
+      </div>
+      <button type="button" class="bg-video-toggle" data-bg-toggle hidden data-label-pause="<?= e(t('video_pause')) ?>" data-label-play="<?= e(t('video_play')) ?>"><?= t('video_pause') ?></button>
       <div class="container about-grid">
         <figure class="about-media reveal">
           <?= landing_picture('academic-study', 1152, 864, t('alt_study'), '(min-width: 960px) 42vw, 92vw') ?>
@@ -382,10 +390,13 @@ $days = explode('|', $strings['mock_days']);
     <section class="section clinical" id="stages" aria-labelledby="clin-title">
       <div class="clinical-glow" aria-hidden="true"></div>
       <div class="container clinical-grid">
-        <div class="clinical-media reveal">
-          <figure>
-            <?= landing_picture('clinical-practice', 864, 1152, t('alt_clinical'), '(min-width: 960px) 34vw, 92vw') ?>
-          </figure>
+        <div class="clinical-media">
+          <div class="clinical-stage" data-clinical-stage data-scene="0">
+            <figure data-scene="0" class="is-on"><?= landing_picture('academic-study', 864, 1152, t('alt_study'), '(min-width: 960px) 34vw, 92vw') ?></figure>
+            <figure data-scene="1"><?= landing_picture('skills-lab', 864, 1152, t('alt_lab'), '(min-width: 960px) 34vw, 92vw') ?></figure>
+            <figure data-scene="2"><?= landing_picture('clinical-practice', 864, 1152, t('alt_clinical'), '(min-width: 960px) 34vw, 92vw') ?></figure>
+            <figure data-scene="3"><?= landing_picture('student-life', 864, 1152, t('alt_life'), '(min-width: 960px) 34vw, 92vw') ?></figure>
+          </div>
           <blockquote><p><?= t('clin_quote') ?></p></blockquote>
         </div>
         <div class="clinical-copy">
@@ -569,6 +580,15 @@ $days = explode('|', $strings['mock_days']);
         </dl>
       </div>
     </section>
+
+    <section class="section close-story" aria-labelledby="close-title">
+      <div class="container close-grid">
+        <p class="kicker reveal"><?= t('close_kicker') ?></p>
+        <h2 id="close-title" class="reveal"><?= t('close_title') ?></h2>
+        <p class="lead reveal"><?= t('close_text') ?></p>
+        <a class="btn btn-primary btn-lg reveal" href="#institut"><span><?= t('close_cta') ?></span><?= landing_icon('arrow') ?></a>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -638,9 +658,98 @@ $days = explode('|', $strings['mock_days']);
         if (event.matches) setMenu(false);
       });
 
-      var compact = function () { header.classList.toggle('is-compact', window.scrollY > 24); };
-      compact();
-      window.addEventListener('scroll', compact, { passive: true });
+      document.querySelectorAll('.bg-video').forEach(function (video) {
+        var section = video.closest('section');
+        var toggle = section ? section.querySelector('[data-bg-toggle]') : null;
+        if (!section || !toggle || reduce.matches || !('IntersectionObserver' in window)) return;
+        var pausedByUser = false;
+        function paint() {
+          var playing = !video.paused && !video.ended;
+          toggle.textContent = playing ? toggle.dataset.labelPause : toggle.dataset.labelPlay;
+          toggle.setAttribute('aria-pressed', playing ? 'true' : 'false');
+        }
+        function start() {
+          if (!video.getAttribute('src')) {
+            video.src = video.dataset.src;
+          }
+          if (pausedByUser) return;
+          var pending = video.play();
+          if (pending && pending.then) {
+            pending.then(function () {
+              if (pausedByUser) video.pause();
+            }).catch(function () {});
+          }
+        }
+        toggle.hidden = false;
+        toggle.addEventListener('click', function () {
+          if (video.paused) {
+            pausedByUser = false;
+            start();
+          } else {
+            pausedByUser = true;
+            video.pause();
+          }
+          paint();
+        });
+        var watch = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) start();
+            else video.pause();
+            paint();
+          });
+        }, { threshold: 0.2 });
+        watch.observe(section);
+        video.addEventListener('play', paint);
+        video.addEventListener('pause', paint);
+        paint();
+      });
+
+      var progress = document.querySelector('[data-scroll-progress] span');
+      var parallaxOn = !reduce.matches && window.matchMedia('(min-width: 960px)').matches;
+      var bgVideos = parallaxOn ? document.querySelectorAll('.bg-video') : [];
+      var scrollTick = false;
+      function onScroll() {
+        header.classList.toggle('is-compact', window.scrollY > 24);
+        if (progress) {
+          var max = document.documentElement.scrollHeight - window.innerHeight;
+          var ratio = max > 0 ? Math.min(1, window.scrollY / max) : 0;
+          progress.style.transform = 'scaleX(' + ratio + ')';
+        }
+        if (parallaxOn) {
+          bgVideos.forEach(function (video) {
+            var rect = video.closest('section').getBoundingClientRect();
+            if (rect.bottom < 0 || rect.top > window.innerHeight) return;
+            var shift = (rect.top / window.innerHeight) * 14;
+            video.style.transform = 'translate3d(0,' + shift.toFixed(1) + 'px,0) scale(1.08)';
+          });
+        }
+        scrollTick = false;
+      }
+      function requestScroll() {
+        if (scrollTick) return;
+        scrollTick = true;
+        window.requestAnimationFrame(onScroll);
+      }
+      onScroll();
+      window.addEventListener('scroll', requestScroll, { passive: true });
+
+      var stage = document.querySelector('[data-clinical-stage]');
+      var steps = document.querySelectorAll('.steps li');
+      if (stage && steps.length && 'IntersectionObserver' in window) {
+        steps.forEach(function (step, index) { step.setAttribute('data-scene', String(index)); });
+        var sceneWatch = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (!entry.isIntersecting) return;
+            var index = entry.target.getAttribute('data-scene');
+            stage.setAttribute('data-scene', index);
+            stage.querySelectorAll('figure').forEach(function (figure) {
+              figure.classList.toggle('is-on', figure.getAttribute('data-scene') === index);
+            });
+            steps.forEach(function (step) { step.classList.toggle('is-current', step === entry.target); });
+          });
+        }, { rootMargin: '-42% 0px -48% 0px' });
+        steps.forEach(function (step) { sceneWatch.observe(step); });
+      }
 
       var links = Array.prototype.slice.call(document.querySelectorAll('[data-nav-link]'));
       if ('IntersectionObserver' in window) {
