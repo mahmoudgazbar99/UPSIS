@@ -3,23 +3,78 @@ services:
   web:
     build: .
     container_name: myapp_web
+    restart: unless-stopped
     ports:
       - "8080:80"
+    expose:
+      - "80"
+      - "443"
     environment:
+      LAN_IP: 192.168.10.11
       DB_HOST: db
-      DB_PORT: "3306"
+      DB_PORT: "5432"
       DB_NAME: ecole_sante_gabes
       DB_USER: myapp_user
       DB_PASS: myapp_password
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
       INSCRIPTION_TEMPLATE: /opt/templates/template_inscription_2.docx
+      STAGE_DOCS_DIR: /var/lib/upsis/stage-documents
     depends_on:
       db:
         condition: service_healthy
+      certificate-init:
+        condition: service_completed_successfully
+    command: ["bash", "-lc", "exec bash /var/www/html/docker/start-web.sh"]
     volumes:
       - ./:/var/www/html
+      - tls_certificates:/etc/apache2/ssl:ro
+      - public_ca:/var/www/html/public/certificates:ro
       - ./templates/template_inscription_2.docx:/opt/templates/template_inscription_2.docx:ro
+      - stage_documents:/var/lib/upsis/stage-documents
+
+  certificate-init:
+    image: php:8.3-apache
+    environment:
+      LAN_IP: 192.168.10.11
+    volumes:
+      - tls_certificates:/tls
+      - ca_private:/ca
+      - public_ca:/public
+      - ./docker/create-lan-certificate.sh:/usr/local/bin/create-lan-certificate.sh:ro
+    entrypoint: ["bash", "/usr/local/bin/create-lan-certificate.sh"]
+
+  protocol-proxy:
+    image: haproxy:3.2-alpine
+    container_name: upsis_protocol_proxy
+    restart: unless-stopped
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./docker/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      web:
+        condition: service_started
 
   db:
+    image: postgres:16.6
+    container_name: myapp_pg
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: ecole_sante_gabes
+      POSTGRES_USER: myapp_user
+      POSTGRES_PASSWORD: myapp_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myapp_user -d ecole_sante_gabes"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mysql:
     image: mysql:8.4
     container_name: myapp_db
     restart: unless-stopped
@@ -32,7 +87,7 @@ services:
       MYSQL_PASSWORD: myapp_password
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./ecole_sante_gabes_full.sql:/docker-entrypoint-initdb.d/01-db.sql:ro
+      - ./database/backups/ecole_sante_gabes_full.sql:/docker-entrypoint-initdb.d/01-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 5s
@@ -41,3 +96,8 @@ services:
 
 volumes:
   mysql_data:
+  postgres_data:
+  stage_documents:
+  tls_certificates:
+  ca_private:
+  public_ca:

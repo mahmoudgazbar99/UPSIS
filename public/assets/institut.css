@@ -1,0 +1,282 @@
+/* Institut — the public landing palette, applied when body.theme-institut is set. */
+
+body.theme-institut {
+  --app-bg: var(--ux-dark-base, #121212);
+  --app-bg-soft: var(--ux-dark-base-soft, #1c1b1f);
+  --app-surface: rgba(30, 30, 30, 0.92);
+  --app-surface-strong: var(--ux-dark-card, #1e1e1e);
+  --app-border: var(--ux-dark-divider, #49454f);
+  --app-text: var(--ux-dark-text, #e6e1e5);
+  --app-muted: var(--ux-dark-text-secondary, #cac4d0);
+  --app-accent: #2dd4bf;
+  --app-accent-2: #5eead4;
+  --app-accent-ink: #042f2e;
+  --app-shadow: var(--ux-elev-4, 0 4px 5px 0 rgba(0, 0, 0, 0.14));
+  --bs-primary: #2dd4bf;
+  --bs-primary-rgb: 45, 212, 191;
+  --bs-body-color: #e6e1e5;
+  --bs-body-color-rgb: 230, 225, 229;
+  --bs-secondary-color: #cac4d0;
+  --bs-emphasis-color: #e6e1e5;
+  --bs-heading-color: #e6e1e5;
+  --bs-border-color: #49454f;
+  --bs-link-color: #5eead4;
+  --bs-link-hover-color: #99f6e4;
+  font-family: Inter, "Segoe UI", sans-serif;
+  color: var(--app-text);
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(45, 212, 191, 0.16), transparent 34rem),
+    radial-gradient(ellipse at 88% 8%, rgba(232, 220, 200, 0.07), transparent 28rem),
+    linear-gradient(165deg, #121212, #1c1b1f 58%, #0a0a0a);
+  background-attachment: fixed;
+}
+
+body.theme-institut.theme-light {
+  --app-bg: var(--ux-base, #f2f2f7);
+  --app-bg-soft: var(--ux-base-soft, #e8e8ed);
+  --app-surface: #ffffff;
+  --app-surface-strong: var(--ux-card, #ffffff);
+  --app-border: var(--ux-divider, #e5e5ea);
+  --app-text: var(--ux-text, #1d1b20);
+  --app-muted: var(--ux-text-secondary, #49454f);
+  --app-accent: #0f766e;
+  --app-accent-2: #115e59;
+  --app-accent-ink: #ffffff;
+  --app-shadow: var(--ux-elev-1, 0 1px 3px 1px rgba(0, 0, 0, 0.12));
+  --bs-primary: #0f766e;
+  --bs-primary-rgb: 15, 118, 110;
+  --bs-body-color: #1d1b20;
+  --bs-body-color-rgb: 29, 27, 32;
+  --bs-secondary-color: #49454f;
+  --bs-emphasis-color: #1d1b20;
+  --bs-heading-color: #1d1b20;
+  --bs-border-color: #e5e5ea;
+  --bs-link-color: #0f766e;
+  --bs-link-hover-color: #115e59;
+  background:
+    radial-gradient(ellipse at 12% 0%, rgba(15, 118, 110, 0.1), transparent 30rem),
+    radial-gradient(ellipse at 90% 6%, rgba(15, 118, 110, 0.05), transparent 26rem),
+    linear-gradient(165deg, #f2f2f7, #e8e8ed);
+}
+
+body.theme-institut h1,
+body.theme-institut h2,
+body.theme-institut h3,
+body.theme-institut h4,
+body.theme-institut h5,
+body.theme-institut h6,
+body.theme-institut .display-6,
+body.theme-institut .login-brand-title,
+body.theme-institut .navbar-institution-name {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 560;
+  letter-spacing: -0.02em;
+}
+
+body.theme-institut .navbar {
+  background: rgba(7, 17, 31, 0.82);
+  border-bottom: 1px solid var(--app-border) !important;
+}
+
+body.theme-institut.theme-light .navbar {
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--ux-elev-4, 0 4px 5px 0 rgba(0, 0, 0, 0.14));
+}
+
+body.theme-institut .navbar-logo {
+  background: #fff;
+  border-radius: 0.7rem;
+  padding: 0.15rem;
+}
+
+body.theme-institut .teacher-welcome {
+  color: var(--app-accent) !important;
+  text-shadow: none;
+}
+
+body.theme-institut .app-card,
+body.theme-institut .login-card,
+body.theme-institut .dashboard-content-panel,
+body.theme-institut .list-group-item {
+  background: var(--app-surface-strong);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--ux-elev-1, var(--app-shadow));
+}
+
+body.theme-institut .modal-content {
+  background: var(--app-surface-strong);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--ux-elev-24, var(--app-shadow));
+}
+
+body.theme-institut .dropdown-menu {
+  background: var(--app-surface-strong);
+  color: var(--app-text);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--ux-elev-8, var(--app-shadow));
+}
+
+body.theme-institut .app-card::before {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--app-accent), transparent);
+  opacity: 0.7;
+}
+
+body.theme-institut .dashboard-menu-item {
+  background: var(--app-surface);
+  border-radius: 0.9rem;
+}
+
+body.theme-institut .dashboard-menu-item:hover,
+body.theme-institut .dashboard-menu-item:focus-visible {
+  border-color: var(--app-accent);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+body.theme-institut .dashboard-menu-number {
+  border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+}
+
+body.theme-institut .dashboard-menu-item-accent {
+  border-color: color-mix(in srgb, var(--app-accent) 55%, transparent);
+}
+
+body.theme-institut .btn {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+body.theme-institut .btn-primary {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  color: var(--app-accent-ink);
+  box-shadow: none;
+}
+
+body.theme-institut .btn-primary:hover,
+body.theme-institut .btn-primary:focus-visible {
+  background: var(--app-accent-2);
+  border-color: var(--app-accent-2);
+  color: var(--app-accent-ink);
+}
+
+body.theme-institut .btn-outline-light,
+body.theme-institut .btn-outline-secondary {
+  color: var(--app-text);
+  border-color: var(--app-border);
+  background: transparent;
+}
+
+body.theme-institut .btn-outline-light:hover,
+body.theme-institut .btn-outline-secondary:hover {
+  color: var(--app-accent-ink);
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+}
+
+body.theme-institut .form-control,
+body.theme-institut .form-select,
+body.theme-institut .form-control:focus,
+body.theme-institut .form-select:focus {
+  color: var(--app-text);
+  background-color: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+body.theme-institut .form-control:focus,
+body.theme-institut .form-select:focus,
+body.theme-institut .btn:focus-visible,
+body.theme-institut a:focus-visible,
+body.theme-institut .dashboard-menu-item:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+body.theme-institut .table,
+body.theme-institut .table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--app-text);
+  --bs-table-border-color: var(--app-border);
+  --bs-table-striped-bg: rgba(45, 212, 191, 0.06);
+  --bs-table-striped-color: var(--app-text);
+  --bs-table-hover-bg: rgba(45, 212, 191, 0.12);
+  --bs-table-hover-color: var(--app-text);
+  color: var(--app-text);
+}
+
+body.theme-institut.theme-light .table,
+body.theme-institut.theme-light .table-dark {
+  --bs-table-striped-bg: rgba(15, 118, 110, 0.06);
+  --bs-table-hover-bg: rgba(15, 118, 110, 0.1);
+}
+
+body.theme-institut .table > :not(caption) > * > * {
+  background-color: transparent;
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+body.theme-institut .alert-info,
+body.theme-institut .alert-secondary {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+body.theme-institut .text-secondary,
+body.theme-institut .text-muted,
+body.theme-institut .form-text {
+  color: var(--app-muted) !important;
+}
+
+body.theme-institut .eyebrow {
+  color: var(--app-accent);
+}
+
+body.theme-institut .table thead th {
+  color: var(--app-muted);
+  background: rgba(45, 212, 191, 0.08);
+}
+
+body.theme-institut.theme-light .table thead th {
+  background: rgba(15, 118, 110, 0.08);
+}
+
+body.theme-institut .form-select option {
+  background: #0c1c30;
+  color: #f4efe6;
+}
+
+body.theme-institut.theme-light .form-select option,
+body.theme-institut.theme-light .form-select option:checked {
+  background: #fffdf8;
+  color: #142033;
+}
+
+body.theme-institut.theme-light .form-select:disabled,
+body.theme-institut.theme-light select.form-select:disabled {
+  background: #f3efe6 !important;
+  background-color: #f3efe6 !important;
+  border-color: rgba(15, 61, 46, 0.2) !important;
+  color: #3d4d63 !important;
+  -webkit-text-fill-color: #3d4d63 !important;
+  color-scheme: light;
+}
+
+body.theme-institut .theme-style-select,
+body.theme-institut .theme-toggle {
+  color: var(--app-text);
+  background: var(--app-surface);
+  border-color: var(--app-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.theme-institut .dashboard-menu-item {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

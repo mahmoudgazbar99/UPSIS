@@ -1,0 +1,25 @@
+Options -Indexes
+DirectoryIndex accueil.php index.php
+
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Use extensionless canonical URLs for PHP pages.
+    RewriteCond %{THE_REQUEST} "\s+(/[^?\s]+)\.php(?:[?\s])" [NC]
+    RewriteRule ^ %1 [R=308,L,NE]
+
+    # Keep real public files (accueil, assets, images, exports).
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # The public landing page remains a physical file.
+    RewriteRule ^accueil$ accueil.php [L]
+
+    # Extensionless ERP URLs are dispatched by public/index.php.
+    RewriteRule ^([A-Za-z0-9_-]+)$ index.php [L,QSA]
+</IfModule>

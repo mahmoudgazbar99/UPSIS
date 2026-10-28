@@ -2,7 +2,7 @@
 declare(strict_types=1);
 $_SERVER['SCRIPT_NAME'] = '/index.php';
 $_SERVER['REQUEST_METHOD'] = 'GET';
-require dirname(__DIR__) . '/config.php';
+require dirname(__DIR__) . '/application/bootstrap.php';
 access_ensure();
 $failures = [];
 $check = static function (bool $ok, string $label) use (&$failures): void {

@@ -1,0 +1,91 @@
+/**
+ * UXBrainy light-mode system (shared across all skins).
+ * Light: base #F2F2F7 · cards #FFF · text #1D1B20 · secondary #49454F
+ *        disabled #A9A8AA · primary #6200EE · error #B00020 · dividers #E5E5EA
+ * Dark corollary: soft black surfaces, soft ink, deepened purple accent.
+ */
+
+:root {
+  --ux-base: #f2f2f7;
+  --ux-base-soft: #e8e8ed;
+  --ux-card: #ffffff;
+  --ux-divider: #e5e5ea;
+  --ux-text: #1d1b20;
+  --ux-text-secondary: #49454f;
+  --ux-disabled: #a9a8aa;
+  --ux-primary: #6200ee;
+  --ux-primary-hover: #5300c8;
+  --ux-on-primary: #ffffff;
+  --ux-primary-soft: rgba(98, 0, 238, 0.1);
+  --ux-error: #b00020;
+  --ux-error-soft: rgba(176, 0, 32, 0.1);
+
+  --ux-elev-0: none;
+  --ux-elev-1: 0 1px 2px rgba(0, 0, 0, 0.14), 0 1px 3px 1px rgba(0, 0, 0, 0.12);
+  --ux-elev-4: 0 2px 4px -1px rgba(0, 0, 0, 0.2), 0 4px 5px 0 rgba(0, 0, 0, 0.14), 0 1px 10px 0 rgba(0, 0, 0, 0.12);
+  --ux-elev-8: 0 5px 5px -3px rgba(0, 0, 0, 0.2), 0 8px 10px 1px rgba(0, 0, 0, 0.14), 0 3px 14px 2px rgba(0, 0, 0, 0.12);
+  --ux-elev-24: 0 11px 15px -7px rgba(0, 0, 0, 0.2), 0 24px 38px 3px rgba(0, 0, 0, 0.14), 0 9px 46px 8px rgba(0, 0, 0, 0.12);
+
+  --ux-dark-base: #121212;
+  --ux-dark-base-soft: #1c1b1f;
+  --ux-dark-card: #1e1e1e;
+  --ux-dark-card-2: #2b2930;
+  --ux-dark-divider: #49454f;
+  --ux-dark-text: #e6e1e5;
+  --ux-dark-text-secondary: #cac4d0;
+  --ux-dark-disabled: #938f99;
+  --ux-dark-primary: #bb86fc;
+  --ux-dark-primary-hover: #d0bcff;
+  --ux-dark-on-primary: #1d1b20;
+  --ux-dark-primary-fill: #6200ee;
+  --ux-dark-on-primary-fill: #ffffff;
+  --ux-dark-primary-soft: rgba(187, 134, 252, 0.14);
+  --ux-dark-error: #cf6679;
+}
+
+/* Elevation helpers for cards / chrome / overlays */
+.ux-elev-1 { box-shadow: var(--ux-elev-1); }
+.ux-elev-4 { box-shadow: var(--ux-elev-4); }
+.ux-elev-8 { box-shadow: var(--ux-elev-8); }
+.ux-elev-24 { box-shadow: var(--ux-elev-24); }
+
+body.theme-light .app-card,
+body.theme-light .login-card,
+body.theme-light .dashboard-content-panel {
+  background: var(--ux-card, #ffffff);
+  box-shadow: var(--ux-elev-1);
+}
+
+body.theme-light .modal-content {
+  background: var(--ux-card, #ffffff);
+  box-shadow: var(--ux-elev-24);
+}
+
+body.theme-light .dropdown-menu {
+  background: var(--ux-card, #ffffff);
+  box-shadow: var(--ux-elev-8);
+}
+
+body.theme-light .text-muted,
+body.theme-light .form-text {
+  color: var(--ux-text-secondary, #49454f) !important;
+}
+
+body.theme-light .btn:disabled,
+body.theme-light .form-control:disabled,
+body.theme-light .form-select:disabled {
+  color: var(--ux-disabled, #a9a8aa) !important;
+}
+
+body.theme-light .text-danger {
+  color: var(--ux-error, #b00020) !important;
+}
+
+body.theme-light .alert-danger {
+  --bs-alert-color: #ffffff;
+  --bs-alert-bg: var(--ux-error, #b00020);
+  --bs-alert-border-color: var(--ux-error, #b00020);
+  color: #ffffff;
+  background: var(--ux-error, #b00020);
+  border-color: var(--ux-error, #b00020);
+}
