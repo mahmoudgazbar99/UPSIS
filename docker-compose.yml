@@ -18,7 +18,6 @@ services:
       DB_PASS: myapp_password
       MYSQL_HOST: mysql
       MYSQL_PORT: "3306"
-      INSCRIPTION_TEMPLATE: /opt/templates/template_inscription_2.docx
       STAGE_DOCS_DIR: /var/lib/upsis/stage-documents
     depends_on:
       db:
@@ -30,7 +29,6 @@ services:
       - ./:/var/www/html
       - tls_certificates:/etc/apache2/ssl:ro
       - public_ca:/var/www/html/public/certificates:ro
-      - ./templates/template_inscription_2.docx:/opt/templates/template_inscription_2.docx:ro
       - stage_documents:/var/lib/upsis/stage-documents
 
   certificate-init:

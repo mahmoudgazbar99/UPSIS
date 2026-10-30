@@ -5,8 +5,6 @@ require_once app_path('bootstrap.php');
 require_once app_path('support/certificate_export.php');
 require_once root_path('vendor/autoload.php');
 
-use PhpOffice\PhpWord\TemplateProcessor;
-
 function repair_export_text(string $value): string
 {
     if (!preg_match('/(?:Ã.|Â.)/u', $value)) {
@@ -19,100 +17,20 @@ function repair_export_text(string $value): string
 
 function prepare_certificate_page(string $docPath): void
 {
-    $archive = new ZipArchive();
-    if ($archive->open($docPath) !== true) {
-        throw new RuntimeException('Impossible de préparer la mise en page d’une attestation.');
-    }
-
-    $documentXml = $archive->getFromName('word/document.xml');
-    if ($documentXml === false) {
-        $archive->close();
-        throw new RuntimeException('La structure du modèle d’attestation est invalide.');
-    }
-
-    $document = new DOMDocument();
-    if (!$document->loadXML($documentXml)) {
-        $archive->close();
-        throw new RuntimeException('La mise en page du modèle d’attestation est invalide.');
-    }
-
-    $xpath = new DOMXPath($document);
-    $wordNamespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-    $xpath->registerNamespace('w', $wordNamespace);
-    $certificateTable = $xpath->query('/w:document/w:body/w:tbl')->item(0);
-    $certificateRow = $certificateTable instanceof DOMElement
-        ? $xpath->query('./w:tr[1]', $certificateTable)->item(0)
-        : null;
-    if (!$certificateTable instanceof DOMElement || !$certificateRow instanceof DOMElement) {
-        $archive->close();
-        throw new RuntimeException('La structure du certificat est invalide.');
-    }
-
-    foreach ($xpath->query('//w:tblpPr') as $float) {
-        $float->parentNode?->removeChild($float);
-    }
-    certificate_compact_inscription_body($xpath, $wordNamespace);
-
-    foreach ($xpath->query('//w:noWrap') as $noWrap) {
-        $noWrap->parentNode?->removeChild($noWrap);
-    }
-
-    $pageWidth = 16838;
-    $margin = 420;
-    foreach ($xpath->query('//w:sectPr') as $section) {
-        $pageSize = $xpath->query('./w:pgSz', $section)->item(0);
-        if ($pageSize instanceof DOMElement) {
-            $pageSize->setAttributeNS($wordNamespace, 'w:w', (string) $pageWidth);
-            $pageSize->setAttributeNS($wordNamespace, 'w:h', '11906');
-            $pageSize->setAttributeNS($wordNamespace, 'w:orient', 'landscape');
-        }
-        $pageMargins = $xpath->query('./w:pgMar', $section)->item(0);
-        if ($pageMargins instanceof DOMElement) {
-            foreach (['top', 'bottom', 'left', 'right'] as $side) {
-                $pageMargins->setAttributeNS($wordNamespace, 'w:' . $side, (string) $margin);
-            }
-        }
-        $columns = $xpath->query('./w:cols', $section)->item(0);
-        if ($columns instanceof DOMElement) {
-            $columns->setAttributeNS($wordNamespace, 'w:num', '1');
-        }
-    }
-
-    certificate_resize_table($xpath, $wordNamespace, $certificateTable, $pageWidth - (2 * $margin));
-
-    $body = $xpath->query('/w:document/w:body')->item(0);
-    if ($body instanceof DOMElement) {
-        $afterCertificateTable = false;
-        foreach (iterator_to_array($body->childNodes) as $child) {
-            if ($child->isSameNode($certificateTable)) {
-                $afterCertificateTable = true;
-                continue;
-            }
-            if ($afterCertificateTable && $child->namespaceURI === $wordNamespace && $child->localName === 'p' && trim($child->textContent) === '') {
-                $body->removeChild($child);
-            }
-        }
-    }
-
-    if (!$archive->deleteName('word/document.xml') || !$archive->addFromString('word/document.xml', $document->saveXML())) {
-        $archive->close();
-        throw new RuntimeException('Impossible d’enregistrer la mise en page de l’attestation.');
-    }
-    $archive->close();
+    certificate_center_landscape_cut($docPath);
 }
 
 if (!defined('INSCRIPTION_EXPORT_AS_LIBRARY')) {
 require_admin();
 set_time_limit(300);
 
-$templatePath = getenv('INSCRIPTION_TEMPLATE') ?: root_path('templates/template_inscription_2.docx');
-$templatePath = is_file($templatePath) ? institution_personalize_docx($templatePath) : $templatePath;
+$templatePath = root_path('templates/template_inscription_3.docx');
 if (!is_file($templatePath)) {
     http_response_code(500);
     exit('Erreur : le modèle d’inscription est introuvable.');
 }
 $students = db()->query(
-    'SELECT e.*, s.nom_spec
+    'SELECT e.*, s.nom_spec, s.id_program
      FROM etudiant e
      LEFT JOIN specialite s ON s.id_spec = e.id_spec
      ORDER BY e.nom, e.prenom, e.id_etudiant'
@@ -129,8 +47,10 @@ if (!mkdir($workDir, 0700, true) && !is_dir($workDir)) {
 }
 
 $pdfPath = $workDir . DIRECTORY_SEPARATOR . 'Attestations_Inscription_Tous_Etudiants.pdf';
+$logoFile = null;
 
 try {
+    $logoFile = institution_logo_file();
     foreach ($students as $student) {
         $dateNaissance = '';
         if (!empty($student['date_naissance'])) {
@@ -138,28 +58,35 @@ try {
             $dateNaissance = $timestamp ? date('d/m/Y', $timestamp) : (string) $student['date_naissance'];
         }
 
-        $processor = new TemplateProcessor($templatePath);
-        $processor->setValue('nom', repair_export_text((string) ($student['nom'] ?? '')));
-        $processor->setValue('prenom', repair_export_text((string) ($student['prenom'] ?? '')));
-        $processor->setValue('date_naissance', $dateNaissance);
-        $processor->setValue('lieu_naissance', repair_export_text((string) ($student['lieu_naissance'] ?? '')));
-        $processor->setValue('cin', $student['cin_passeport'] ?? '');
-        $processor->setValue('specialite', repair_export_text((string) ($student['nom_spec'] ?? '')));
-        $processor->setValue('niveau', level_label((string) ($student['niveau_etude'] ?? $student['niveau'] ?? '')));
-        $processor->setValue('inscription', $student['num_inscription'] ?? '');
-        $currentYear = (int) date('Y');
-        $processor->setValue('annee_univ', $currentYear . '/' . ($currentYear + 1));
-        $processor->setValue('date_du_jour', date('d/m/Y'));
-        institution_apply_signatories($processor);
-        $processor->setValue('diplome', institution_award_title());
-        $processor->setValue('universite', institution_name_inline());
-
         $safeCin = preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);
         $docPath = $workDir . DIRECTORY_SEPARATOR . 'Certificat_Inscription_' . $safeCin . '.docx';
-        $processor->saveAs($docPath);
-        if (PHP_OS_FAMILY !== 'Windows') {
-            prepare_certificate_page($docPath);
+        if (!copy($templatePath, $docPath)) {
+            throw new RuntimeException('Impossible de copier le modèle pour le CIN ' . $safeCin . '.');
         }
+
+        $institution = institution_brand();
+        $currentYear = (int) date('Y');
+        $programId = (int) ($student['id_program'] ?? 0);
+        $programId = $programId > 0 ? $programId : null;
+        $niveau = (string) ($student['niveau_etude'] ?? $student['niveau'] ?? '');
+        institution_replace_docx_placeholders($docPath, [
+            'nom' => repair_export_text((string) ($student['nom'] ?? '')),
+            'prenom' => repair_export_text((string) ($student['prenom'] ?? '')),
+            'date_naissance' => institution_ltr_text($dateNaissance),
+            'lieu_naissance' => institution_ltr_text(repair_export_text((string) ($student['lieu_naissance'] ?? ''))),
+            'cin' => (string) ($student['cin_passeport'] ?? ''),
+            'specialite' => repair_export_text((string) ($student['nom_spec'] ?? '')),
+            'niveau' => level_label($niveau),
+            'DIPLOME_FR' => institution_award_title($programId),
+            'logo' => $logoFile['path'],
+            'inscription' => institution_ltr_text((string) ($student['num_inscription'] ?? '')),
+            'date_du_jour' => date('d/m/Y'),
+            'sec_generale' => $institution['sec_generale'],
+            'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
+            'establishment_fr' => $institution['establishment_fr'],
+        ]);
+
+        prepare_certificate_page($docPath);
     }
 
     $docPaths = glob($workDir . DIRECTORY_SEPARATOR . '*.docx') ?: [];
@@ -247,6 +174,8 @@ try {
     if (is_dir($workDir)) {
         rmdir($workDir);
     }
+    if (is_array($logoFile) && !empty($logoFile['temporary']) && is_file($logoFile['path'])) {
+        unlink($logoFile['path']);
+    }
 }
 }
-
