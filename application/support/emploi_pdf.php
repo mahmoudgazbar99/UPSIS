@@ -38,6 +38,16 @@ function emploi_pdf_path(int $groupId): string
     return emploi_pdf_dir() . DIRECTORY_SEPARATOR . $groupId . '.pdf';
 }
 
+function emploi_pdf_signature_ok(string $path): bool
+{
+    if (!is_file($path)) {
+        return false;
+    }
+    $mime = (string) (new finfo(FILEINFO_MIME_TYPE))->file($path);
+    $head = (string) file_get_contents($path, false, null, 0, 5);
+    return $mime === 'application/pdf' && $head === '%PDF-';
+}
+
 function emploi_pdf_meta(int $groupId): ?array
 {
     if ($groupId <= 0) {
@@ -76,11 +86,12 @@ function emploi_pdf_save(int $groupId, array $file): void
     if ($size <= 0 || $size > 12 * 1048576) {
         throw new InvalidArgumentException('Le PDF doit peser moins de 12 Mo.');
     }
-    $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = (string) $finfo->file($tmp);
-    $extension = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    if ($mime !== 'application/pdf' && $extension !== 'pdf') {
+    if (!emploi_pdf_signature_ok($tmp)) {
         throw new InvalidArgumentException('Seuls les fichiers PDF sont acceptés.');
+    }
+    $name = preg_replace('/[\x00-\x1F\x7F"]+/', '', $name) ?? '';
+    if ($name === '') {
+        $name = 'emploi.pdf';
     }
 
     $group = db()->prepare('SELECT id_groupe FROM groupe WHERE id_groupe = ? LIMIT 1');

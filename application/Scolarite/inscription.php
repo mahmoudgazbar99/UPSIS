@@ -52,6 +52,7 @@ if ($editing && $_SERVER['REQUEST_METHOD'] !== 'POST' && ($_GET['draft'] ?? '') 
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $studentId = filter_input(INPUT_POST, 'id_etudiant', FILTER_VALIDATE_INT) ?: 0;
     $editing = $studentId > 0;
 
@@ -190,6 +191,7 @@ page_head($editing ? 'Modifier un étudiant' : 'Inscription étudiant', 'registe
 <div class="card app-card"><div class="card-body p-4 p-lg-5">
 <?php if ($step === 1): ?>
 <form method="post" class="row g-3">
+  <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
   <?php if ($editing): ?><input type="hidden" name="id_etudiant" value="<?= $studentId ?>"><?php endif; ?>
 
   <h2 class="h5 text-info border-bottom border-secondary pb-2">Identité — Français</h2>
@@ -247,7 +249,7 @@ page_head($editing ? 'Modifier un étudiant' : 'Inscription étudiant', 'registe
 <h2 class="h4 mb-4">Vérification du dossier</h2>
 <p class="text-secondary">Vérifiez les informations avant l’enregistrement définitif.</p>
 <div class="review-grid mb-4"><?php foreach ($data as $key => $value): ?><div><span><?= e(str_replace('_', ' ', ucfirst($key))) ?></span><strong><?= e($key === 'niveau' ? level_label($value) : $value) ?></strong></div><?php endforeach; ?><?php if (!$editing): ?><div><span>N° inscription</span><strong>Généré automatiquement</strong></div><?php endif; ?></div>
-<form method="post"><?php if ($editing): ?><input type="hidden" name="id_etudiant" value="<?= $studentId ?>"><?php endif; ?><input type="hidden" name="identity_type" value="<?= e($identityType) ?>"><input type="hidden" name="cin_passeport" value="<?= e($data['cin_passeport']) ?>"><?php foreach ($data as $key => $value): ?><?php if ($key !== 'cin_passeport'): ?><input type="hidden" name="<?= e($key) ?>" value="<?= e($value) ?>"><?php endif; ?><?php endforeach; ?><a class="btn btn-outline-light" href="inscription.php?draft=1<?= $embedded ? '&amp;embed=1' : '' ?>">← Modifier</a><button name="action" value="submit" class="btn btn-success float-end"><?= $editing ? 'Confirmer les modifications' : 'Confirmer et enregistrer' ?></button></form>
+<form method="post"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><?php if ($editing): ?><input type="hidden" name="id_etudiant" value="<?= $studentId ?>"><?php endif; ?><input type="hidden" name="identity_type" value="<?= e($identityType) ?>"><input type="hidden" name="cin_passeport" value="<?= e($data['cin_passeport']) ?>"><?php foreach ($data as $key => $value): ?><?php if ($key !== 'cin_passeport'): ?><input type="hidden" name="<?= e($key) ?>" value="<?= e($value) ?>"><?php endif; ?><?php endforeach; ?><a class="btn btn-outline-light" href="inscription.php?draft=1<?= $embedded ? '&amp;embed=1' : '' ?>">← Modifier</a><button name="action" value="submit" class="btn btn-success float-end"><?= $editing ? 'Confirmer les modifications' : 'Confirmer et enregistrer' ?></button></form>
 <?php endif; ?>
 </div></div>
 

@@ -1,0 +1,14 @@
+# Applied only when Apache's document root is the project folder (XAMPP /htdocs).
+# Docker serves public/ directly, so this file is outside that document root.
+Options -Indexes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(application|storage|database|config|docker|vendor|tests|scripts|templates|\.git)(/|$) - [F,L]
+    RewriteRule ^(docker-compose\.yml|composer\.(json|lock)|\.env)$ - [F,L]
+</IfModule>
+
+<FilesMatch "^(?:docker-compose\.yml|composer\.(?:json|lock)|.env)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+</FilesMatch>

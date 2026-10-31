@@ -1,4 +1,7 @@
 .student-space {
+  --student-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --student-duration: 0.64s;
+  --student-duration-fast: 0.4s;
   min-height: 100vh;
   margin: 0;
   color: #f7f3ea;
@@ -61,16 +64,37 @@
   color: #1c1408;
   font-weight: 700;
   text-decoration: none;
+  transition:
+    background-color var(--student-duration-fast) var(--student-ease),
+    transform var(--student-duration-fast) var(--student-ease),
+    box-shadow var(--student-duration-fast) var(--student-ease);
 }
 
 .student-space-bar-actions > a:hover {
   background: #ffe3b8;
   color: #1c1408;
+  transform: translateY(-2px);
+}
+
+.student-space-bar-actions > a:active {
+  transform: scale(0.97);
 }
 
 .student-space-main {
   width: min(72rem, calc(100% - 2rem));
   margin: 1rem auto 2rem;
+}
+
+.student-space .visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
 .student-space-cards {
@@ -90,6 +114,20 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
+  transition:
+    transform var(--student-duration) var(--student-ease),
+    background-color var(--student-duration) var(--student-ease),
+    border-color var(--student-duration) var(--student-ease),
+    box-shadow var(--student-duration) var(--student-ease);
+}
+
+.student-space-cards button:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 28px 56px rgba(0, 0, 0, 0.32);
+}
+
+.student-space-cards button:active {
+  transform: translateY(-1px) scale(0.98);
 }
 
 .student-space-cards button span {
@@ -117,6 +155,21 @@
   margin-top: 0.9rem;
   padding: 1.4rem 1.2rem 1.2rem;
   border-radius: 1.35rem;
+}
+
+.student-space-sheet.is-entering {
+  animation: student-sheet-in var(--student-duration) var(--student-ease) both;
+}
+
+@keyframes student-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .student-space-sheet h1,
@@ -260,6 +313,18 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+  transition:
+    background-color var(--student-duration-fast) var(--student-ease),
+    transform var(--student-duration-fast) var(--student-ease);
+}
+
+.student-space-form button:hover {
+  background: #ffe3b8;
+  transform: translateY(-2px);
+}
+
+.student-space-form button:active {
+  transform: scale(0.97);
 }
 
 .student-inbox {
@@ -278,6 +343,10 @@
   display: grid;
   place-items: center;
   font-size: 1.15rem;
+  transition:
+    background-color var(--student-duration-fast) var(--student-ease),
+    color var(--student-duration-fast) var(--student-ease),
+    transform var(--student-duration-fast) var(--student-ease);
 }
 
 .student-inbox-toggle::after {
@@ -349,6 +418,9 @@
   text-align: left;
   font: inherit;
   cursor: pointer;
+  transition:
+    background-color var(--student-duration-fast) var(--student-ease),
+    transform var(--student-duration-fast) var(--student-ease);
 }
 
 .student-inbox-item.is-unread {
@@ -368,6 +440,7 @@
 
 .student-inbox-item:hover {
   background: rgba(255, 255, 255, 0.12);
+  transform: translateX(6px);
 }
 
 .student-mail-modal .modal-content {
@@ -436,6 +509,21 @@
   white-space: pre-wrap;
   line-height: 1.65;
   font-size: 1.05rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-space,
+  .student-space * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .student-space-cards button:hover,
+  .student-space-bar-actions > a:hover,
+  .student-space-form button:hover,
+  .student-inbox-item:hover {
+    transform: none;
+  }
 }
 
 @media (max-width: 800px) {

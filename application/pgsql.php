@@ -16,6 +16,54 @@ function pg_blob(mixed $value): string
     return $value;
 }
 
+/**
+ * Turns MySQL double-quoted string literals into PostgreSQL single-quoted
+ * strings. Text already inside a single-quoted literal is left unchanged,
+ * so a value that contains quotation marks cannot leave that literal.
+ */
+function pgsql_rewrite_double_quoted_strings(string $sql): string
+{
+    $length = strlen($sql);
+    $out = '';
+    $index = 0;
+    while ($index < $length) {
+        $character = $sql[$index];
+        if ($character === "'") {
+            $out .= "'";
+            $index++;
+            while ($index < $length) {
+                if ($sql[$index] === "'" && ($index + 1) < $length && $sql[$index + 1] === "'") {
+                    $out .= "''";
+                    $index += 2;
+                    continue;
+                }
+                $out .= $sql[$index];
+                if ($sql[$index] === "'") {
+                    $index++;
+                    break;
+                }
+                $index++;
+            }
+            continue;
+        }
+        if ($character === '"') {
+            $end = strpos($sql, '"', $index + 1);
+            $inner = $end === false ? null : substr($sql, $index + 1, $end - $index - 1);
+            if ($inner === null || str_contains($inner, '\\')) {
+                $out .= $character;
+                $index++;
+                continue;
+            }
+            $out .= "'" . str_replace("'", "''", $inner) . "'";
+            $index = $end + 1;
+            continue;
+        }
+        $out .= $character;
+        $index++;
+    }
+    return $out;
+}
+
 function pgsql_sql(string $sql): string
 {
     $trim = ltrim($sql);
@@ -62,9 +110,7 @@ function pgsql_sql(string $sql): string
     $sql = preg_replace('/\bADD\s+UNIQUE\s+KEY\s+`?([A-Za-z0-9_]+)`?\s*\(([^)]+)\)/i', 'ADD CONSTRAINT $1 UNIQUE ($2)', $sql) ?? $sql;
     $sql = preg_replace('/`([A-Za-z0-9_]+)`/', '$1', $sql) ?? $sql;
     $sql = preg_replace('/\bJSON_UNQUOTE\s*\(\s*JSON_EXTRACT\s*\(\s*([A-Za-z0-9_\.]+)\s*,\s*([\'"])\$\.([A-Za-z0-9_]+)\2\s*\)\s*\)/i', "(CASE WHEN $1 IS NULL OR btrim($1::text) = '' THEN NULL ELSE $1::jsonb END->>'$3')", $sql) ?? $sql;
-    $sql = preg_replace_callback('/"([^"\\\\]*)"/', static function (array $match): string {
-        return "'" . str_replace("'", "''", $match[1]) . "'";
-    }, $sql) ?? $sql;
+    $sql = pgsql_rewrite_double_quoted_strings($sql);
     $sql = str_replace('DATABASE()', 'current_schema()', $sql);
     $sql = preg_replace('/\bCURDATE\s*\(\s*\)/i', 'CURRENT_DATE', $sql) ?? $sql;
     $sql = preg_replace('/\bUNIX_TIMESTAMP\s*\(\s*([^)]+)\)/i', 'EXTRACT(EPOCH FROM $1)::bigint', $sql) ?? $sql;

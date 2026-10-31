@@ -4,6 +4,8 @@ declare(strict_types=1);
 require_once app_path('bootstrap.php');
 require_once app_path('support/student_theme.php');
 require_once app_path('support/emploi_pdf.php');
+require_once app_path('support/course_library.php');
+require_once app_path('support/course_explorer_view.php');
 
 /**
  * Ferme une session qui n'est pas une session étudiante valide.
@@ -40,6 +42,26 @@ function dashboard_note(mixed $value): string
     return e(number_format((float) $value, 2, ',', ' '));
 }
 
+function dashboard_course_link(string $link): bool
+{
+    return preg_match('/^dashboard\.php\?panel=cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?\z/', $link) === 1;
+}
+
+/**
+ * @param array<int, array<string, mixed>> $folders
+ */
+function dashboard_folder_in_tree(array $folders, int $folderId): bool
+{
+    foreach ($folders as $folder) {
+        if ((int) ($folder['id'] ?? 0) === $folderId
+            || dashboard_folder_in_tree((array) ($folder['folders'] ?? []), $folderId)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 // Étape 1 — La session doit porter l'identifiant de l'étudiant connecté.
 $studentId = filter_var($_SESSION['id_etudiant'] ?? null, FILTER_VALIDATE_INT);
 if ($studentId === false || $studentId <= 0 || !is_student()) {
@@ -50,6 +72,7 @@ $profile = null;
 $timetable = [];
 $grades = [];
 $emploiPdfs = [];
+$courses = [];
 $dbError = '';
 $attestationOpen = false;
 $attestationCin = '';
@@ -57,6 +80,7 @@ $attestationMotif = '';
 $attestationQueued = false;
 $attestationBoard = ['state' => 'none', 'message' => ''];
 $inbox = ['unread' => 0, 'stamp' => '0', 'messages' => []];
+$explorerFragment = false;
 
 try {
     $pdo = db();
@@ -76,6 +100,18 @@ try {
         dashboard_refuse_session();
     }
 
+    $explorerFragment = (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET'
+        && (string) ($_GET['fragment'] ?? '') === 'explorer';
+
+    if ($explorerFragment) {
+        try {
+            course_library_ensure($pdo);
+            $courses = course_tree_for_student((int) $studentId);
+        } catch (Throwable $exception) {
+            $courses = [];
+            error_log('dashboard: course library unavailable: ' . $exception->getMessage());
+        }
+    } else {
     $inbox = student_notifications_payload($pdo, $studentId);
     $attestationOpen = attestation_feature_active($pdo);
     $attestationCin = '';
@@ -160,6 +196,16 @@ try {
     $gradesQuery->execute([$studentId]);
     $grades = $gradesQuery->fetchAll();
     $emploiPdfs = emploi_pdf_for_student($studentId);
+
+    // Étape 5 — Cours publiés : une panne de la bibliothèque ne doit pas bloquer l’espace.
+    try {
+        course_library_ensure($pdo);
+        $courses = course_tree_for_student((int) $studentId);
+    } catch (Throwable $exception) {
+        $courses = [];
+        error_log('dashboard: course library unavailable: ' . $exception->getMessage());
+    }
+    } // requêtes hors fragment explorateur
 } catch (PDOException $exception) {
     $dbError = 'Erreur lors de la récupération des données';
 }
@@ -173,9 +219,70 @@ $gradesBySemester = [];
 foreach ($grades as $grade) {
     $gradesBySemester[(string) $grade['semestre']][] = $grade;
 }
-$openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') === 'demande_attestation' && $attestationOpen)
-    ? 'attestation'
-    : 'profil';
+$panels = ['profil', 'emploi', 'cours', 'notes'];
+if ($attestationOpen) {
+    $panels[] = 'attestation';
+}
+$requestedPanel = is_string($_GET['panel'] ?? null) ? $_GET['panel'] : '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'] ?? '') === 'demande_attestation' && $attestationOpen) {
+    $openPanel = 'attestation';
+} elseif (in_array($requestedPanel, $panels, true)) {
+    $openPanel = $requestedPanel;
+} else {
+    $openPanel = 'profil';
+}
+if (!empty($explorerFragment)) {
+    $openPanel = 'cours';
+}
+
+// Lien profond : ?panel=cours&cours=<id>&dossier=<id>. Un identifiant non visible est ignoré.
+$courseState = [
+    'course' => null,
+    'folder' => null,
+    'base_url' => 'dashboard.php?panel=cours',
+    'download_suffix' => '&espace=etudiant',
+];
+if ($openPanel === 'cours' && $courses !== []) {
+    $visibleCourses = [];
+    foreach ($courses as $course) {
+        $visibleCourses[(int) $course['id']] = $course;
+    }
+    $wantedCourse = filter_var($_GET['cours'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    $wantedFolder = filter_var($_GET['dossier'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (is_int($wantedCourse) && isset($visibleCourses[$wantedCourse])) {
+        $courseState['course'] = $wantedCourse;
+    }
+    if (is_int($wantedFolder)) {
+        try {
+            $folderAllowed = course_student_may_access_folder((int) $studentId, $wantedFolder);
+        } catch (Throwable $exception) {
+            $folderAllowed = false;
+            error_log('dashboard: course folder check failed: ' . $exception->getMessage());
+        }
+        if ($folderAllowed) {
+            $candidates = $courseState['course'] !== null
+                ? [$courseState['course'] => $visibleCourses[$courseState['course']]]
+                : $visibleCourses;
+            foreach ($candidates as $candidateId => $candidate) {
+                if (dashboard_folder_in_tree((array) ($candidate['folders'] ?? []), $wantedFolder)) {
+                    $courseState['course'] = $candidateId;
+                    $courseState['folder'] = $wantedFolder;
+                    break;
+                }
+            }
+            if ($courseState['folder'] === null && isset($candidates[$wantedFolder])) {
+                $courseState['course'] = $wantedFolder;
+            }
+        }
+    }
+}
+$courseCount = count($courses);
+if (!empty($explorerFragment)) {
+    header('Cache-Control: private, no-store');
+    header('X-Content-Type-Options: nosniff');
+    course_explorer_render($courses, 'student', $courseState);
+    exit;
+}
 ?>
 <!doctype html>
 <html lang="fr">
@@ -188,8 +295,10 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
-  <link href="assets/student-space.css?v=6" rel="stylesheet">
-  <link href="assets/student-theme.css?v=4" rel="stylesheet">
+  <link href="assets/student-space.css?v=7" rel="stylesheet">
+  <link href="assets/student-theme.css?v=5" rel="stylesheet">
+  <link href="assets/course-explorer.css?v=2" rel="stylesheet">
+  <script src="assets/course-explorer.js?v=2" defer></script>
 </head>
 <body class="student-space">
   <header class="student-space-bar">
@@ -212,8 +321,9 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
               <p class="student-inbox-empty">Aucun message</p>
             <?php else: ?>
               <?php foreach ($inbox['messages'] as $note): ?>
-                <button type="button" class="student-inbox-item<?= ((int) $note['is_read'] === 1) ? ' is-read' : ' is-unread' ?>" data-notif-id="<?= (int) $note['id'] ?>">
-                  <strong><?= e($note['sujet']) ?></strong>
+                <?php $noteLink = is_string($note['link'] ?? null) ? $note['link'] : ''; ?>
+                <button type="button" class="student-inbox-item<?= ((int) $note['is_read'] === 1) ? ' is-read' : ' is-unread' ?>" data-notif-id="<?= (int) $note['id'] ?>"<?= $noteLink !== '' ? ' data-notif-link="' . e($noteLink) . '"' : '' ?>>
+                  <strong><?php if (dashboard_course_link($noteLink)): ?><i class="bi bi-folder2-open me-1" aria-hidden="true"></i><?php endif; ?><?= e($note['sujet']) ?></strong>
                   <span><?= e($note['date']) ?></span>
                 </button>
               <?php endforeach; ?>
@@ -224,6 +334,7 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       <a href="logout.php?espace=etudiant">Déconnexion</a>
     </div>
   </header>
+  <p class="visually-hidden" id="studentLive" aria-live="polite"></p>
   <main class="student-space-main">
     <?php if ($dbError !== ''): ?><div class="student-space-alert" role="alert"><?= e($dbError) ?></div><?php endif; ?>
     <?php flash_show(); ?>
@@ -233,26 +344,31 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
         <strong>Profil</strong>
         <small><?= $profile ? 'Niveau ' . e(level_label((string) $profile['niveau'])) : 'Identité' ?></small>
       </button>
-      <button type="button" data-panel="emploi" aria-pressed="false">
+      <button type="button" data-panel="emploi" aria-pressed="<?= $openPanel === 'emploi' ? 'true' : 'false' ?>">
         <span>02</span>
         <strong>Emploi du temps</strong>
         <small><?= count($emploiPdfs) > 0 ? (count($emploiPdfs) . ' PDF') : (count($timetable) . ' séance' . (count($timetable) > 1 ? 's' : '')) ?></small>
       </button>
-      <button type="button" data-panel="notes" aria-pressed="false">
+      <button type="button" data-panel="cours" aria-pressed="<?= $openPanel === 'cours' ? 'true' : 'false' ?>">
         <span>03</span>
+        <strong>Cours</strong>
+        <small><?= $courseCount > 0 ? $courseCount . ' cours' : 'Aucun cours' ?></small>
+      </button>
+      <button type="button" data-panel="notes" aria-pressed="<?= $openPanel === 'notes' ? 'true' : 'false' ?>">
+        <span>04</span>
         <strong>Notes</strong>
         <small><?= count($grades) ?> matière<?= count($grades) > 1 ? 's' : '' ?></small>
       </button>
       <?php if ($attestationOpen): ?>
       <button type="button" data-panel="attestation" aria-pressed="<?= $openPanel === 'attestation' ? 'true' : 'false' ?>">
-        <span>04</span>
+        <span>05</span>
         <strong>Attestation</strong>
         <small>Demande de présence</small>
       </button>
       <?php endif; ?>
     </div>
 
-    <section class="student-space-sheet" data-sheet="profil"<?= $openPanel === 'profil' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'profil' ? ' is-entering' : '' ?>" data-sheet="profil"<?= $openPanel === 'profil' ? '' : ' hidden' ?>>
       <h1>Profil</h1>
       <?php if ($profile !== null): ?>
         <dl>
@@ -266,7 +382,7 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       <?php endif; ?>
     </section>
 
-    <section class="student-space-sheet" data-sheet="emploi" hidden>
+    <section class="student-space-sheet<?= $openPanel === 'emploi' ? ' is-entering' : '' ?>" data-sheet="emploi"<?= $openPanel === 'emploi' ? '' : ' hidden' ?>>
       <h1>Emploi du temps</h1>
       <?php if ($emploiPdfs !== []): ?>
         <p class="student-space-lead">PDF publié pour votre groupe. Vous pouvez l’ouvrir en aperçu ou le télécharger.</p>
@@ -275,11 +391,10 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
           <article class="student-space-table-wrap" style="margin-bottom:1.25rem;padding:1rem;">
             <h2 style="margin-top:0;"><?= e($groupLabel) ?></h2>
             <p class="student-space-lead"><?= e((string) $pdf['original_name']) ?></p>
-            <div style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:.85rem;">
-              <a class="btn btn-primary btn-sm" href="emploi_pdf.php?id_groupe=<?= (int) $pdf['id_groupe'] ?>&amp;action=view&amp;espace=etudiant" target="_blank" rel="noopener">Aperçu PDF</a>
+            <div style="display:flex;flex-wrap:wrap;gap:.6rem;">
+              <a class="btn btn-primary btn-sm" href="emploi_pdf.php?id_groupe=<?= (int) $pdf['id_groupe'] ?>&amp;action=view&amp;espace=etudiant" data-course-preview data-course-preview-title="Emploi du temps <?= e($groupLabel) ?>">Aperçu PDF</a>
               <a class="btn btn-outline-primary btn-sm" href="emploi_pdf.php?id_groupe=<?= (int) $pdf['id_groupe'] ?>&amp;action=download&amp;espace=etudiant">Télécharger PDF</a>
             </div>
-            <iframe title="Aperçu emploi du temps <?= e($groupLabel) ?>" src="emploi_pdf.php?id_groupe=<?= (int) $pdf['id_groupe'] ?>&amp;action=view&amp;espace=etudiant" style="width:100%;min-height:28rem;border:1px solid rgba(0,0,0,.12);border-radius:.75rem;background:#fff;"></iframe>
           </article>
         <?php endforeach; ?>
       <?php elseif ($timetableBySemester === []): ?>
@@ -311,7 +426,16 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       <?php endif; ?>
     </section>
 
-    <section class="student-space-sheet" data-sheet="notes" hidden>
+    <section class="student-space-sheet<?= $openPanel === 'cours' ? ' is-entering' : '' ?>" data-sheet="cours"<?= $openPanel === 'cours' ? '' : ' hidden' ?>>
+      <h1>Mes cours</h1>
+      <p class="student-space-lead">Les cours publiés par vos enseignants pour vos matières.</p>
+      <p class="student-space-alert" id="studentCourseFresh" role="status" hidden>
+        Nouveau cours disponible — <a href="dashboard.php?panel=cours" id="studentCourseRefresh">Actualiser</a>
+      </p>
+      <?php course_explorer_render($courses, 'student', $courseState); ?>
+    </section>
+
+    <section class="student-space-sheet<?= $openPanel === 'notes' ? ' is-entering' : '' ?>" data-sheet="notes"<?= $openPanel === 'notes' ? '' : ' hidden' ?>>
       <h1>Notes du semestre</h1>
       <?php if ($gradesBySemester === []): ?>
         <p class="student-space-lead">Aucune note n’est enregistrée pour le moment.</p>
@@ -342,7 +466,7 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
     </section>
 
     <?php if ($attestationOpen): ?>
-    <section class="student-space-sheet" data-sheet="attestation"<?= $openPanel === 'attestation' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'attestation' ? ' is-entering' : '' ?>" data-sheet="attestation"<?= $openPanel === 'attestation' ? '' : ' hidden' ?>>
       <h1>Demander une attestation de présence</h1>
       <div id="attestationBoard">
       <?php if ($attestationBoard['state'] === 'en_attente'): ?>
@@ -391,17 +515,69 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
   (function () {
-    var buttons = document.querySelectorAll('[data-panel]');
-    var sheets = document.querySelectorAll('[data-sheet]');
+    var COURSE_LINK = /^dashboard\.php\?panel=cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?$/;
+    var buttons = document.querySelectorAll('.student-space-cards > [data-panel]');
+    var sheets = document.querySelectorAll('.student-space-main > [data-sheet]');
+    var liveEl = document.getElementById('studentLive');
+    function announce(message) {
+      if (!liveEl) return;
+      liveEl.textContent = '';
+      liveEl.textContent = message;
+    }
+    function rememberPanel(panel) {
+      if (!window.history || typeof window.history.replaceState !== 'function') return;
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('panel') === panel) return;
+      params.set('panel', panel);
+      if (panel !== 'cours') {
+        params.delete('cours');
+        params.delete('dossier');
+      }
+      window.history.replaceState(window.history.state, '', window.location.pathname + '?' + params.toString() + window.location.hash);
+    }
+    function openPanel(panel, options) {
+      var opts = options || {};
+      if (!panel) return;
+      buttons.forEach(function (item) {
+        item.setAttribute('aria-pressed', item.getAttribute('data-panel') === panel ? 'true' : 'false');
+      });
+      sheets.forEach(function (sheet) {
+        var match = sheet.getAttribute('data-sheet') === panel;
+        if (match) {
+          var wasHidden = sheet.hidden;
+          sheet.hidden = false;
+          sheet.classList.remove('is-entering');
+          if (wasHidden) {
+            void sheet.offsetWidth;
+            sheet.classList.add('is-entering');
+          }
+        } else {
+          sheet.hidden = true;
+          sheet.classList.remove('is-entering');
+        }
+      });
+      if (!opts.silent) rememberPanel(panel);
+    }
+    window.studentSpace = {
+      openPanel: openPanel,
+      announce: announce
+    };
     buttons.forEach(function (button) {
       button.addEventListener('click', function () {
-        buttons.forEach(function (item) { item.setAttribute('aria-pressed', 'false'); });
-        button.setAttribute('aria-pressed', 'true');
-        sheets.forEach(function (sheet) {
-          sheet.hidden = sheet.getAttribute('data-sheet') !== button.getAttribute('data-panel');
-        });
+        openPanel(button.getAttribute('data-panel'));
       });
     });
+    var courseRefresh = document.getElementById('studentCourseRefresh');
+    if (courseRefresh) {
+      courseRefresh.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (window.courseExplorer && typeof window.courseExplorer.reload === 'function') {
+          window.courseExplorer.reload();
+        } else {
+          window.location.assign(courseRefresh.getAttribute('href') || 'dashboard.php?panel=cours');
+        }
+      });
+    }
 
     var csrf = <?= json_encode(csrf_token(), JSON_UNESCAPED_UNICODE) ?>;
     var inbox = <?= json_encode($inbox, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
@@ -429,19 +605,55 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
         unread < 1 ? 'Boîte de réception, aucun message non lu' : 'Boîte de réception, ' + unread + ' message' + (unread > 1 ? 's' : '') + ' non lu' + (unread > 1 ? 's' : '')
       );
     }
+    function noteLink(note) {
+      return note && typeof note.link === 'string' ? note.link : '';
+    }
     function renderList(messages) {
       if (!listEl) return;
       if (!messages || !messages.length) {
         listEl.innerHTML = '<p class="student-inbox-empty">Aucun message</p>';
         return;
       }
-      listEl.innerHTML = messages.map(function (note) {
+      var fragment = document.createDocumentFragment();
+      messages.forEach(function (note) {
         var unread = Number(note.is_read) !== 1;
-        return '<button type="button" class="student-inbox-item' + (unread ? ' is-unread' : ' is-read') + '" data-notif-id="' + Number(note.id) + '">'
-          + '<strong>' + escapeText(note.sujet) + '</strong>'
-          + '<span>' + escapeText(note.date) + '</span>'
-          + '</button>';
-      }).join('');
+        var link = noteLink(note);
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'student-inbox-item' + (unread ? ' is-unread' : ' is-read');
+        item.setAttribute('data-notif-id', String(Number(note.id)));
+        if (link !== '') item.setAttribute('data-notif-link', link);
+        var title = document.createElement('strong');
+        if (COURSE_LINK.test(link)) {
+          var icon = document.createElement('i');
+          icon.className = 'bi bi-folder2-open me-1';
+          icon.setAttribute('aria-hidden', 'true');
+          title.appendChild(icon);
+        }
+        title.appendChild(document.createTextNode(note.sujet == null ? '' : String(note.sujet)));
+        var date = document.createElement('span');
+        date.textContent = note.date == null ? '' : String(note.date);
+        item.appendChild(title);
+        item.appendChild(date);
+        fragment.appendChild(item);
+      });
+      listEl.textContent = '';
+      listEl.appendChild(fragment);
+    }
+    var knownIds = {};
+    function rememberIds(messages) {
+      (messages || []).forEach(function (note) { knownIds[Number(note.id)] = true; });
+    }
+    function announceNewCourse(messages) {
+      var fresh = (messages || []).some(function (note) {
+        return !knownIds[Number(note.id)] && Number(note.is_read) !== 1 && COURSE_LINK.test(noteLink(note));
+      });
+      var sheet = document.querySelector('.student-space-main > [data-sheet="cours"]');
+      var hint = document.getElementById('studentCourseFresh');
+      if (!fresh || !sheet || sheet.hidden || !hint) return;
+      var refresh = document.getElementById('studentCourseRefresh');
+      if (refresh) refresh.setAttribute('href', window.location.href);
+      hint.hidden = false;
     }
     function applyInbox(data) {
       if (!data) return;
@@ -450,6 +662,7 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       setBadge(data.unread);
       renderList(data.messages || []);
       renderAttestationBoard(data.attestation || null);
+      rememberIds(data.messages);
     }
     function renderAttestationBoard(board) {
       var holder = document.getElementById('attestationBoard');
@@ -469,6 +682,22 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       }
       return null;
     }
+    function markRead(id) {
+      var body = new URLSearchParams();
+      body.set('csrf_token', csrf);
+      body.set('id_notif', String(id));
+      return fetch('etudiant_inbox.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        keepalive: true,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+        body: body.toString()
+      })
+        .then(function (response) { return response.ok ? response.json() : null; })
+        .then(function (data) { if (data) applyInbox(data); })
+        .catch(function () {});
+    }
     function openMessage(id) {
       var note = findMessage(id);
       if (!note || !modalEl || typeof bootstrap === 'undefined') return;
@@ -477,25 +706,37 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
       bodyEl.textContent = note.message_body || '';
       bootstrap.Modal.getOrCreateInstance(modalEl).show();
       if (Number(note.is_read) === 1) return;
-      var body = new URLSearchParams();
-      body.set('csrf_token', csrf);
-      body.set('id_notif', String(id));
-      fetch('etudiant_inbox.php', {
-        method: 'POST',
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-        body: body.toString()
-      })
-        .then(function (response) { return response.ok ? response.json() : null; })
-        .then(function (data) { if (data) applyInbox(data); })
-        .catch(function () {});
+      markRead(id);
+    }
+    function closeInbox() {
+      if (!toggleEl || typeof bootstrap === 'undefined' || !bootstrap.Dropdown) return;
+      var dropdown = bootstrap.Dropdown.getInstance(toggleEl);
+      if (dropdown) dropdown.hide();
+    }
+    function followCourseLink(id, link) {
+      var note = findMessage(id);
+      closeInbox();
+      openPanel('cours');
+      if (window.courseExplorer && typeof window.courseExplorer.navigate === 'function') {
+        window.courseExplorer.navigate(link, { push: true });
+      } else {
+        window.location.assign(link);
+        return;
+      }
+      if (!note || Number(note.is_read) === 1) return;
+      markRead(id);
     }
     if (listEl) {
       listEl.addEventListener('click', function (event) {
         var item = event.target.closest('[data-notif-id]');
         if (!item) return;
-        openMessage(item.getAttribute('data-notif-id'));
+        var id = item.getAttribute('data-notif-id');
+        var link = item.getAttribute('data-notif-link') || '';
+        if (COURSE_LINK.test(link)) {
+          followCourseLink(id, link);
+          return;
+        }
+        openMessage(id);
       });
     }
     function tick() {
@@ -512,10 +753,12 @@ $openPanel = ($_SERVER['REQUEST_METHOD'] === 'POST' && (string) ($_POST['action'
             return;
           }
           if (String(data.stamp || '') === stamp) return;
+          announceNewCourse(data.messages);
           applyInbox(data);
         })
         .catch(function () {});
     }
+    rememberIds(inbox.messages);
     setBadge(inbox.unread);
     setInterval(tick, 2000);
   })();

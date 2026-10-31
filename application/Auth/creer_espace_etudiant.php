@@ -10,35 +10,44 @@ if (logged_in()) {
 
 $error = '';
 $cin = '';
+$birth = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $cin = student_normalize_cin((string) ($_POST['cin'] ?? ''));
+    $birth = trim((string) ($_POST['date_naissance'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
     $confirm = (string) ($_POST['password_confirm'] ?? '');
 
-    if ($cin === '' || mb_strlen($cin) > 40) {
-        $error = 'Indiquez le CIN ou le passeport utilisé lors de l’inscription.';
+    if ($cin === '' || mb_strlen($cin) > 40 || $birth === '') {
+        $error = 'Indiquez le CIN ou le passeport et la date de naissance du dossier d’inscription.';
     } elseif (strlen($password) < 8 || strlen($password) > 72) {
         $error = 'Le mot de passe doit contenir entre 8 et 72 caractères.';
     } elseif (!hash_equals($password, $confirm)) {
         $error = 'Les deux mots de passe ne correspondent pas.';
     } else {
+        $createBucket = 'creer:' . strtolower($cin);
+        if (auth_rate_limited($createBucket)) {
+            $error = 'Trop de tentatives. Réessayez dans quelques minutes.';
+        } else {
         try {
             $pdo = db();
             ensure_etudiant_compte_table($pdo);
 
-            // Seul un dossier déjà présent dans etudiant peut obtenir un espace.
+            // Le CIN seul ne suffit pas : la date de naissance doit être celle du dossier.
             $student = student_find_by_cin($cin);
-
-            if (!$student) {
-                $error = 'Aucun étudiant inscrit ne correspond à ce CIN.';
-            } else {
+            $existingAccount = false;
+            if ($student && student_birth_matches($student, $birth)) {
                 $existing = $pdo->prepare('SELECT 1 FROM etudiant_compte WHERE id_etudiant = ? LIMIT 1');
                 $existing->execute([(int) $student['id_etudiant']]);
-                if ($existing->fetchColumn()) {
-                    $error = 'Un espace existe déjà pour ce CIN. Connectez-vous.';
-                } else {
+                $existingAccount = (bool) $existing->fetchColumn();
+            }
+
+            if (!$student || !student_birth_matches($student, $birth) || $existingAccount) {
+                auth_rate_fail($createBucket);
+                $error = 'Ces informations ne permettent pas d’ouvrir un espace. Vérifiez le CIN et la date de naissance, ou connectez-vous si l’espace existe déjà.';
+            } else {
+                    auth_rate_clear($createBucket);
                     $insert = $pdo->prepare(
                         'INSERT INTO etudiant_compte (id_etudiant, password) VALUES (?, ?)'
                     );
@@ -61,10 +70,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     flash('success', 'Votre espace étudiant est ouvert.');
                     header('Location: dashboard.php');
                     exit;
-                }
             }
         } catch (PDOException $exception) {
+            error_log('student account creation failed: ' . $exception->getMessage());
             $error = 'Erreur lors de la récupération des données';
+        }
         }
     }
 }
@@ -90,6 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
       <label for="cin">CIN / passeport</label>
       <input id="cin" name="cin" value="<?= e($cin) ?>" maxlength="40" required autofocus>
+      <label for="date_naissance">Date de naissance</label>
+      <input id="date_naissance" name="date_naissance" type="date" value="<?= e($birth) ?>" required>
       <label for="password">Mot de passe</label>
       <input id="password" name="password" type="password" minlength="8" maxlength="72" required autocomplete="new-password">
       <label for="password_confirm">Confirmer le mot de passe</label>

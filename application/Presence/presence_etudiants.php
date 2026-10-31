@@ -146,13 +146,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
                 updated_at = CURRENT_TIMESTAMP'
         );
 
+        $resolved = [];
+        foreach ($memberIds as $studentId) {
+            $raw = $statuses[$studentId] ?? $statuses[(string) $studentId] ?? null;
+            if ($raw !== 'present' && $raw !== 'absent') {
+                throw new RuntimeException('Indiquez présent ou absent pour chaque étudiant du groupe.');
+            }
+            $resolved[$studentId] = $raw;
+        }
+
         $pdo->beginTransaction();
         $saved = 0;
         $presentCount = 0;
         $absentCount = 0;
-        foreach ($memberIds as $studentId) {
-            $raw = (string) ($statuses[$studentId] ?? 'present');
-            $statut = $raw === 'absent' ? 'absent' : 'present';
+        foreach ($resolved as $studentId => $statut) {
             if ($statut === 'absent') {
                 $absentCount++;
             } else {

@@ -34,7 +34,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $studentId = filter_input(INPUT_POST, 'id_etudiant', FILTER_VALIDATE_INT);
             $subjectId = filter_input(INPUT_POST, 'id_mat', FILTER_VALIDATE_INT);
             $groupId = filter_input(INPUT_POST, 'id_groupe', FILTER_VALIDATE_INT) ?: 0;
-            $semester = $_POST['semestre'] ?? '';
+            $postedSemester = (string) ($_POST['semestre'] ?? '');
+            $subjectSemester = '';
+            if (is_int($subjectId) && $subjectId > 0) {
+                $subjectRow = $pdo->prepare('SELECT semestre FROM matiere WHERE id_mat = ?');
+                $subjectRow->execute([$subjectId]);
+                $subjectSemester = (string) $subjectRow->fetchColumn();
+            }
+            $semester = $subjectSemester;
+            if ($subjectSemester !== '' && $postedSemester !== '' && $postedSemester !== $semester) {
+                throw new RuntimeException('Le semestre doit être celui de la matière.');
+            }
             $mainMark = str_replace(',', '.', trim((string) ($_POST['note'] ?? '')));
             $retakeMark = str_replace(',', '.', trim((string) ($_POST['note_rattrapage'] ?? '')));
             $componentMarks = [];
@@ -47,9 +57,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             if (!$studentId || !$subjectId || !academic_period_valid($semester) || ($mainMark === '' && !array_filter($componentMarks, static fn($value): bool => $value !== null)) || ($mainMark !== '' && (!is_numeric($mainMark) || (float) $mainMark < 0 || (float) $mainMark > 20)) || ($retakeMark !== '' && (!is_numeric($retakeMark) || (float) $retakeMark < 0 || (float) $retakeMark > 20))) throw new RuntimeException('Sélectionnez l’étudiant, la matière et saisissez au moins une note Cours, TD, TP ou une note finale manuelle.');
             if ($groupId) {
-                $groupTypeQuery = $pdo->prepare('SELECT type_groupe FROM groupe WHERE id_groupe = ?');
+                $groupTypeQuery = $pdo->prepare('SELECT type_groupe, semestre FROM groupe WHERE id_groupe = ?');
                 $groupTypeQuery->execute([$groupId]);
-                if ($groupTypeQuery->fetchColumn() !== 'Cours') throw new RuntimeException('La saisie des notes est disponible uniquement pour les groupes Cours.');
+                $groupRow = $groupTypeQuery->fetch();
+                if (!$groupRow || $groupRow['type_groupe'] !== 'Cours') throw new RuntimeException('La saisie des notes est disponible uniquement pour les groupes Cours.');
+                if ((string) $groupRow['semestre'] !== $semester) throw new RuntimeException('Ce groupe n’appartient pas au semestre de la matière.');
             }
             if ($groupId) {
                 $membership = $pdo->prepare('SELECT 1 FROM groupe_etudiant WHERE id_groupe = ? AND id_etudiant = ?');
@@ -64,12 +76,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $params = ['id_etudiant' => $studentId, 'id_mat' => $subjectId, 'semestre' => $semester, 'note' => $mainMark === '' ? null : $mainMark, 'note_cours' => $componentMarks['note_cours'], 'note_td' => $componentMarks['note_td'], 'note_tp' => $componentMarks['note_tp'], 'note_rattrapage' => $retakeMark === '' ? null : $retakeMark];
             if ($noteId) {
+                $existingNote = $pdo->prepare('SELECT id_etudiant, id_mat, id_groupe, semestre FROM note WHERE id_note = ?');
+                $existingNote->execute([$noteId]);
+                $existingRow = $existingNote->fetch();
+                if (!$existingRow) {
+                    throw new RuntimeException('Cette note est introuvable.');
+                }
+                if ((int) $existingRow['id_etudiant'] !== $studentId
+                    || (int) $existingRow['id_mat'] !== $subjectId
+                    || (string) $existingRow['semestre'] !== $semester
+                ) {
+                    throw new RuntimeException('Une note existante ne peut pas être déplacée vers un autre étudiant, une autre matière ou un autre semestre.');
+                }
                 $params['id_note'] = $noteId;
-                $existingGroupQuery = $pdo->prepare('SELECT id_groupe FROM note WHERE id_note = ?');
-                $existingGroupQuery->execute([$noteId]);
-                $existingGroup = $existingGroupQuery->fetchColumn();
-                $params['id_groupe'] = $groupId ?: ($existingGroup ?: null);
-                $pdo->prepare('UPDATE note SET id_etudiant=:id_etudiant, id_mat=:id_mat, id_groupe=:id_groupe, semestre=:semestre, note=:note, note_cours=:note_cours, note_td=:note_td, note_tp=:note_tp, note_rattrapage=:note_rattrapage WHERE id_note=:id_note')->execute($params);
+                $params['id_groupe'] = $groupId ?: ($existingRow['id_groupe'] ?: null);
+                unset($params['id_etudiant'], $params['id_mat'], $params['semestre']);
+                $pdo->prepare('UPDATE note SET id_groupe=:id_groupe, note=:note, note_cours=:note_cours, note_td=:note_td, note_tp=:note_tp, note_rattrapage=:note_rattrapage WHERE id_note=:id_note')->execute($params);
                 $message = 'Note modifiée avec succès.';
                 $noteAction = 'modifier';
             } else {

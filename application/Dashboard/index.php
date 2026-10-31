@@ -244,6 +244,7 @@ function dashboard_menu(): void {
         <div class="dashboard-menu-sub" hidden>
           <?php
           dashboard_menu_item('structure_academique.php?embed=1', 'Structure académique', 'Programmes, niveaux, périodes', 'groups', '');
+          dashboard_menu_item('etablissement.php?embed=1', 'Nom de l’établissement', 'Modifier les noms français et arabe des attestations', 'accounts', '');
           dashboard_menu_item('specialites.php?embed=1', 'Spécialités', 'Créer ou désactiver', 'enroll', '');
           dashboard_menu_item('frais_scolarite.php?embed=1', 'Frais de scolarité', 'Montant et devise', 'finance', '');
           dashboard_menu_item('politique_promotion.php?embed=1', 'Seuil de promotion', 'Admission et niveau final', 'promo', '');
@@ -270,6 +271,9 @@ function dashboard_menu(): void {
         $num()
       );
       dashboard_menu_item('feuille_presence.php?embed=1', 'Feuille de présence', 'Vos groupes et matières affectés', 'sheet', $num());
+      if (is_teacher()) {
+        dashboard_menu_item('mes_cours.php?embed=1', 'Mes cours', 'Dossiers et PDF pour vos étudiants', 'docs', $num());
+      }
     }
     if (is_admin()) {
       $eliminationTotal = (int) presence_elimination_alerts(db())['counts']['total'];

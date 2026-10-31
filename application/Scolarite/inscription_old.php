@@ -119,7 +119,9 @@ page_head($editing ? 'Modifier un étudiant' : 'Inscription étudiant', 'registe
 </div></div>
 <?php page_foot();*/
 require_once app_path('layout.php');
-require_login();
+require_permission('students.edit');
+header('Location: inscription.php');
+exit;
 
 $fields = ['nom', 'prenom', 'nom_ar', 'prenom_ar', 'date_naissance', 'lieu_naissance', 'lieu_naissance_ar', 'sexe', 'nationalite', 'etat_civil', 'cin_passeport', 'num_tel', 'adresse', 'email', 'date_inscrit', 'id_spec', 'niveau', 'annee_bac', 'specialite_bac'];
 $specs = db()->query('SELECT * FROM specialite ORDER BY nom_spec')->fetchAll();

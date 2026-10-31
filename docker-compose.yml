@@ -77,7 +77,7 @@ services:
     container_name: myapp_db
     restart: unless-stopped
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: ecole_sante_gabes

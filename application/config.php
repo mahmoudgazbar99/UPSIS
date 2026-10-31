@@ -10,10 +10,10 @@ function app_is_student_request(): bool
 {
     $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     if ($script === 'account_status.php') {
-        return (string) ($_GET['espace'] ?? '') === 'etudiant';
+        return ($_GET['espace'] ?? '') === 'etudiant';
     }
-    if (in_array($script, ['stage_dossier.php', 'stage_document.php', 'emploi_pdf.php'], true)
-        && (string) ($_GET['espace'] ?? '') === 'etudiant'
+    if (in_array($script, ['stage_dossier.php', 'stage_document.php', 'emploi_pdf.php', 'cours_fichier.php'], true)
+        && ($_GET['espace'] ?? '') === 'etudiant'
     ) {
         return true;
     }
@@ -29,7 +29,7 @@ function app_is_student_request(): bool
     if ($script !== 'logout.php') {
         return false;
     }
-    if ((string) ($_GET['espace'] ?? '') === 'etudiant') {
+    if (($_GET['espace'] ?? '') === 'etudiant') {
         return true;
     }
     $refererPath = (string) (parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?: '');
@@ -47,6 +47,7 @@ session_set_cookie_params([
     'samesite' => 'Lax',
 ]);
 session_start();
+app_send_security_headers();
 if (!app_is_student_request() && ($_SESSION['user_role'] ?? '') === 'etudiant') {
     unset($_SESSION['user_role'], $_SESSION['id_etudiant']);
 }
@@ -108,6 +109,14 @@ function student_find_by_cin(string $cin): ?array
     return $row ?: null;
 }
 
+function student_birth_matches(array $student, string $birth): bool
+{
+    $stored = substr((string) ($student['date_naissance'] ?? ''), 0, 10);
+    return $stored !== ''
+        && preg_match('/^\d{4}-\d{2}-\d{2}$/', $birth) === 1
+        && hash_equals($stored, $birth);
+}
+
 function stage_accounts_table_exists(): bool {
     $statement = db()->prepare(
         'SELECT 1 FROM information_schema.tables
@@ -118,6 +127,21 @@ function stage_accounts_table_exists(): bool {
 }
 
 function logged_in(): bool { return !empty($_SESSION['user_role']); }
+function app_send_security_headers(): void
+{
+    if (PHP_SAPI === 'cli' || headers_sent()) {
+        return;
+    }
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
+    header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
+    header('X-Permitted-Cross-Domain-Policies: none');
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=15552000');
+    }
+}
+
 function is_admin(): bool { return ($_SESSION['user_role'] ?? '') === 'admin'; }
 function is_teacher(): bool { return ($_SESSION['user_role'] ?? '') === 'enseignant'; }
 function is_finance(): bool { return ($_SESSION['user_role'] ?? '') === 'finance'; }
@@ -237,6 +261,10 @@ function current_account_session_status(): string
         return 'anonymous';
     }
     if (is_admin()) {
+        $generation = admin_auth_generation();
+        if ((int) ($_SESSION['admin_auth_generation'] ?? -1) !== $generation) {
+            return 'revoked';
+        }
         return 'active';
     }
 
@@ -301,6 +329,117 @@ function verify_csrf(): void {
         exit('Requête invalide. Veuillez actualiser la page.');
     }
 }
+
+function auth_client_address(): string
+{
+    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+    return $ip !== '' ? $ip : 'local';
+}
+
+function auth_throttle_path(string $bucket): string
+{
+    $dir = storage_path('cache/auth-throttle');
+    if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) {
+        throw new RuntimeException('Le contrôle des tentatives de connexion est indisponible.');
+    }
+    return $dir . DIRECTORY_SEPARATOR . hash('sha256', $bucket) . '.json';
+}
+
+/** @return array{fails:int,window:int,locked_until:int} */
+function auth_throttle_read(string $bucket): array
+{
+    $path = auth_throttle_path($bucket);
+    if (!is_file($path)) {
+        return ['fails' => 0, 'window' => 0, 'locked_until' => 0];
+    }
+    $data = json_decode((string) file_get_contents($path), true);
+    if (!is_array($data)) {
+        return ['fails' => 0, 'window' => 0, 'locked_until' => 0];
+    }
+    return [
+        'fails' => (int) ($data['fails'] ?? 0),
+        'window' => (int) ($data['window'] ?? 0),
+        'locked_until' => (int) ($data['locked_until'] ?? 0),
+    ];
+}
+
+function auth_throttle_write(string $bucket, int $fails, int $window, int $lockedUntil): void
+{
+    file_put_contents(auth_throttle_path($bucket), json_encode([
+        'fails' => $fails,
+        'window' => $window,
+        'locked_until' => $lockedUntil,
+    ]), LOCK_EX);
+}
+
+function auth_bucket_locked(string $bucket, int $limit): bool
+{
+    $data = auth_throttle_read($bucket);
+    if ($data['locked_until'] > time()) {
+        return true;
+    }
+    if ($data['window'] > 0 && $data['window'] < time() - 900) {
+        return false;
+    }
+    return $data['fails'] >= $limit;
+}
+
+function auth_bucket_hit(string $bucket, int $limit): void
+{
+    $data = auth_throttle_read($bucket);
+    $window = $data['window'];
+    $fails = $data['fails'];
+    if ($window < time() - 900) {
+        $window = time();
+        $fails = 0;
+    }
+    $fails++;
+    $lockedUntil = $fails >= $limit ? time() + 900 : 0;
+    auth_throttle_write($bucket, $fails, $window, $lockedUntil);
+}
+
+function auth_bucket_clear(string $bucket): void
+{
+    $path = auth_throttle_path($bucket);
+    if (is_file($path)) {
+        unlink($path);
+    }
+}
+
+function auth_rate_limited(string $identity): bool
+{
+    return auth_bucket_locked('id:' . $identity, 8) || auth_bucket_locked('ip:' . auth_client_address(), 60);
+}
+
+function auth_rate_fail(string $identity): void
+{
+    auth_bucket_hit('id:' . $identity, 8);
+    auth_bucket_hit('ip:' . auth_client_address(), 60);
+}
+
+function auth_rate_clear(string $identity): void
+{
+    auth_bucket_clear('id:' . $identity);
+}
+
+function ensure_admin_auth_generation(PDO $pdo): void
+{
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    if (!$pdo->query("SHOW COLUMNS FROM admin_user LIKE 'auth_generation'")->fetch()) {
+        $pdo->exec('ALTER TABLE admin_user ADD COLUMN auth_generation INT UNSIGNED NOT NULL DEFAULT 1');
+    }
+    $ready = true;
+}
+
+function admin_auth_generation(): int
+{
+    ensure_admin_auth_generation(db());
+    $value = db()->query('SELECT auth_generation FROM admin_user WHERE username = "admin" LIMIT 1')->fetchColumn();
+    return $value === false ? 0 : (int) $value;
+}
 function e(?string $value): string {
     $value = (string) $value;
     if (!mb_check_encoding($value, 'UTF-8')) {
@@ -340,10 +479,10 @@ function enforce_student_route_isolation(): void {
         return;
     }
     $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if ($script === 'account_status.php' && (string) ($_GET['espace'] ?? '') === 'etudiant') {
+    if ($script === 'account_status.php' && ($_GET['espace'] ?? '') === 'etudiant') {
         return;
     }
-    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'stage_dossier.php', 'stage_document.php', 'emploi_pdf.php'], true)) {
+    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'stage_dossier.php', 'stage_document.php', 'emploi_pdf.php', 'cours_fichier.php'], true)) {
         return;
     }
     header('Location: dashboard.php');
@@ -408,6 +547,16 @@ function attestation_ensure_tables(PDO $pdo): void
              ADD COLUMN date_acceptation TIMESTAMP NULL DEFAULT NULL AFTER date_demande'
         );
     }
+    if (db_table_exists($pdo, 'demande_attestation')) {
+        try {
+            $pdo->exec(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_demande_etudiant_attente
+                 ON demande_attestation (id_etudiant) WHERE statut = 'en_attente'"
+            );
+        } catch (Throwable $exception) {
+            error_log('attestation pending unique index: ' . $exception->getMessage());
+        }
+    }
 }
 
 function attestation_feature_active(PDO $pdo): bool
@@ -433,26 +582,39 @@ function student_notifications_ensure_tables(PDO $pdo): void
         return;
     }
     $ready = true;
-    if (db_table_exists($pdo, 'etudiant_notifications')) {
+    if (!db_table_exists($pdo, 'etudiant_notifications')) {
+        $pdo->exec(
+            "CREATE TABLE etudiant_notifications (
+              id_notif INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              id_etudiant INT UNSIGNED NOT NULL,
+              sujet VARCHAR(180) NOT NULL,
+              message_body TEXT NOT NULL,
+              lien VARCHAR(255) NULL DEFAULT NULL,
+              is_read TINYINT(1) NOT NULL DEFAULT 0,
+              date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (id_notif),
+              KEY idx_etudiant_notif_unread (id_etudiant, is_read, date_creation),
+              CONSTRAINT fk_etudiant_notifications FOREIGN KEY (id_etudiant)
+                REFERENCES etudiant (id_etudiant) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+        );
         return;
     }
-    $pdo->exec(
-        "CREATE TABLE etudiant_notifications (
-          id_notif INT UNSIGNED NOT NULL AUTO_INCREMENT,
-          id_etudiant INT UNSIGNED NOT NULL,
-          sujet VARCHAR(180) NOT NULL,
-          message_body TEXT NOT NULL,
-          is_read TINYINT(1) NOT NULL DEFAULT 0,
-          date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          PRIMARY KEY (id_notif),
-          KEY idx_etudiant_notif_unread (id_etudiant, is_read, date_creation),
-          CONSTRAINT fk_etudiant_notifications FOREIGN KEY (id_etudiant)
-            REFERENCES etudiant (id_etudiant) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-    );
+    if (!$pdo->query("SHOW COLUMNS FROM etudiant_notifications LIKE 'lien'")->fetch()) {
+        $pdo->exec('ALTER TABLE etudiant_notifications ADD COLUMN lien VARCHAR(255) NULL DEFAULT NULL AFTER message_body');
+    }
 }
 
-function student_notify(PDO $pdo, int $studentId, string $sujet, string $messageBody): void
+function student_notification_link(?string $link): ?string
+{
+    $link = trim((string) $link);
+    if ($link === '' || strlen($link) > 255 || !preg_match('/^dashboard\.php\?panel=cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?\z/', $link)) {
+        return null;
+    }
+    return $link;
+}
+
+function student_notify(PDO $pdo, int $studentId, string $sujet, string $messageBody, ?string $link = null): void
 {
     student_notifications_ensure_tables($pdo);
     $sujet = trim($sujet);
@@ -461,10 +623,10 @@ function student_notify(PDO $pdo, int $studentId, string $sujet, string $message
         return;
     }
     $query = $pdo->prepare(
-        'INSERT INTO etudiant_notifications (id_etudiant, sujet, message_body, is_read)
-         VALUES (?, ?, ?, 0)'
+        'INSERT INTO etudiant_notifications (id_etudiant, sujet, message_body, lien, is_read)
+         VALUES (?, ?, ?, ?, 0)'
     );
-    $query->execute([$studentId, mb_substr($sujet, 0, 180), $messageBody]);
+    $query->execute([$studentId, mb_substr($sujet, 0, 180), $messageBody, student_notification_link($link)]);
 }
 
 function attestation_format_pickup_datetime(string $raw): ?string
@@ -521,7 +683,7 @@ function student_notifications_latest(PDO $pdo, int $studentId, int $limit = 25)
     student_notifications_ensure_tables($pdo);
     $limit = max(1, min(50, $limit));
     $query = $pdo->prepare(
-        'SELECT id_notif, sujet, message_body, is_read, date_creation
+        'SELECT id_notif, sujet, message_body, lien, is_read, date_creation
          FROM etudiant_notifications
          WHERE id_etudiant = ?
          ORDER BY date_creation DESC, id_notif DESC
@@ -535,6 +697,7 @@ function student_notifications_latest(PDO $pdo, int $studentId, int $limit = 25)
             'id' => (int) $row['id_notif'],
             'sujet' => (string) $row['sujet'],
             'message_body' => (string) $row['message_body'],
+            'link' => student_notification_link($row['lien'] ?? null) ?? '',
             'is_read' => (int) $row['is_read'] === 1 ? 1 : 0,
             'date' => date('d/m/Y H:i', $created),
         ];
@@ -957,7 +1120,7 @@ function ensure_teacher_active(PDO $pdo): void
 
 function audit_record(string $category, string $action, string $summary): void
 {
-    if (!in_array($category, ['note', 'paiement', 'presence', 'compte', 'reglage', 'stage'], true)) {
+    if (!in_array($category, ['note', 'paiement', 'presence', 'compte', 'reglage', 'stage', 'cours'], true)) {
         return;
     }
     try {
@@ -1005,6 +1168,7 @@ function audit_record(string $category, string $action, string $summary): void
 
 require_once __DIR__ . '/support/institution.php';
 require_once __DIR__ . '/support/academic_policy.php';
+require_once __DIR__ . '/support/course_library.php';
 if (!in_array(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')), ['account_status.php', 'etudiant_inbox.php'], true)) {
     validate_current_account_status();
 }

@@ -84,6 +84,9 @@ function macos_dock(): void {
             <?php if (is_admin() || is_scolarite()): ?>
             <a class="macos-dock-item" href="inscription.php?embed=1" target="dashboard-content" data-dock="enroll" title="Inscrire" aria-label="Inscrire"><?= $icon('<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/>') ?></a>
             <?php endif; ?>
+            <?php if (is_teacher()): ?>
+            <button type="button" class="macos-dock-item" data-dock="courses" data-course-finder-open title="Cours" aria-label="Ouvrir le dossier des cours" aria-haspopup="dialog" aria-controls="courseFinderWindow"><?= $icon('<path d="M3.5 8.2A2.2 2.2 0 0 1 5.7 6h3.1l1.6 1.8h7.9A2.2 2.2 0 0 1 20.5 10v7.2a2.2 2.2 0 0 1-2.2 2.2H5.7a2.2 2.2 0 0 1-2.2-2.2z"/>') ?></button>
+            <?php endif; ?>
             <?php if (is_admin() || is_teacher()): ?>
             <a class="macos-dock-item" href="gestion_notes.php?embed=1" target="dashboard-content" data-dock="grades" title="Notes" aria-label="Notes"><?= $icon('<path d="M7 4h10v16H7z"/><path d="M10 8h4M10 12h4M10 16h2"/>') ?></a>
             <a class="macos-dock-item" href="presence_etudiants.php?embed=1" target="dashboard-content" data-dock="presence" title="Présence" aria-label="Présence"><?= $icon('<path d="M8 12.5 10.5 15 16 9"/><rect x="4" y="4" width="16" height="16" rx="3"/>') ?></a>
@@ -97,6 +100,45 @@ function macos_dock(): void {
             <a class="macos-dock-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content" data-dock="settings" title="Réglages" aria-label="Réglages"><?= $icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/>') ?></a>
             <?php endif; ?>
         </nav>
+        <?php if (is_teacher()): ?>
+        <div class="course-finder-layer no-print" id="courseFinderLayer" data-csrf="<?= e(csrf_token()) ?>" hidden>
+            <div class="course-finder-window" id="courseFinderWindow" role="dialog" aria-modal="true" aria-labelledby="courseFinderTitle">
+                <header class="course-finder-titlebar">
+                    <div class="macos-traffic">
+                        <button type="button" class="macos-dot macos-dot-close" data-course-finder-close aria-label="Fermer le dossier des cours"></button>
+                        <span class="macos-dot macos-dot-min" aria-hidden="true"></span>
+                        <span class="macos-dot macos-dot-max" aria-hidden="true"></span>
+                    </div>
+                    <button type="button" class="course-finder-back" data-course-finder-back hidden aria-label="Dossier précédent">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M15 6 9 12l6 6"/></svg>
+                    </button>
+                    <h2 id="courseFinderTitle">Cours</h2>
+                    <div class="course-finder-toolbar">
+                        <button type="button" data-course-finder-course>Ajouter un cours</button>
+                        <button type="button" data-course-finder-new>Nouveau dossier</button>
+                        <button type="button" data-course-finder-add>Ajouter des PDF</button>
+                        <input type="file" data-course-finder-files accept="application/pdf,.pdf" multiple hidden>
+                    </div>
+                </header>
+                <p class="course-finder-status" data-course-finder-status role="status"></p>
+                <div class="course-finder-body" data-course-finder-body tabindex="0"></div>
+                <div class="course-finder-menu" data-course-finder-menu hidden role="menu"></div>
+                <form class="course-finder-sheet" data-course-finder-sheet hidden>
+                    <p data-course-finder-sheet-text></p>
+                    <label data-course-finder-subject-label hidden>Matière
+                        <select data-course-finder-subject></select>
+                    </label>
+                    <label data-course-finder-sheet-label>Nom
+                        <input data-course-finder-sheet-name maxlength="120" autocomplete="off">
+                    </label>
+                    <div class="course-finder-sheet-actions">
+                        <button type="button" data-course-finder-sheet-cancel>Annuler</button>
+                        <button type="submit" data-course-finder-sheet-ok>Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
         <button type="button" class="macos-restore-hint no-print" data-macos-restore>Restaurer la fenêtre</button>
         <div class="macos-command-overlay no-print" data-macos-command hidden>
             <div class="macos-command-sheet" role="dialog" aria-modal="true" aria-label="Recherche">
@@ -104,6 +146,491 @@ function macos_dock(): void {
                 <ul data-macos-command-list></ul>
             </div>
         </div>
+        <?php if (is_teacher()): ?>
+        <script>
+        (function () {
+            var openButton = document.querySelector('[data-course-finder-open]');
+            var layer = document.getElementById('courseFinderLayer');
+            var body = document.querySelector('[data-course-finder-body]');
+            var title = document.getElementById('courseFinderTitle');
+            var back = document.querySelector('[data-course-finder-back]');
+            if (!openButton || !layer || !body || !title || !back) return;
+            var courses = null;
+            var subjects = [];
+            var stack = [];
+            var loading = false;
+            var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var phoneQuery = window.matchMedia('(max-width: 767.98px)');
+
+            function glyph(markup) {
+                var holder = document.createElement('span');
+                holder.className = 'course-finder-glyph';
+                holder.innerHTML = markup;
+                return holder;
+            }
+            function folderIcon() {
+                return glyph('<svg viewBox="0 0 64 52" aria-hidden="true"><path fill="#7ec8ff" d="M4 14a6 6 0 0 1 6-6h14l6 7h24a6 6 0 0 1 6 6v22a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6z"/><path fill="#b9e2ff" d="M4 22h56v21a6 6 0 0 1-6 6H10a6 6 0 0 1-6-6z"/></svg>');
+            }
+            function fileIcon() {
+                return glyph('<svg viewBox="0 0 48 60" aria-hidden="true"><path fill="#fff" stroke="#d0d5dd" d="M8 4h22l12 12v38a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4z"/><path fill="#e11d48" d="M6 36h36v10H6z"/><text x="24" y="44" text-anchor="middle" font-size="8" font-family="Inter,sans-serif" fill="#fff">PDF</text></svg>');
+            }
+            function current() {
+                return stack.length ? stack[stack.length - 1] : null;
+            }
+            function render() {
+                var node = current();
+                var folders = node ? node.folders : (courses || []);
+                var files = node ? node.files : [];
+                title.textContent = node ? node.name : 'Cours';
+                back.hidden = stack.length === 0;
+                body.replaceChildren();
+                body.classList.remove('is-opening');
+                if (!courses) {
+                    body.appendChild(message('Chargement des dossiers…'));
+                    return;
+                }
+                if (!folders.length && !files.length) {
+                    body.appendChild(message(node ? 'Ce dossier est vide.' : 'Aucun cours pour le moment. Créez un dossier depuis Mes cours.'));
+                    return;
+                }
+                var grid = document.createElement('div');
+                grid.className = 'course-finder-grid';
+                folders.forEach(function (folder) { grid.appendChild(item(folder, true)); });
+                files.forEach(function (file) { grid.appendChild(item(file, false)); });
+                body.appendChild(grid);
+                if (!reduced) {
+                    window.requestAnimationFrame(function () { body.classList.add('is-opening'); });
+                }
+            }
+            function message(text) {
+                var p = document.createElement('p');
+                p.className = 'course-finder-empty';
+                p.textContent = text;
+                return p;
+            }
+            function item(entry, isFolder) {
+                var card = document.createElement('div');
+                card.className = 'course-finder-item' + (isFolder ? ' is-folder' : ' is-file');
+                card.draggable = true;
+                var open = document.createElement('button');
+                open.type = 'button';
+                open.className = 'course-finder-open';
+                open.appendChild(isFolder ? folderIcon() : fileIcon());
+                var name = document.createElement('span');
+                name.textContent = entry.name || (isFolder ? 'Dossier' : 'Fichier');
+                open.appendChild(name);
+                if (!isFolder && entry.size) {
+                    var size = document.createElement('small');
+                    size.textContent = entry.size;
+                    open.appendChild(size);
+                }
+                open.addEventListener('click', function () {
+                    if (phoneQuery.matches) openEntry(entry, isFolder);
+                });
+                open.addEventListener('dblclick', function () {
+                    if (!phoneQuery.matches) openEntry(entry, isFolder);
+                });
+                open.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        openEntry(entry, isFolder);
+                    }
+                    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+                        event.preventDefault();
+                        openMenu(entry, isFolder, event, open);
+                    }
+                });
+                var actions = document.createElement('button');
+                actions.type = 'button';
+                actions.className = 'course-finder-more';
+                actions.textContent = 'Actions';
+                actions.setAttribute('aria-label', 'Actions pour ' + (entry.name || 'cet élément'));
+                actions.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    openMenu(entry, isFolder, event);
+                });
+                card.appendChild(open);
+                card.appendChild(actions);
+                card.addEventListener('contextmenu', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openMenu(entry, isFolder, event);
+                });
+                card.addEventListener('dragstart', function (event) {
+                    event.dataTransfer.setData('application/x-upsis-course', JSON.stringify({ kind: isFolder ? 'folder' : 'file', id: entry.id }));
+                    event.dataTransfer.effectAllowed = 'move';
+                });
+                if (isFolder) {
+                    card.addEventListener('dragover', function (event) {
+                        if (!canDrop(event)) return;
+                        event.preventDefault();
+                        card.classList.add('is-drop');
+                    });
+                    card.addEventListener('dragleave', function () { card.classList.remove('is-drop'); });
+                    card.addEventListener('drop', function (event) {
+                        card.classList.remove('is-drop');
+                        event.preventDefault();
+                        event.stopPropagation();
+                        receiveDrop(event, entry.id);
+                    });
+                }
+                return card;
+            }
+            function openEntry(entry, isFolder) {
+                if (isFolder) {
+                    stack.push(entry);
+                    render();
+                    return;
+                }
+                if (!entry.id) return;
+                var frame = document.createElement('iframe');
+                frame.className = 'course-finder-preview';
+                frame.title = entry.name || 'Aperçu PDF';
+                frame.src = 'cours_fichier.php?id=' + encodeURIComponent(entry.id) + '&action=view';
+                body.replaceChildren(frame);
+                title.textContent = entry.name || 'PDF';
+                back.hidden = false;
+                stack.push({ name: entry.name, preview: true, folders: [], files: [] });
+            }
+            function closeFinder() {
+                layer.hidden = true;
+                openButton.setAttribute('aria-expanded', 'false');
+                openButton.focus();
+            }
+            function showFinder() {
+                layer.hidden = false;
+                openButton.setAttribute('aria-expanded', 'true');
+                var dialog = layer.querySelector('.course-finder-window');
+                if (dialog) {
+                    dialog.classList.remove('is-in');
+                    if (!reduced) window.requestAnimationFrame(function () { dialog.classList.add('is-in'); });
+                }
+                back.focus();
+                if (courses === null && !loading) {
+                    loading = true;
+                    render();
+                    fetch('mes_cours.php?finder=1', { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } })
+                        .then(function (response) { if (!response.ok) throw new Error('cours'); return response.json(); })
+                        .then(function (data) {
+                            courses = data && data.courses ? data.courses : [];
+                            subjects = data && data.subjects ? data.subjects : [];
+                            stack = [];
+                            render();
+                        })
+                        .catch(function () {
+                            courses = [];
+                            body.replaceChildren(message('Les dossiers n’ont pas pu être ouverts.'));
+                        })
+                        .finally(function () { loading = false; });
+                }
+            }
+            var status = document.querySelector('[data-course-finder-status]');
+            var menu = document.querySelector('[data-course-finder-menu]');
+            var sheet = document.querySelector('[data-course-finder-sheet]');
+            var sheetText = document.querySelector('[data-course-finder-sheet-text]');
+            var sheetName = document.querySelector('[data-course-finder-sheet-name]');
+            var sheetLabel = document.querySelector('[data-course-finder-sheet-label]');
+            var subjectLabel = document.querySelector('[data-course-finder-subject-label]');
+            var subjectSelect = document.querySelector('[data-course-finder-subject]');
+            var newCourse = document.querySelector('[data-course-finder-course]');
+            var newFolder = document.querySelector('[data-course-finder-new]');
+            var addFiles = document.querySelector('[data-course-finder-add]');
+            var fileInput = document.querySelector('[data-course-finder-files]');
+            var sheetMode = null;
+            function setStatus(text) {
+                if (status) status.textContent = text || '';
+            }
+            function pathIds() {
+                return stack.filter(function (node) { return node && node.id && !node.preview; }).map(function (node) { return node.id; });
+            }
+            function restorePath(ids) {
+                stack = [];
+                var level = courses || [];
+                ids.forEach(function (id) {
+                    var found = null;
+                    level.forEach(function (node) { if (node.id === id) found = node; });
+                    if (!found) return;
+                    stack.push(found);
+                    level = found.folders || [];
+                });
+            }
+            function postFinder(fields, fileList) {
+                var form = new FormData();
+                form.append('csrf_token', layer.getAttribute('data-csrf') || '');
+                form.append('finder', '1');
+                Object.keys(fields).forEach(function (key) { form.append(key, fields[key]); });
+                Array.prototype.forEach.call(fileList || [], function (file) { form.append('pdfs[]', file); });
+                var keep = fields.action === 'create_course' ? [] : pathIds();
+                setStatus('Enregistrement…');
+                layer.setAttribute('aria-busy', 'true');
+                return fetch('mes_cours.php', { method: 'POST', body: form, credentials: 'same-origin', cache: 'no-store' })
+                    .then(function (response) { return response.json(); })
+                    .then(function (data) {
+                        if (data && data.courses) {
+                            courses = data.courses;
+                            if (data.subjects) subjects = data.subjects;
+                            restorePath(keep);
+                            render();
+                        }
+                        setStatus(data && data.message ? data.message : '');
+                        if (!data || data.ok === false) throw new Error(data && data.message ? data.message : 'Action impossible.');
+                    })
+                    .catch(function (error) {
+                        setStatus(error && error.message ? error.message : 'Action impossible.');
+                    })
+                    .finally(function () { layer.removeAttribute('aria-busy'); });
+            }
+            function hideMenu() {
+                if (!menu) return;
+                menu.hidden = true;
+                menu.replaceChildren();
+            }
+            function hideSheet() {
+                if (!sheet) return;
+                sheet.hidden = true;
+                sheetMode = null;
+            }
+            function openSheet(mode, entry, isFolder) {
+                hideMenu();
+                sheetMode = { mode: mode, entry: entry, isFolder: isFolder };
+                var removing = mode === 'delete';
+                var creatingCourse = mode === 'course';
+                sheetText.textContent = removing
+                    ? 'Supprimer « ' + (entry.name || 'cet élément') + ' » ? Cette action est définitive.'
+                    : (creatingCourse ? 'Nom du nouveau cours' : (mode === 'create' ? 'Nom du nouveau dossier' : 'Nouveau nom'));
+                sheetLabel.hidden = removing;
+                if (subjectLabel) subjectLabel.hidden = !creatingCourse;
+                if (creatingCourse && subjectSelect) {
+                    subjectSelect.replaceChildren();
+                    subjects.forEach(function (subject) {
+                        var option = document.createElement('option');
+                        option.value = String(subject.id);
+                        option.textContent = subject.label;
+                        subjectSelect.appendChild(option);
+                    });
+                }
+                sheetName.value = mode === 'rename' ? (entry.name || '').replace(/\.pdf$/i, '') : '';
+                sheet.querySelector('[data-course-finder-sheet-ok]').textContent = removing ? 'Supprimer' : 'Enregistrer';
+                sheet.hidden = false;
+                (removing ? sheet.querySelector('[data-course-finder-sheet-ok]') : sheetName).focus();
+            }
+            function openMenu(entry, isFolder, event, anchor) {
+                hideSheet();
+                if (menu.parentElement !== document.body) document.body.appendChild(menu);
+                menu.replaceChildren();
+                function add(label, run, danger) {
+                    var button = document.createElement('button');
+                    button.type = 'button';
+                    button.setAttribute('role', 'menuitem');
+                    button.textContent = label;
+                    if (danger) button.className = 'is-danger';
+                    button.addEventListener('click', function () { hideMenu(); run(); });
+                    menu.appendChild(button);
+                }
+                function rule() {
+                    var line = document.createElement('div');
+                    line.className = 'course-finder-menu-rule';
+                    line.setAttribute('role', 'separator');
+                    menu.appendChild(line);
+                }
+                add('Actualiser', reloadCourses);
+                rule();
+                add('Ouvrir', function () { openEntry(entry, isFolder); });
+                if (!isFolder) add('Télécharger', function () {
+                    window.location.assign('cours_fichier.php?id=' + encodeURIComponent(entry.id) + '&action=download');
+                });
+                add('Renommer', function () { openSheet('rename', entry, isFolder); });
+                var here = current();
+                var destinations = (here ? here.folders : (courses || [])).filter(function (folder) { return folder.id !== entry.id; });
+                if (destinations.length) {
+                    rule();
+                    destinations.forEach(function (folder) {
+                        add('Déplacer dans « ' + folder.name + ' »', function () {
+                            postFinder(isFolder
+                                ? { action: 'move_folder', id_dossier: String(entry.id), id_parent: String(folder.id) }
+                                : { action: 'move_file', id_fichier: String(entry.id), id_dossier: String(folder.id) });
+                        });
+                    });
+                }
+                rule();
+                add('Supprimer', function () { openSheet('delete', entry, isFolder); }, true);
+                var pointerX = event && typeof event.clientX === 'number' ? event.clientX : 0;
+                var pointerY = event && typeof event.clientY === 'number' ? event.clientY : 0;
+                if (!pointerX && !pointerY && anchor && anchor.getBoundingClientRect) {
+                    var rect = anchor.getBoundingClientRect();
+                    pointerX = rect.left;
+                    pointerY = rect.bottom;
+                }
+                menu.hidden = false;
+                menu.classList.remove('is-in');
+                var bounds = menu.getBoundingClientRect();
+                var left = Math.max(8, Math.min(pointerX, window.innerWidth - bounds.width - 8));
+                var top = Math.max(8, Math.min(pointerY, window.innerHeight - bounds.height - 8));
+                menu.style.left = left + 'px';
+                menu.style.top = top + 'px';
+                if (!reduced) window.requestAnimationFrame(function () { menu.classList.add('is-in'); });
+            }
+            function hasOsFiles(event) {
+                var types = event.dataTransfer ? event.dataTransfer.types : [];
+                for (var i = 0; i < types.length; i += 1) if (types[i] === 'Files') return true;
+                return false;
+            }
+            function canDrop(event) {
+                return hasOsFiles(event) || (event.dataTransfer && event.dataTransfer.types && Array.prototype.indexOf.call(event.dataTransfer.types, 'application/x-upsis-course') !== -1);
+            }
+            function receiveDrop(event, destinationId) {
+                if (hasOsFiles(event)) {
+                    if (!destinationId) {
+                        setStatus('Ouvrez un cours avant de déposer un PDF.');
+                        return;
+                    }
+                    postFinder({ action: 'upload', id_dossier: String(destinationId) }, event.dataTransfer.files);
+                    return;
+                }
+                var raw = event.dataTransfer.getData('application/x-upsis-course');
+                if (!raw || !destinationId) return;
+                var payload = null;
+                try { payload = JSON.parse(raw); } catch (error) { return; }
+                if (!payload || payload.id === destinationId) return;
+                postFinder(payload.kind === 'folder'
+                    ? { action: 'move_folder', id_dossier: String(payload.id), id_parent: String(destinationId) }
+                    : { action: 'move_file', id_fichier: String(payload.id), id_dossier: String(destinationId) });
+            }
+            function reloadCourses() {
+                var keep = pathIds();
+                setStatus('Actualisation…');
+                fetch('mes_cours.php?finder=1', { credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } })
+                    .then(function (response) { if (!response.ok) throw new Error('cours'); return response.json(); })
+                    .then(function (data) {
+                        courses = data && data.courses ? data.courses : [];
+                        subjects = data && data.subjects ? data.subjects : [];
+                        restorePath(keep);
+                        render();
+                        setStatus('Dossiers à jour.');
+                    })
+                    .catch(function () { setStatus('Les dossiers n’ont pas pu être actualisés.'); });
+            }
+            function openRefreshMenu(event) {
+                hideSheet();
+                if (menu.parentElement !== document.body) document.body.appendChild(menu);
+                menu.replaceChildren();
+                var button = document.createElement('button');
+                button.type = 'button';
+                button.setAttribute('role', 'menuitem');
+                button.textContent = 'Actualiser';
+                button.addEventListener('click', function () { hideMenu(); reloadCourses(); });
+                menu.appendChild(button);
+                menu.hidden = false;
+                menu.classList.remove('is-in');
+                var bounds = menu.getBoundingClientRect();
+                menu.style.left = Math.max(8, Math.min(event.clientX, window.innerWidth - bounds.width - 8)) + 'px';
+                menu.style.top = Math.max(8, Math.min(event.clientY, window.innerHeight - bounds.height - 8)) + 'px';
+                if (!reduced) window.requestAnimationFrame(function () { menu.classList.add('is-in'); });
+            }
+            if (newCourse) newCourse.addEventListener('click', function () {
+                if (!subjects.length) {
+                    setStatus('Aucune matière ne vous est affectée. Le cours ne peut pas être créé.');
+                    return;
+                }
+                openSheet('course', { name: '' }, true);
+            });
+            if (newFolder) newFolder.addEventListener('click', function () {
+                var node = current();
+                if (!node || !node.id) {
+                    setStatus('Ouvrez un cours, puis créez le dossier à l’intérieur.');
+                    return;
+                }
+                openSheet('create', node, true);
+            });
+            if (addFiles && fileInput) {
+                addFiles.addEventListener('click', function () {
+                    if (!current() || !current().id) {
+                        setStatus('Ouvrez un cours avant d’ajouter un PDF.');
+                        return;
+                    }
+                    fileInput.click();
+                });
+                fileInput.addEventListener('change', function () {
+                    var node = current();
+                    if (node && node.id && fileInput.files && fileInput.files.length) {
+                        postFinder({ action: 'upload', id_dossier: String(node.id) }, fileInput.files);
+                    }
+                    fileInput.value = '';
+                });
+            }
+            body.addEventListener('contextmenu', function (event) {
+                if (event.target.closest && event.target.closest('.course-finder-item')) return;
+                event.preventDefault();
+                openRefreshMenu(event);
+            });
+            body.addEventListener('dragover', function (event) {
+                if (!canDrop(event)) return;
+                event.preventDefault();
+                body.classList.add('is-drop');
+            });
+            body.addEventListener('dragleave', function (event) {
+                if (event.target === body) body.classList.remove('is-drop');
+            });
+            body.addEventListener('drop', function (event) {
+                body.classList.remove('is-drop');
+                if (!canDrop(event)) return;
+                event.preventDefault();
+                var node = current();
+                receiveDrop(event, node ? node.id : 0);
+            });
+            if (sheet) sheet.addEventListener('submit', function (event) {
+                event.preventDefault();
+                if (!sheetMode) return;
+                var entry = sheetMode.entry;
+                var name = sheetName.value.trim();
+                if (sheetMode.mode === 'delete') {
+                    postFinder(sheetMode.isFolder
+                        ? { action: 'delete_folder', id_dossier: String(entry.id) }
+                        : { action: 'delete_file', id_fichier: String(entry.id) });
+                } else if (sheetMode.mode === 'course') {
+                    if (!name || !subjectSelect || !subjectSelect.value) return;
+                    postFinder({ action: 'create_course', id_mat: subjectSelect.value, nom: name });
+                } else if (sheetMode.mode === 'create') {
+                    if (!name) return;
+                    postFinder({ action: 'create_folder', id_parent: String(entry.id), nom: name });
+                } else if (name) {
+                    postFinder(sheetMode.isFolder
+                        ? { action: 'rename_folder', id_dossier: String(entry.id), nom: name }
+                        : { action: 'rename_file', id_fichier: String(entry.id), nom: name });
+                }
+                hideSheet();
+            });
+            var cancelSheet = document.querySelector('[data-course-finder-sheet-cancel]');
+            if (cancelSheet) cancelSheet.addEventListener('click', hideSheet);
+            document.addEventListener('click', function (event) {
+                if (menu && !menu.hidden && !(event.target.closest && event.target.closest('[data-course-finder-menu], .course-finder-more'))) hideMenu();
+            });
+            openButton.addEventListener('click', function () {
+                if (layer.hidden) showFinder();
+                else closeFinder();
+            });
+            back.addEventListener('click', function () {
+                stack.pop();
+                render();
+            });
+            layer.addEventListener('click', function (event) {
+                if (event.target === layer || (event.target.closest && event.target.closest('[data-course-finder-close]'))) closeFinder();
+            });
+            document.addEventListener('keydown', function (event) {
+                if (layer.hidden || event.key !== 'Escape') return;
+                event.preventDefault();
+                if (menu && !menu.hidden) { hideMenu(); return; }
+                if (sheet && !sheet.hidden) { hideSheet(); return; }
+                if (stack.length) {
+                    stack.pop();
+                    render();
+                } else {
+                    closeFinder();
+                }
+            });
+        })();
+        </script>
+        <?php endif; ?>
     <?php
 }
 
@@ -121,7 +648,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
         <link href="assets/style.css?v=89" rel="stylesheet">
         <link href="assets/institut.css?v=3" rel="stylesheet">
-        <link href="assets/macos.css?v=43" rel="stylesheet">
+        <link href="assets/macos.css?v=49" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {
@@ -257,7 +784,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                         </select>
                                     </li>
                                     <li class="macos-only-control"><hr class="dropdown-divider"></li>
-                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php?embed=1" target="dashboard-content">Nom et logo de l’université</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
+                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php?embed=1" target="dashboard-content">Nom de l’établissement</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
                                     <li><a class="dropdown-item text-danger" href="logout.php">Déconnexion</a></li>
                                 </ul>
                             </div>

@@ -75,8 +75,9 @@ try {
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview, true);
 
 } catch (Throwable $e) {
+    error_log('generate_word: ' . $e->getMessage());
     http_response_code(500);
-    echo 'Erreur lors de la génération du document : ' . $e->getMessage();
+    echo 'Erreur lors de la génération du document.';
 } finally {
     if (is_string($docxPath) && is_file($docxPath)) {
         unlink($docxPath);

@@ -11,6 +11,7 @@ $categories = [
     'paiement' => 'Paiements',
     'presence' => 'Présences',
     'compte' => 'Comptes',
+    'cours' => 'Cours',
 ];
 $category = (string) ($_GET['categorie'] ?? 'tous');
 if (!isset($categories[$category])) {

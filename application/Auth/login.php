@@ -12,18 +12,28 @@ $error = match ((string) ($_GET['error'] ?? '')) {
     default => '',
 };
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $error = '';
     $role = (string) ($_POST['role'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
-    if ($role === 'admin' && password_verify($password, admin_password_hash())) {
+    $loginName = $role === 'enseignant' || $role === 'stage'
+        ? strtolower(trim((string) ($_POST['cin'] ?? '')))
+        : ($role === 'admin' ? 'admin' : strtolower(trim((string) ($_POST['username'] ?? ''))));
+    $loginBucket = 'staff:' . $role . ':' . $loginName;
+    $loginFailed = false;
+    if (auth_rate_limited($loginBucket)) {
+        $error = 'Trop de tentatives. Réessayez dans quelques minutes.';
+    } elseif ($role === 'admin' && password_verify($password, admin_password_hash())) {
+        auth_rate_clear($loginBucket);
         session_regenerate_id(true);
         $_SESSION['user_role'] = 'admin';
+        $_SESSION['admin_auth_generation'] = admin_auth_generation();
         unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty']);
         unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
         header('Location: index.php');
         exit;
     }
-    if ($role === 'enseignant') {
+    if ($error === '' && $role === 'enseignant') {
         ensure_teacher_active(db());
         $stmt = db()->prepare('SELECT id_enseignant, password, active, auth_generation FROM enseignant WHERE cin = ? LIMIT 1');
         $stmt->execute([trim((string) ($_POST['cin'] ?? ''))]);
@@ -40,6 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         if ($validTeacherPassword) {
+            auth_rate_clear($loginBucket);
             session_regenerate_id(true);
             $_SESSION['user_role'] = 'enseignant';
             $_SESSION['teacher_id'] = (int) $teacher['id_enseignant'];
@@ -50,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     }
-    if ($role === 'stage') {
+    if ($error === '' && $role === 'stage') {
         if (!stage_accounts_table_exists()) {
             $error = 'Le compte stage est temporairement indisponible. Contactez l’administrateur pour appliquer stage_accounts_migration.sql sur la base utilisée par cette application.';
         } else {
@@ -59,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([trim((string) ($_POST['cin'] ?? ''))]);
             $stage = $stmt->fetch();
             if ($stage && password_verify($password, (string) $stage['password'])) {
+                auth_rate_clear($loginBucket);
                 session_regenerate_id(true);
                 $_SESSION['user_role'] = 'stage';
                 $_SESSION['stage_id'] = (int) $stage['id_stage'];
@@ -70,11 +82,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     }
-    if ($role === 'finance') {
+    if ($error === '' && $role === 'finance') {
         $stmt = db()->prepare('SELECT id_finance, password, auth_generation FROM finance_user WHERE username = ? AND active = 1 LIMIT 1');
         $stmt->execute([trim((string) ($_POST['username'] ?? ''))]);
         $finance = $stmt->fetch();
         if ($finance && password_verify($password, (string) $finance['password'])) {
+            auth_rate_clear($loginBucket);
             session_regenerate_id(true);
             $_SESSION['user_role'] = 'finance';
             $_SESSION['finance_id'] = (int) $finance['id_finance'];
@@ -84,12 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     }
-    if ($role === 'scolarite') {
+    if ($error === '' && $role === 'scolarite') {
         access_ensure();
         $stmt = db()->prepare('SELECT id_scolarite, password, auth_generation FROM scolarite_user WHERE username = ? AND active = 1 LIMIT 1');
         $stmt->execute([trim((string) ($_POST['username'] ?? ''))]);
         $office = $stmt->fetch();
         if ($office && password_verify($password, (string) $office['password'])) {
+            auth_rate_clear($loginBucket);
             session_regenerate_id(true);
             $_SESSION['user_role'] = 'scolarite';
             $_SESSION['scolarite_id'] = (int) $office['id_scolarite'];
@@ -100,6 +114,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     if ($error === '') {
+        $loginFailed = true;
+    }
+    if ($loginFailed) {
+        auth_rate_fail($loginBucket);
         $error = 'Identifiants incorrects.';
     }
 }
@@ -187,6 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="card-body p-5">
         <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
         <form method="post" action="login.php">
+          <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <label class="form-label" for="role">Se connecter en tant que</label>
           <?php
           $loginRoles = ['admin' => 'Administrateur', 'scolarite' => 'Scolarité', 'enseignant' => 'Enseignant', 'stage' => 'Service des stages', 'finance' => 'Service finance'];

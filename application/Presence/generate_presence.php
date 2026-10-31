@@ -70,8 +70,9 @@ try {
     $asPdf = !$preview && certificate_wants_pdf();
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview, true);
 } catch (Throwable $exception) {
+    error_log('generate_presence: ' . $exception->getMessage());
     http_response_code(500);
-    echo 'Erreur : ' . $exception->getMessage();
+    echo 'Erreur lors de la génération du document.';
 } finally {
     if (is_string($docxPath) && is_file($docxPath)) {
         unlink($docxPath);

@@ -5,6 +5,12 @@ DirectoryIndex accueil.php index.php
     Require all granted
 </IfModule>
 
+# Course library PDFs may weigh up to 25 Mo each.
+<IfModule php_module>
+    php_value upload_max_filesize 25M
+    php_value post_max_size 128M
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 

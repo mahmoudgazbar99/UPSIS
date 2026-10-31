@@ -21,6 +21,8 @@ DocumentRoot /var/www/html/public
     Options FollowSymLinks
     AllowOverride All
     Require all granted
+    php_admin_flag display_errors Off
+    php_admin_flag expose_php Off
 </Directory>
 
 <Directory /var/www/html>

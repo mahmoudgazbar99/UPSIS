@@ -21,8 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (password_verify($newPassword, admin_password_hash())) {
         $error = 'Le nouveau mot de passe doit être différent de l’ancien.';
     } else {
-        $statement = db()->prepare('UPDATE admin_user SET password_hash = ? WHERE username = ?');
+        $statement = db()->prepare('UPDATE admin_user SET password_hash = ?, auth_generation = auth_generation + 1 WHERE username = ?');
         $statement->execute([password_hash($newPassword, PASSWORD_DEFAULT), 'admin']);
+        $_SESSION['admin_auth_generation'] = admin_auth_generation();
         $message = 'Mot de passe administrateur modifié avec succès.';
         audit_record('compte', 'modifier', 'Mot de passe administrateur modifié.');
     }

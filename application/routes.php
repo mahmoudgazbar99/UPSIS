@@ -31,6 +31,7 @@ return [
     'enseignants.php' => 'Enseignant/enseignants.php',
     'affecter_enseignant.php' => 'Enseignant/affecter_enseignant.php',
     'responsables.php' => 'Enseignant/responsables.php',
+    'mes_cours.php' => 'Enseignant/mes_cours.php',
 
     'tronc_commun.php' => 'Pedagogie/tronc_commun.php',
     'structure_academique.php' => 'Pedagogie/structure_academique.php',
@@ -44,6 +45,7 @@ return [
     'promotion.php' => 'Pedagogie/promotion.php',
     'emploi_temps.php' => 'Pedagogie/emploi_temps.php',
     'emploi_pdf.php' => 'Pedagogie/emploi_pdf.php',
+    'cours_fichier.php' => 'Pedagogie/cours_fichier.php',
 
     'gestion_notes.php' => 'Notes/gestion_notes.php',
     'grille_notes.php' => 'Notes/grille_notes.php',

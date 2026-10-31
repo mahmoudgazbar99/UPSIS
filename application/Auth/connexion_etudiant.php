@@ -15,9 +15,14 @@ $error = (($_GET['error'] ?? '') === 'suspended')
 $cin = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $error = '';
     $cin = student_normalize_cin((string) ($_POST['cin'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
+    $loginBucket = 'etudiant:' . strtolower($cin);
+    if (auth_rate_limited($loginBucket)) {
+        $error = 'Trop de tentatives. Réessayez dans quelques minutes.';
+    } else {
     try {
         ensure_etudiant_compte_table(db());
         $row = student_find_by_cin($cin);
@@ -28,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([(int) $row['id_etudiant']]);
             $account = $stmt->fetch();
             if ($account && (int) $account['active'] === 1 && password_verify($password, (string) $account['password'])) {
+                auth_rate_clear($loginBucket);
                 session_regenerate_id(true);
                 $_SESSION['user_role'] = 'etudiant';
                 $_SESSION['id_etudiant'] = (int) $row['id_etudiant'];
@@ -37,10 +43,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } catch (PDOException $exception) {
+        error_log('student login failed: ' . $exception->getMessage());
         $error = 'Erreur lors de la récupération des données';
     }
     if ($error === '') {
+        auth_rate_fail($loginBucket);
         $error = 'Identifiants incorrects.';
+    }
     }
 }
 ?>
@@ -64,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <p class="student-gate-school"><?php foreach (institution_name_lines() as $index => $institutionLine): ?><?= $index > 0 ? '<br>' : '' ?><?= e($institutionLine) ?><?php endforeach; ?></p>
     <?php if ($error !== ''): ?><div class="alert" role="alert"><?= e($error) ?></div><?php endif; ?>
     <form method="post" action="connexion_etudiant.php" autocomplete="on">
+      <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
       <label for="cin">CIN / passeport</label>
       <input id="cin" name="cin" value="<?= e($cin) ?>" maxlength="40" required autofocus autocomplete="username">
       <label for="password">Mot de passe</label>

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once app_path('bootstrap.php');
+require_admin();
 
 $pdo = db();
 $pdo->exec("SET SESSION character_set_connection = 'utf8mb4'");
@@ -33,7 +34,8 @@ foreach ($fixes as $table => $columns) {
             $pdo->exec($sql);
             echo "✓ Fixed $table.$col\n";
         } catch (Exception $e) {
-            echo "✗ Error fixing $table.$col: " . $e->getMessage() . "\n";
+            error_log('utf8 repair failed for ' . $table . '.' . $col . ': ' . $e->getMessage());
+            echo "Error fixing $table.$col\n";
         }
     }
 }

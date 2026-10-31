@@ -14,6 +14,8 @@ function landing_language(): string
         setcookie('landing_lang', $requested, [
             'expires' => time() + 31536000,
             'path' => '/',
+            'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+            'httponly' => true,
             'samesite' => 'Lax',
         ]);
         return $requested;

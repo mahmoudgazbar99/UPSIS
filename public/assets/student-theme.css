@@ -315,6 +315,30 @@ html[data-student-skin="nursing"][data-theme="dark"] .student-mail-modal .btn-cl
   filter: invert(1);
 }
 
+html[data-student-skin="nursing"] .course-pdf-dialog {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow);
+}
+
+html[data-student-skin="nursing"] .course-pdf-toolbar {
+  border-bottom-color: var(--line);
+}
+
+html[data-student-skin="nursing"] .student-space-cards button,
+html[data-student-skin="nursing"] .student-inbox-item,
+html[data-student-skin="nursing"] .student-inbox-toggle,
+html[data-student-skin="nursing"] .student-space-form button,
+html[data-student-skin="nursing"] .student-space-bar-actions > a {
+  transition:
+    transform 0.64s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (max-width: 640px) {
   .student-gate .student-skin-select {
     top: 0.75rem;

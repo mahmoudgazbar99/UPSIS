@@ -55,30 +55,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     }
 }
-$where = stage_duty() === 'superviseur' ? 'WHERE p.id_stage_superviseur = ' . current_stage_id() : 'WHERE 1=1';
-if ((string) ($_GET['annee'] ?? '') !== '') {
-    $where .= ' AND p.annee_label = ' . db()->quote((string) $_GET['annee']);
+$filters = [];
+$filterValues = [];
+if (stage_duty() === 'superviseur') {
+    $filters[] = 'p.id_stage_superviseur = ?';
+    $filterValues[] = current_stage_id();
 }
-if ((string) ($_GET['statut'] ?? '') !== '') {
-    $where .= ' AND p.statut = ' . db()->quote((string) $_GET['statut']);
+$yearFilter = trim((string) ($_GET['annee'] ?? ''));
+if ($yearFilter !== '') {
+    $filters[] = 'p.annee_label = ?';
+    $filterValues[] = $yearFilter;
 }
-if ((int) ($_GET['id_organisme'] ?? 0) > 0) {
-    $where .= ' AND p.id_organisme = ' . (int) $_GET['id_organisme'];
+$statusFilter = (string) ($_GET['statut'] ?? '');
+if ($statusFilter !== '' && array_key_exists($statusFilter, stage_statuses())) {
+    $filters[] = 'p.statut = ?';
+    $filterValues[] = $statusFilter;
 }
-if ((int) ($_GET['id_service'] ?? 0) > 0) {
-    $where .= ' AND p.id_service = ' . (int) $_GET['id_service'];
+$hostFilter = (int) ($_GET['id_organisme'] ?? 0);
+if ($hostFilter > 0) {
+    $filters[] = 'p.id_organisme = ?';
+    $filterValues[] = $hostFilter;
 }
-if ((int) ($_GET['id_superviseur'] ?? 0) > 0 && stage_duty() !== 'superviseur') {
-    $where .= ' AND p.id_stage_superviseur = ' . (int) $_GET['id_superviseur'];
+$serviceFilter = (int) ($_GET['id_service'] ?? 0);
+if ($serviceFilter > 0) {
+    $filters[] = 'p.id_service = ?';
+    $filterValues[] = $serviceFilter;
 }
-$rows = db()->query(
+$supervisorFilter = (int) ($_GET['id_superviseur'] ?? 0);
+if ($supervisorFilter > 0 && stage_duty() !== 'superviseur') {
+    $filters[] = 'p.id_stage_superviseur = ?';
+    $filterValues[] = $supervisorFilter;
+}
+$placementQuery = db()->prepare(
     'SELECT p.*, e.nom, e.prenom, e.num_inscription, o.nom AS organisme
      FROM stage_placement p
      JOIN etudiant e ON e.id_etudiant = p.id_etudiant
      JOIN stage_organisme o ON o.id_organisme = p.id_organisme
-     ' . $where . '
+     ' . ($filters === [] ? '' : 'WHERE ' . implode(' AND ', $filters)) . '
      ORDER BY p.date_debut DESC LIMIT 80'
-)->fetchAll();
+);
+$placementQuery->execute($filterValues);
+$rows = $placementQuery->fetchAll();
 $students = db()->query('SELECT id_etudiant, nom, prenom, num_inscription FROM etudiant WHERE statut = "actif" ORDER BY nom, prenom LIMIT 400')->fetchAll();
 $hosts = db()->query('SELECT id_organisme, nom, capacite FROM stage_organisme WHERE active = 1 ORDER BY nom')->fetchAll();
 $services = db()->query('SELECT s.id_service, s.nom, o.nom AS organisme FROM stage_service s JOIN stage_organisme o ON o.id_organisme = s.id_organisme WHERE s.active = 1 ORDER BY o.nom, s.nom')->fetchAll();

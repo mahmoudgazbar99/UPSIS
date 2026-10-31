@@ -120,7 +120,8 @@ try {
         http_response_code(500);
         header('Content-Type: text/plain; charset=UTF-8');
     }
-    echo 'Erreur lors de la génération du document : ' . $exception->getMessage();
+    error_log('generate_reussite: ' . $exception->getMessage());
+    echo 'Erreur lors de la génération du document.';
 } finally {
     if (is_file($docxPath)) {
         unlink($docxPath);

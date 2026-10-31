@@ -156,7 +156,8 @@ try {
         http_response_code(500);
         header('Content-Type: text/plain; charset=UTF-8');
     }
-    echo $exception->getMessage();
+    error_log('download_all_inscriptions: ' . $exception->getMessage());
+    echo 'Erreur lors de la génération du document.';
 } finally {
     if (is_dir($workDir)) {
         $iterator = new RecursiveIteratorIterator(

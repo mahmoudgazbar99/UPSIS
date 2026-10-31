@@ -136,12 +136,12 @@ function stage_docs_root(): string
     $configured = getenv('STAGE_DOCS_DIR');
     $root = is_string($configured) && $configured !== ''
         ? $configured
-        : dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'stage-documents';
+        : storage_path('stage-documents');
     $root = rtrim($root, "/\\");
-    $web = realpath(__DIR__);
-    if ($web !== false) {
-        $left = strtolower(str_replace('\\', '/', $root));
-        $right = strtolower(str_replace('\\', '/', $web));
+    $public = realpath(public_path());
+    $left = strtolower(str_replace('\\', '/', $root));
+    if ($public !== false) {
+        $right = strtolower(str_replace('\\', '/', $public));
         if ($left === $right || str_starts_with($left, $right . '/')) {
             throw new RuntimeException('Le stockage des documents de stage ne peut pas être publié avec le site.');
         }
