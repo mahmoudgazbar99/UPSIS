@@ -720,6 +720,12 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
     const url = new URL(link.href, window.location.href);
     if (url.origin !== window.location.origin) return;
     url.searchParams.set('embed', '1');
+    var current = '';
+    try { current = frame.contentWindow.location.href; } catch (error) { current = frame.getAttribute('src') || ''; }
+    if (current && new URL(current, window.location.href).href === url.href) {
+      showModule();
+      return;
+    }
     frame.src = url.href;
     showModule();
   });

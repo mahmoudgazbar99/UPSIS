@@ -181,6 +181,7 @@ $navItems['contact'] = 'nav_contact';
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="<?= e(institution_logo_src()) ?>">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/landing.css?v=48" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -836,5 +837,6 @@ $navItems['contact'] = 'nav_contact';
       }
     })();
   </script>
+<script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>

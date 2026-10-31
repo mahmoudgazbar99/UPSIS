@@ -646,6 +646,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+        <link href="assets/motion.css?v=3" rel="stylesheet">
         <link href="assets/style.css?v=89" rel="stylesheet">
         <link href="assets/institut.css?v=3" rel="stylesheet">
         <link href="assets/macos.css?v=49" rel="stylesheet">
@@ -834,6 +835,7 @@ function page_foot(): void {
         </div>
         <?php macos_dock(); ?>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="assets/motion.js?v=3" defer></script>
         <?php if (logged_in() && !is_admin() && !is_student()): ?>
         <script src="assets/account-session.js?v=1"></script>
         <?php endif; ?>

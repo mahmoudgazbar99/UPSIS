@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <title>Espace étudiant | <?= e(institution_name_inline()) ?></title>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-login.css?v=5" rel="stylesheet">
   <link href="assets/student-theme.css?v=4" rel="stylesheet">
 </head>
@@ -86,5 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <a href="login.php">Personnel</a>
     </p>
   </main>
+<script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>

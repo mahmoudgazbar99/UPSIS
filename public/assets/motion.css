@@ -1,0 +1,47 @@
+/*
+ * One slow arrival per view. Nested shells and a second replay are omitted
+ * so the content does not pop twice.
+ */
+
+:root {
+  --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-slow: 0.72s;
+  --motion-press: 0.28s;
+}
+
+@keyframes motion-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes motion-press {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+html.motion-on body.theme-macos .macos-window,
+html.motion-on body.theme-macos.login-page .macos-window {
+  animation: none;
+}
+
+html.motion-on .motion-stage {
+  animation: motion-reveal var(--motion-slow) var(--motion-ease) both;
+}
+
+html.motion-on .motion-press {
+  animation: motion-press var(--motion-press) var(--motion-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.motion-on .motion-stage,
+  html.motion-on .motion-press {
+    animation: none;
+  }
+}
