@@ -198,6 +198,7 @@ function dashboard_menu(): void {
     dashboard_menu_item('#dashboard-content', 'Tableau de bord', 'Vue générale des étudiants', 'home', $num());
     if (is_admin() || is_scolarite()) {
       dashboard_menu_item('inscription.php?embed=1', 'Inscrire', 'Ajouter ou modifier un étudiant', 'enroll', $num());
+      dashboard_menu_item('etudiants_import.php?embed=1', 'Importer des étudiants', 'Fichier Excel, lignes incomplètes signalées', 'archive', $num());
       dashboard_menu_item('groupes.php?embed=1', 'Groupes', 'Consulter et organiser les groupes', 'groups', $num());
     }
     if (is_admin() || is_teacher()) {
@@ -206,7 +207,7 @@ function dashboard_menu(): void {
     if (is_scolarite()) {
       dashboard_menu_item('demandes_presence.php?embed=1', 'Demandes de présence', 'Attestations demandées par les étudiants', 'attestation', $num());
       dashboard_menu_item('releve_notes.php?embed=1', 'Relevé de notes', 'Consulter un dossier', 'grades', $num());
-      dashboard_menu_item('etudiants_export.php', 'Exporter les étudiants', 'Liste CSV du dossier actuel', 'archive', $num());
+      dashboard_menu_item('etudiants_export.php', 'Exporter les étudiants', 'Liste Excel du dossier actuel', 'archive', $num());
     }
     if (is_finance()) {
       dashboard_menu_item('finance.php?embed=1', 'Suivi des paiements', 'Rechercher un étudiant et enregistrer son paiement', 'finance', $num(), true);

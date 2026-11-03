@@ -3,21 +3,24 @@ declare(strict_types=1);
 
 function student_theme_head(): void
 {
-    echo <<<'HTML'
+    $owner = json_encode(app_theme_owner(), JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    echo <<<HTML
 <script>
 (function () {
+  var owner = {$owner};
+  var skinKey = 'student-skin:' + owner;
+  var themeKey = 'student-theme:' + owner;
   var skin = 'nursing';
   var theme = 'dark';
   try {
-    var staff = localStorage.getItem('app-style');
-    var saved = localStorage.getItem('student-skin');
-    if (staff === 'institut') skin = 'nursing';
-    else if (saved === 'classic' || saved === 'nursing') skin = saved;
-    var landing = localStorage.getItem('app-theme') || localStorage.getItem('landing-theme');
-    theme = landing === 'light' || landing === 'dark'
-      ? landing
+    var saved = localStorage.getItem(skinKey);
+    if (saved === 'classic' || saved === 'nursing') skin = saved;
+    var storedTheme = localStorage.getItem(themeKey);
+    theme = storedTheme === 'light' || storedTheme === 'dark'
+      ? storedTheme
       : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   } catch (error) {}
+  document.documentElement.dataset.themeOwner = owner;
   document.documentElement.setAttribute('data-student-skin', skin);
   document.documentElement.setAttribute('data-theme', theme);
 })();
@@ -27,7 +30,8 @@ HTML;
 
 function student_theme_select(): void
 {
-    echo <<<'HTML'
+    $owner = json_encode(app_theme_owner(), JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    echo <<<HTML
 <label class="student-skin-select">
   <span class="visually-hidden">Thème</span>
   <select data-student-skin-select aria-label="Choisir le thème">
@@ -38,6 +42,9 @@ function student_theme_select(): void
 </label>
 <script>
 (function () {
+  var owner = {$owner};
+  var skinKey = 'student-skin:' + owner;
+  var themeKey = 'student-theme:' + owner;
   var select = document.currentScript.previousElementSibling.querySelector('select');
   if (!select) return;
   var root = document.documentElement;
@@ -50,20 +57,15 @@ function student_theme_select(): void
   select.addEventListener('change', function () {
     if (select.value === 'classic') {
       root.setAttribute('data-student-skin', 'classic');
-      try {
-        localStorage.setItem('student-skin', 'classic');
-        if (localStorage.getItem('app-style') === 'institut') localStorage.setItem('app-style', 'original');
-      } catch (error) {}
+      try { localStorage.setItem(skinKey, 'classic'); } catch (error) {}
       return;
     }
     var theme = select.value === 'nursing-light' ? 'light' : 'dark';
     root.setAttribute('data-student-skin', 'nursing');
     root.setAttribute('data-theme', theme);
     try {
-      localStorage.setItem('student-skin', 'nursing');
-      localStorage.setItem('landing-theme', theme);
-      localStorage.setItem('app-style', 'institut');
-      localStorage.setItem('app-theme', theme);
+      localStorage.setItem(skinKey, 'nursing');
+      localStorage.setItem(themeKey, theme);
     } catch (error) {}
   });
 })();

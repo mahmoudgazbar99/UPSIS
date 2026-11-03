@@ -1,7 +1,9 @@
 (function () {
   if (window.top !== window.self) return;
 
-  var statusUrl = 'account_status.php';
+  var scope = document.documentElement.dataset.themeScope || '';
+  var desk = scope.split(':')[0];
+  var statusUrl = 'account_status.php' + (desk && desk !== 'invite' ? '?desk=' + encodeURIComponent(desk) : '');
   var loginUrl = 'login.php';
   var checking = false;
 

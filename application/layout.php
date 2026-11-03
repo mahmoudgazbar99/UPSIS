@@ -654,15 +654,28 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <script>
         (function () {
             try {
-                var theme = localStorage.getItem('app-theme') || 'dark';
-                var style = localStorage.getItem('app-style') || 'original';
+                var themeScope = <?= json_encode(app_theme_key(), JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+                var themeKey = 'app-theme:' + themeScope;
+                var styleKey = 'app-style:' + themeScope;
+                var theme = localStorage.getItem(themeKey);
+                var style = localStorage.getItem(styleKey);
+                var accountScope = themeScope.slice(0, Math.max(themeScope.lastIndexOf(':'), 0));
+                if (!theme) {
+                    theme = localStorage.getItem('app-theme:' + accountScope) || localStorage.getItem('app-theme') || 'dark';
+                    localStorage.setItem(themeKey, theme);
+                }
+                if (!style) {
+                    style = localStorage.getItem('app-style:' + accountScope) || localStorage.getItem('app-style') || 'original';
+                    localStorage.setItem(styleKey, style);
+                }
                 if (style === 'alternate') style = 'atlas';
                 if (style !== 'atlas' && style !== 'glass' && style !== 'macos' && style !== 'institut') style = 'original';
                 document.documentElement.classList.add('theme-boot');
                 document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
                 document.documentElement.dataset.appStyle = style;
+                document.documentElement.dataset.themeScope = themeScope;
                 document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
-                if (localStorage.getItem('app-style') === 'alternate') localStorage.setItem('app-style', 'atlas');
+                if (localStorage.getItem(styleKey) === 'alternate') localStorage.setItem(styleKey, 'atlas');
             } catch (error) {}
         })();
         </script>
@@ -786,7 +799,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                     </li>
                                     <li class="macos-only-control"><hr class="dropdown-divider"></li>
                                     <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php?embed=1" target="dashboard-content">Nom de l’établissement</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
-                                    <li><a class="dropdown-item text-danger" href="logout.php">Déconnexion</a></li>
+                                    <li><a class="dropdown-item text-danger" href="logout.php?desk=<?= e(strtok(app_theme_owner(), ':') ?: 'admin') ?>">Déconnexion</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -803,7 +816,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <?php if (is_admin()): ?><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><?php endif; ?>
-                                    <li><a class="dropdown-item text-danger" href="logout.php">Déconnexion</a></li>
+                                    <li><a class="dropdown-item text-danger" href="logout.php?desk=<?= e(strtok(app_theme_owner(), ':') ?: 'admin') ?>">Déconnexion</a></li>
                                 </ul>
                             </div>
                         </li>
@@ -837,7 +850,7 @@ function page_foot(): void {
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="assets/motion.js?v=3" defer></script>
         <?php if (logged_in() && !is_admin() && !is_student()): ?>
-        <script src="assets/account-session.js?v=1"></script>
+        <script src="assets/account-session.js?v=2"></script>
         <?php endif; ?>
         <script>
         (function () {
@@ -846,8 +859,11 @@ function page_foot(): void {
             const styleSelects = document.querySelectorAll('[data-style-select]');
             const navToggle = document.querySelector('.app-chrome .navbar-toggler');
             const navCollapse = document.querySelector('#nav');
-            const savedTheme = localStorage.getItem('app-theme') || 'dark';
-            const savedStyle = localStorage.getItem('app-style') || 'original';
+            const themeScope = document.documentElement.dataset.themeScope || <?= json_encode(app_theme_key(), JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+            const themeKey = 'app-theme:' + themeScope;
+            const styleKey = 'app-style:' + themeScope;
+            const savedTheme = localStorage.getItem(themeKey) || 'dark';
+            const savedStyle = localStorage.getItem(styleKey) || 'original';
 
             function applyTheme(theme) {
                 const light = theme === 'light';
@@ -879,8 +895,8 @@ function page_foot(): void {
 
             function applyStyle(style) {
                 const normalized = normalizeStyle(style);
-                if (localStorage.getItem('app-style') === 'alternate') {
-                    localStorage.setItem('app-style', 'atlas');
+                if (localStorage.getItem(styleKey) === 'alternate') {
+                    localStorage.setItem(styleKey, 'atlas');
                 }
                 body.classList.remove('theme-alternate');
                 body.classList.toggle('theme-atlas', normalized === 'atlas');
@@ -923,6 +939,7 @@ function page_foot(): void {
                         if (frame.contentWindow) {
                             frame.contentWindow.postMessage({
                                 type: 'app-theme-sync',
+                                scope: themeScope,
                                 theme: theme,
                                 style: style
                             }, window.location.origin);
@@ -960,17 +977,18 @@ function page_foot(): void {
             window.addEventListener('resize', syncSettingsDropdownDirection);
             window.addEventListener('message', function (event) {
                 if (event.origin !== window.location.origin || !event.data || event.data.type !== 'app-theme-sync') return;
+                if (event.data.scope && event.data.scope !== themeScope) return;
                 if (event.data.theme) applyTheme(event.data.theme);
                 if (event.data.style) applyStyle(event.data.style);
             });
             window.addEventListener('storage', function (event) {
-                if (event.key === 'app-theme' && event.newValue) applyTheme(event.newValue);
-                if (event.key === 'app-style' && event.newValue) applyStyle(event.newValue);
+                if (event.key === themeKey && event.newValue) applyTheme(event.newValue);
+                if (event.key === styleKey && event.newValue) applyStyle(event.newValue);
             });
             if (toggle) {
                 toggle.addEventListener('click', function () {
                     const nextTheme = body.classList.contains('theme-light') ? 'dark' : 'light';
-                    localStorage.setItem('app-theme', nextTheme);
+                    localStorage.setItem(themeKey, nextTheme);
                     applyTheme(nextTheme);
                     broadcastAppearance();
                 });
@@ -978,7 +996,7 @@ function page_foot(): void {
             styleSelects.forEach(function (el) {
                 el.addEventListener('change', function () {
                     const nextStyle = normalizeStyle(el.value);
-                    localStorage.setItem('app-style', nextStyle);
+                    localStorage.setItem(styleKey, nextStyle);
                     applyStyle(nextStyle);
                     broadcastAppearance();
                 });
@@ -1632,7 +1650,8 @@ function page_foot(): void {
                 if (!link || link.hasAttribute('data-dashboard-home')) return false;
                 if (link.hasAttribute('data-file-download')) return true;
                 const href = link.getAttribute('href') || '';
-                return /(?:^|\/)(?:download_all_inscriptions|generate_word|generate_presence|generate_reussite|generate_feuille_presence|recu_paiement|etudiants_export)\.php(?:\?|#|$)/.test(href);
+                return /(?:^|\/)(?:download_all_inscriptions|generate_word|generate_presence|generate_reussite|generate_feuille_presence|recu_paiement|etudiants_export)\.php(?:\?|#|$)/.test(href)
+                    || /[?&](?:export|modele)=1(?:&|#|$)/.test(href);
             }
 
             document.addEventListener('click', function (event) {

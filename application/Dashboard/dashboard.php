@@ -378,7 +378,7 @@ if (!empty($explorerFragment)) {
           <div><dt>Niveau</dt><dd><?= e(level_label((string) $profile['niveau'])) ?> année</dd></div>
           <div><dt>E-mail</dt><dd><?= e((string) $profile['email']) ?></dd></div>
           <?php $publishedStages = stage_student_published((int) $studentId); ?>
-          <div><dt>Stage publié</dt><dd><?php if (!$publishedStages): ?>Aucun stage publié.<?php else: foreach ($publishedStages as $stage): ?><?= e($stage['organisme']) ?><?= $stage['service'] ? ' · ' . e((string) $stage['service']) : '' ?> · <?= e($stage['date_debut'] . ' → ' . $stage['date_fin']) ?> · <?= e(stage_statuses()[(string) $stage['statut']] ?? (string) $stage['statut']) ?> · <a href="stage_dossier.php?id=<?= (int) $stage['id_placement'] ?>&amp;espace=etudiant">Dossier documentaire du stage</a><br><?php endforeach; endif; ?></dd></div>
+          <div><dt>Stage publié</dt><dd><?php if (!$publishedStages): ?>Aucun stage publié.<?php else: foreach ($publishedStages as $stage): ?><?= e($stage['organisme']) ?><?= $stage['service'] ? ' · ' . e((string) $stage['service']) : '' ?> · <?= e($stage['date_debut'] . ' → ' . $stage['date_fin']) ?> · <?= e(stage_statuses()[(string) $stage['statut']] ?? (string) $stage['statut']) ?> · <a href="stage_dossier.php?id=<?= (int) $stage['id_placement'] ?>&amp;espace=etudiant">Dossier documentaire du stage</a><br><?php endforeach; endif; ?> <a href="stage_demande.php?espace=etudiant">Demande de stage d’été</a></dd></div>
         </dl>
       <?php endif; ?>
     </section>

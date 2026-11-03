@@ -291,6 +291,7 @@
 }
 
 .student-space-form input,
+.student-space-form select,
 .student-space-form textarea {
   width: 100%;
   box-sizing: border-box;

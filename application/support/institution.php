@@ -260,6 +260,56 @@ function institution_copy_docx_template(string $sourcePath): string
     return $copyPath;
 }
 
+function institution_separate_establishment_names(DOMXPath $xpath): void
+{
+    $paragraphs = $xpath->query('//w:p');
+    if ($paragraphs === false) {
+        return;
+    }
+    $nodes = [];
+    foreach ($paragraphs as $paragraph) {
+        if ($paragraph instanceof DOMElement) {
+            $nodes[] = $paragraph;
+        }
+    }
+    $normalize = static function (DOMElement $paragraph) use ($xpath): string {
+        $text = '';
+        $textNodes = $xpath->query('.//w:t', $paragraph);
+        if ($textNodes !== false) {
+            foreach ($textNodes as $textNode) {
+                $text .= $textNode->nodeValue ?? '';
+            }
+        }
+        return preg_replace('/\s+/u', '', $text) ?? '';
+    };
+    $namespace = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+    for ($index = 0, $count = count($nodes); $index < $count - 1; $index++) {
+        $current = $normalize($nodes[$index]);
+        $next = $normalize($nodes[$index + 1]);
+        $separatesNames = ($current === '${establishment_fr}' && str_starts_with($next, '${establishment_ar}'))
+            || ($current === '${establishment_ar}' && str_starts_with($next, '${establishment_fr}'));
+        if (!$separatesNames) {
+            continue;
+        }
+        $properties = $xpath->query('./w:pPr', $nodes[$index])->item(0);
+        if (!$properties instanceof DOMElement) {
+            $properties = $nodes[$index]->ownerDocument->createElementNS($namespace, 'w:pPr');
+            $nodes[$index]->insertBefore($properties, $nodes[$index]->firstChild);
+        }
+        if ($xpath->query('./w:pBdr', $properties)->length > 0) {
+            continue;
+        }
+        $border = $nodes[$index]->ownerDocument->createElementNS($namespace, 'w:pBdr');
+        $bottom = $nodes[$index]->ownerDocument->createElementNS($namespace, 'w:bottom');
+        $bottom->setAttributeNS($namespace, 'w:val', 'single');
+        $bottom->setAttributeNS($namespace, 'w:sz', '12');
+        $bottom->setAttributeNS($namespace, 'w:space', '1');
+        $bottom->setAttributeNS($namespace, 'w:color', '000000');
+        $border->appendChild($bottom);
+        $properties->appendChild($border);
+    }
+}
+
 function institution_replace_docx_placeholders(string $copyPath, array $values): void
 {
     $archive = new ZipArchive();
@@ -317,6 +367,7 @@ function institution_replace_docx_placeholders(string $copyPath, array $values):
 
             $xpath = new DOMXPath($document);
             $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+            institution_separate_establishment_names($xpath);
             $paragraphs = $xpath->query('//w:p');
             if ($paragraphs === false) {
                 throw new RuntimeException('Impossible de lire les paragraphes de ' . $entryName . '.');

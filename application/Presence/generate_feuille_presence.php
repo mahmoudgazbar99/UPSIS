@@ -107,6 +107,7 @@ $html = '<!doctype html><html lang="fr"><head><meta charset="UTF-8"><style>
     .student-name { white-space: nowrap; }
     .footer { margin-top: 10pt; font-size: 8pt; }
     .institution { text-align: center; margin-top: 8pt; font-size: 8pt; }
+    .institution-line { width: 180pt; margin: 3pt auto; border-top: 1px solid #000; }
     .signature { page-break-inside: avoid; width: 180pt; margin: 20pt 0 0 auto; text-align: center; font-size: 9pt; }
     .signature-line { height: 38pt; border-bottom: 1px solid #222; margin-bottom: 5pt; }
     </style></head><body>
@@ -117,7 +118,7 @@ $html = '<!doctype html><html lang="fr"><head><meta charset="UTF-8"><style>
     . $studentRows .
     '</tbody></table>
     <div class="footer">NB : Les enseignants sont priés de faire l’appel et de relever les absences.</div>
-    <div class="institution">' . $escape(institution_name_inline()) . '</div>
+    <div class="institution">' . (institution_establishment_name_ar() !== '' ? $escape(institution_establishment_name_ar()) . '<div class="institution-line"></div>' : '') . $escape(institution_establishment_name_fr()) . '</div>
     <div class="signature"><div class="signature-line"></div><div>Signature de l’enseignant</div></div>
     </body></html>';
 

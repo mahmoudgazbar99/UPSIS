@@ -25,11 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Trop de tentatives. Réessayez dans quelques minutes.';
     } elseif ($role === 'admin' && password_verify($password, admin_password_hash())) {
         auth_rate_clear($loginBucket);
-        session_regenerate_id(true);
-        $_SESSION['user_role'] = 'admin';
-        $_SESSION['admin_auth_generation'] = admin_auth_generation();
-        unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty']);
-        unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
+        app_enter_role_session('admin', [
+            'admin_auth_generation' => admin_auth_generation(),
+        ]);
         header('Location: index.php');
         exit;
     }
@@ -51,12 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($validTeacherPassword) {
             auth_rate_clear($loginBucket);
-            session_regenerate_id(true);
-            $_SESSION['user_role'] = 'enseignant';
-            $_SESSION['teacher_id'] = (int) $teacher['id_enseignant'];
-            $_SESSION['teacher_auth_generation'] = (int) $teacher['auth_generation'];
-            unset($_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty']);
-            unset($_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
+            app_enter_role_session('enseignant', [
+                'teacher_id' => (int) $teacher['id_enseignant'],
+                'teacher_auth_generation' => (int) $teacher['auth_generation'],
+            ]);
             header('Location: index.php');
             exit;
         }
@@ -71,12 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stage = $stmt->fetch();
             if ($stage && password_verify($password, (string) $stage['password'])) {
                 auth_rate_clear($loginBucket);
-                session_regenerate_id(true);
-                $_SESSION['user_role'] = 'stage';
-                $_SESSION['stage_id'] = (int) $stage['id_stage'];
-                $_SESSION['stage_auth_generation'] = (int) $stage['auth_generation'];
-                $_SESSION['stage_duty'] = (string) ($stage['responsabilite'] ?? 'officer');
-                unset($_SESSION['teacher_id'], $_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
+                app_enter_role_session('stage', [
+                    'stage_id' => (int) $stage['id_stage'],
+                    'stage_auth_generation' => (int) $stage['auth_generation'],
+                    'stage_duty' => (string) ($stage['responsabilite'] ?? 'officer'),
+                ]);
                 header('Location: stage_portal.php');
                 exit;
             }
@@ -88,11 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $finance = $stmt->fetch();
         if ($finance && password_verify($password, (string) $finance['password'])) {
             auth_rate_clear($loginBucket);
-            session_regenerate_id(true);
-            $_SESSION['user_role'] = 'finance';
-            $_SESSION['finance_id'] = (int) $finance['id_finance'];
-            $_SESSION['finance_auth_generation'] = (int) $finance['auth_generation'];
-            unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty'], $_SESSION['scolarite_id'], $_SESSION['scolarite_auth_generation'], $_SESSION['id_etudiant']);
+            app_enter_role_session('finance', [
+                'finance_id' => (int) $finance['id_finance'],
+                'finance_auth_generation' => (int) $finance['auth_generation'],
+            ]);
             header('Location: index.php');
             exit;
         }
@@ -104,11 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $office = $stmt->fetch();
         if ($office && password_verify($password, (string) $office['password'])) {
             auth_rate_clear($loginBucket);
-            session_regenerate_id(true);
-            $_SESSION['user_role'] = 'scolarite';
-            $_SESSION['scolarite_id'] = (int) $office['id_scolarite'];
-            $_SESSION['scolarite_auth_generation'] = (int) $office['auth_generation'];
-            unset($_SESSION['teacher_id'], $_SESSION['stage_id'], $_SESSION['stage_auth_generation'], $_SESSION['stage_duty'], $_SESSION['finance_id'], $_SESSION['finance_auth_generation'], $_SESSION['id_etudiant']);
+            app_enter_role_session('scolarite', [
+                'scolarite_id' => (int) $office['id_scolarite'],
+                'scolarite_auth_generation' => (int) $office['auth_generation'],
+            ]);
             header('Location: index.php');
             exit;
         }
@@ -138,12 +131,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <script>
   (function () {
     try {
-      var theme = localStorage.getItem('app-theme') || 'dark';
-      var style = localStorage.getItem('app-style') || 'original';
-      if (style === 'alternate') { style = 'atlas'; localStorage.setItem('app-style', 'atlas'); }
+      var owner = <?= json_encode(app_theme_owner(), JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+      var themeKey = 'app-theme:' + owner;
+      var styleKey = 'app-style:' + owner;
+      var theme = localStorage.getItem(themeKey) || 'dark';
+      var style = localStorage.getItem(styleKey) || 'original';
+      if (style === 'alternate') { style = 'atlas'; localStorage.setItem(styleKey, 'atlas'); }
       if (style !== 'atlas' && style !== 'glass' && style !== 'macos' && style !== 'institut') style = 'original';
       document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
       document.documentElement.dataset.appStyle = style;
+      document.documentElement.dataset.themeOwner = owner;
       document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
     } catch (error) {}
   })();
@@ -266,9 +263,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (value === 'institut' || value === 'accueil') return 'institut';
       return 'original';
     }
+    const themeOwner = document.documentElement.dataset.themeOwner || 'invite';
+    const themeKey = 'app-theme:' + themeOwner;
+    const styleKey = 'app-style:' + themeOwner;
     function applyStyle(value) {
       const style = normalizeStyle(value);
-      if (localStorage.getItem('app-style') === 'alternate') localStorage.setItem('app-style', 'atlas');
+      if (localStorage.getItem(styleKey) === 'alternate') localStorage.setItem(styleKey, 'atlas');
       body.classList.remove('theme-alternate');
       body.classList.toggle('theme-atlas', style === 'atlas');
       body.classList.toggle('theme-glass', style === 'glass');
@@ -277,8 +277,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       document.documentElement.dataset.appStyle = style;
       if (styleSelect && styleSelect.value !== style) styleSelect.value = style;
     }
-    applyTheme(localStorage.getItem('app-theme') || 'dark');
-    applyStyle(localStorage.getItem('app-style') || 'original');
+    applyTheme(localStorage.getItem(themeKey) || 'dark');
+    applyStyle(localStorage.getItem(styleKey) || 'original');
     updateRole();
     role.addEventListener('change', updateRole);
     const password = document.querySelector('#password');
@@ -295,10 +295,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         password.focus();
       });
     }
-    toggle.addEventListener('click', function () { const next = body.classList.contains('theme-light') ? 'dark' : 'light'; localStorage.setItem('app-theme', next); applyTheme(next); });
+    toggle.addEventListener('click', function () { const next = body.classList.contains('theme-light') ? 'dark' : 'light'; localStorage.setItem(themeKey, next); applyTheme(next); });
     styleSelect.addEventListener('change', function () {
       const next = normalizeStyle(styleSelect.value);
-      localStorage.setItem('app-style', next);
+      localStorage.setItem(styleKey, next);
       applyStyle(next);
     });
     const win = document.querySelector('[data-macos-window]');

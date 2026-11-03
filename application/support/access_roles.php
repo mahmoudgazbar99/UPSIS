@@ -221,6 +221,8 @@ function stage_script_allowed(string $script): bool
 {
     return in_array($script, [
         'stage_portal.php',
+        'stage_bureau.php',
+        'stage_demande.php',
         'stage_organismes.php',
         'stage_placements.php',
         'stage_campagne.php',

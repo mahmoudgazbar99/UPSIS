@@ -68,6 +68,8 @@ return [
     'stage_organismes.php' => 'Stage/stage_organismes.php',
     'stage_placements.php' => 'Stage/stage_placements.php',
     'stage_portal.php' => 'Stage/stage_portal.php',
+    'stage_bureau.php' => 'Stage/stage_bureau.php',
+    'stage_demande.php' => 'Stage/stage_demande.php',
     'stage_suivi.php' => 'Stage/stage_suivi.php',
 
     'finance.php' => 'Finance/finance.php',
@@ -83,6 +85,7 @@ return [
     'download_all_inscriptions.php' => 'Documents/download_all_inscriptions.php',
     'archive_export.php' => 'Documents/archive_export.php',
     'etudiants_export.php' => 'Documents/etudiants_export.php',
+    'etudiants_import.php' => 'Scolarite/etudiants_import.php',
 
     'journal_audit.php' => 'Admin/journal_audit.php',
     'fix_utf8.php' => 'Admin/fix_utf8.php',

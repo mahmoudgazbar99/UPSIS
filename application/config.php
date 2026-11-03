@@ -12,7 +12,7 @@ function app_is_student_request(): bool
     if ($script === 'account_status.php') {
         return ($_GET['espace'] ?? '') === 'etudiant';
     }
-    if (in_array($script, ['stage_dossier.php', 'stage_document.php', 'emploi_pdf.php', 'cours_fichier.php'], true)
+    if (in_array($script, ['stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php'], true)
         && ($_GET['espace'] ?? '') === 'etudiant'
     ) {
         return true;
@@ -36,17 +36,151 @@ function app_is_student_request(): bool
     return in_array(basename($refererPath), $studentPages, true);
 }
 
-if (app_is_student_request()) {
-    session_name('ESG_STUDENT');
+function app_normalized_script(?string $path = null): string
+{
+    $script = $path === null
+        ? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''))
+        : basename($path);
+    if ($script === '' || $script === '/' || $script === '.') {
+        return '';
+    }
+    if (!str_ends_with($script, '.php')) {
+        $script .= '.php';
+    }
+    return $script;
 }
 
-$https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
-session_set_cookie_params([
-    'secure' => $https,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-session_start();
+function app_referer_script(): string
+{
+    $path = (string) (parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?: '');
+    return app_normalized_script($path);
+}
+
+function app_role_session_name(string $role): string
+{
+    return match ($role) {
+        'admin' => 'ESG_ADMIN',
+        'stage' => 'ESG_STAGE',
+        'enseignant' => 'ESG_TEACHER',
+        'finance' => 'ESG_FINANCE',
+        'scolarite' => 'ESG_SCOLARITE',
+        'etudiant' => 'ESG_STUDENT',
+        default => 'PHPSESSID',
+    };
+}
+
+function app_request_wants_stage_session(): bool
+{
+    if (($_GET['embed'] ?? '') === '1' || (($_SERVER['HTTP_SEC_FETCH_DEST'] ?? '') === 'iframe')) {
+        return false;
+    }
+    $desk = (string) ($_GET['desk'] ?? $_POST['desk'] ?? '');
+    if ($desk === 'stage') {
+        return true;
+    }
+    if (in_array($desk, ['admin', 'enseignant', 'finance', 'scolarite'], true)) {
+        return false;
+    }
+    $script = app_normalized_script();
+    $referer = app_referer_script();
+    return str_starts_with($script, 'stage_') || str_starts_with($referer, 'stage_');
+}
+
+function app_session_cookie_params(): void
+{
+    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'secure' => $https,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function app_start_named_session(string $name): void
+{
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    session_name($name);
+    $cookie = $_COOKIE[$name] ?? '';
+    if (is_string($cookie) && preg_match('/^[A-Za-z0-9,-]{16,128}$/', $cookie) === 1) {
+        session_id($cookie);
+    } else {
+        session_id(bin2hex(random_bytes(16)));
+    }
+    app_session_cookie_params();
+    session_start();
+}
+
+function app_staff_session_candidates(): array
+{
+    $desk = (string) ($_GET['desk'] ?? $_POST['desk'] ?? '');
+    $ordered = [];
+    if (in_array($desk, ['admin', 'stage', 'enseignant', 'finance', 'scolarite'], true)) {
+        $ordered[] = app_role_session_name($desk);
+    }
+    $preferred = app_request_wants_stage_session()
+        ? ['ESG_STAGE', 'ESG_ADMIN', 'ESG_TEACHER', 'ESG_FINANCE', 'ESG_SCOLARITE', 'PHPSESSID']
+        : ['ESG_ADMIN', 'ESG_TEACHER', 'ESG_FINANCE', 'ESG_SCOLARITE', 'PHPSESSID', 'ESG_STAGE'];
+    foreach ($preferred as $name) {
+        if (!in_array($name, $ordered, true) && isset($_COOKIE[$name])) {
+            $ordered[] = $name;
+        }
+    }
+    if ($ordered === []) {
+        $ordered[] = 'PHPSESSID';
+    }
+    return $ordered;
+}
+
+function app_open_request_session(): void
+{
+    if (app_is_student_request()) {
+        app_start_named_session('ESG_STUDENT');
+        return;
+    }
+    if (app_normalized_script() === 'login.php') {
+        app_start_named_session('ESG_GATE');
+        return;
+    }
+    $firstLoggedIn = null;
+    foreach (app_staff_session_candidates() as $name) {
+        app_start_named_session($name);
+        $role = (string) ($_SESSION['user_role'] ?? '');
+        if ($role === '') {
+            continue;
+        }
+        $firstLoggedIn ??= $name;
+        $wantsStage = app_request_wants_stage_session();
+        $otherStaff = isset($_COOKIE['ESG_ADMIN']) || isset($_COOKIE['ESG_TEACHER']) || isset($_COOKIE['ESG_FINANCE']) || isset($_COOKIE['ESG_SCOLARITE']) || isset($_COOKIE['PHPSESSID']);
+        if ($wantsStage && $role === 'stage') {
+            return;
+        }
+        if ($wantsStage && $role !== 'stage' && isset($_COOKIE['ESG_STAGE'])) {
+            continue;
+        }
+        if (!$wantsStage && $role === 'stage' && $otherStaff) {
+            continue;
+        }
+        return;
+    }
+    if ($firstLoggedIn !== null && session_name() !== $firstLoggedIn) {
+        app_start_named_session($firstLoggedIn);
+    }
+}
+
+function app_enter_role_session(string $role, array $values): void
+{
+    app_start_named_session(app_role_session_name($role));
+    session_regenerate_id(true);
+    $_SESSION = $values;
+    $_SESSION['user_role'] = $role;
+    session_write_close();
+}
+
+app_open_request_session();
 app_send_security_headers();
 if (!app_is_student_request() && ($_SESSION['user_role'] ?? '') === 'etudiant') {
     unset($_SESSION['user_role'], $_SESSION['id_etudiant']);
@@ -153,6 +287,51 @@ function account_is_active_value(mixed $value): bool
 }
 function current_teacher_id(): int { return (int) ($_SESSION['teacher_id'] ?? 0); }
 function current_stage_id(): int { return (int) ($_SESSION['stage_id'] ?? 0); }
+function app_theme_owner(): string
+{
+    if (!logged_in()) {
+        return 'invite';
+    }
+    if (is_admin()) {
+        return 'admin';
+    }
+    if (is_teacher()) {
+        return 'enseignant:' . current_teacher_id();
+    }
+    if (is_stage()) {
+        return 'stage:' . current_stage_id();
+    }
+    if (is_finance()) {
+        return 'finance:' . (int) ($_SESSION['finance_id'] ?? 0);
+    }
+    if (function_exists('is_scolarite') && is_scolarite()) {
+        return 'scolarite:' . (int) ($_SESSION['scolarite_id'] ?? 0);
+    }
+    if (is_student()) {
+        return 'etudiant:' . (int) ($_SESSION['id_etudiant'] ?? 0);
+    }
+    $role = preg_replace('/[^a-z0-9_-]/', '', (string) ($_SESSION['user_role'] ?? 'compte'));
+    return $role !== '' ? $role : 'compte';
+}
+
+function app_theme_surface(): string
+{
+    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    if ($script !== '' && !str_ends_with($script, '.php')) {
+        $script .= '.php';
+    }
+    $embedded = ($_GET['embed'] ?? '') === '1'
+        || (($_SERVER['HTTP_SEC_FETCH_DEST'] ?? '') === 'iframe');
+    if (!$embedded && str_starts_with($script, 'stage_')) {
+        return 'stage';
+    }
+    return 'bureau';
+}
+
+function app_theme_key(): string
+{
+    return app_theme_owner() . ':' . app_theme_surface();
+}
 function admin_password_hash(): string {
     static $hash;
     if ($hash === null) {
@@ -482,7 +661,7 @@ function enforce_student_route_isolation(): void {
     if ($script === 'account_status.php' && ($_GET['espace'] ?? '') === 'etudiant') {
         return;
     }
-    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'stage_dossier.php', 'stage_document.php', 'emploi_pdf.php', 'cours_fichier.php'], true)) {
+    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php'], true)) {
         return;
     }
     header('Location: dashboard.php');
