@@ -188,9 +188,13 @@ function dashboard_menu(): void {
     return str_pad((string) $n, 2, '0', STR_PAD_LEFT);
   };
 ?>
-<section class="app-card dashboard-menu mb-4" aria-labelledby="dashboard-menu-title">
+<section class="app-card dashboard-menu mb-4" id="dashboard-nav" aria-labelledby="dashboard-menu-title">
   <div class="dashboard-menu-header">
     <div><p class="eyebrow mb-1">Navigation rapide</p><h2 id="dashboard-menu-title" class="h4 mb-0"><span class="dashboard-menu-title-default">Menu principal</span><span class="dashboard-menu-title-macos">Université</span></h2></div>
+    <button type="button" class="clarity-nav-toggle" data-clarity-nav-toggle aria-expanded="true" aria-controls="dashboard-nav" title="Réduire la navigation">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="visually-hidden">Réduire la navigation</span>
+    </button>
     <span class="dashboard-menu-orbit" aria-hidden="true"></span>
   </div>
   <div class="dashboard-menu-list dashboard-menu-rail">
@@ -321,6 +325,7 @@ function dashboard_menu(): void {
     <span class="macos-online-dot" aria-hidden="true"></span>
     <span>Système en ligne</span>
   </div>
+  <span class="clarity-nav-edge" data-clarity-nav-edge aria-hidden="true"></span>
 </section>
 <?php }
 
@@ -339,12 +344,12 @@ $dashboardIntro = is_finance()
     : (is_teacher()
         ? 'Vos cours du jour, feuilles de présence et notes à compléter.'
         : 'Effectifs, demandes en attente et activité récente de l’établissement.');
-page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
+page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=6');
 ?>
 <div class="dashboard-page-intro d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 page-title-block">
   <div><p class="eyebrow"><?= e($dashboardRoleLabel) ?></p><h1 class="display-6 fw-bold mb-1">Tableau de bord</h1><p class="text-secondary mb-0"><?= e($dashboardIntro) ?></p></div>
 </div>
-<div class="dashboard-workspace">
+<div class="dashboard-workspace is-nav-collapsed">
 <?php dashboard_menu(); ?>
 <section id="dashboard-content" class="dashboard-content-panel" aria-label="Contenu de la page sélectionnée" data-dashboard-user="<?= $dashboardLayoutUserId ?>" data-dashboard-role="<?= e($dashboardLayoutRole) ?>">
   <div class="dashboard-layout-toolbar no-print" data-dashboard-layout-toolbar role="region" aria-label="Réorganisation du tableau de bord" hidden>
@@ -417,7 +422,8 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
           </span>
           <div>
             <h2>Bienvenue, <?= e($macosIdentity['name']) ?></h2>
-            <p>Voici un aperçu de l’activité de votre établissement aujourd’hui.</p>
+            <p><?= e($dashboardIntro) ?></p>
+            <?php if (is_admin() || is_scolarite()): ?><a class="btn btn-primary btn-sm mt-2" href="inscription.php?embed=1" target="dashboard-content">Inscrire un étudiant</a><?php endif; ?>
           </div>
         </div>
         <aside class="macos-hero-date">
@@ -430,7 +436,7 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
       </article>
         <article class="macos-stat macos-stat-blue" data-dashboard-widget="stat-students">
           <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M16 20v-1.6a3.4 3.4 0 0 0-3.4-3.4H7.4A3.4 3.4 0 0 0 4 18.4V20m11-12.5a3 3 0 1 1 0 6m5 6.5v-1.6a3.4 3.4 0 0 0-2.8-3.35M10 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-          <div><small>Total étudiants</small><strong><?= (int) $totalStudents ?></strong></div>
+          <div><small>Étudiants au registre</small><strong><?= (int) $totalStudents ?></strong></div>
         </article>
         <article class="macos-stat macos-stat-green" data-dashboard-widget="stat-teachers">
           <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="9" cy="7" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20v-1.7a4.5 4.5 0 0 1 9 0V20M14 5h6v5h-6zM17 10v3m-2 0h4m-2 0v7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
@@ -440,7 +446,7 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
           <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="13.5" y="4" width="7" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="3.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="13.5" y="14" width="7" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></span>
           <div><small>Groupes</small><strong><?= (int) $macosGroupCount ?></strong></div>
         </article>
-        <article class="macos-stat macos-stat-orange" data-dashboard-widget="stat-requests">
+        <article class="macos-stat macos-stat-orange<?= $macosPendingPresence > 0 ? ' is-attention' : '' ?>" data-dashboard-widget="stat-requests">
           <span aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M7 3.5h7l4 4V20a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Zm7 0v4h4M9 12h6m-6 3.5h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
           <div><small>Demandes en attente</small><strong><?= (int) $macosPendingPresence ?></strong></div>
         </article>
@@ -454,7 +460,7 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
           </div>
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-              <thead><tr><th>Étudiant</th><th>CIN</th><th>Date</th><th>Motif</th><th class="text-end">Actions</th></tr></thead>
+              <thead><tr><th scope="col">Étudiant</th><th scope="col">CIN</th><th scope="col">Date</th><th scope="col">Motif</th><th scope="col" class="text-end">Actions</th></tr></thead>
               <tbody>
               <?php foreach ($macosPendingRows as $demande): ?>
                 <tr>
@@ -534,7 +540,7 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
       </form>
     </div></article>
     <article class="card app-card dashboard-student-list" data-dashboard-widget="student-list" aria-label="Liste des étudiants"><div class="card-body p-0 table-responsive"><table class="table table-dark table-hover align-middle mb-0">
-      <thead><tr><th>Inscription</th><th>Étudiant</th><th>Spécialité</th><th>Niveau</th><th>CIN / Passeport</th><th class="text-end">Documents</th></tr></thead>
+      <thead><tr><th scope="col">Inscription</th><th scope="col">Étudiant</th><th scope="col">Spécialité</th><th scope="col">Niveau</th><th scope="col">CIN / Passeport</th><th scope="col" class="text-end">Documents</th></tr></thead>
       <tbody>
       <?php foreach ($students as $student): ?><tr>
         <td><?= e($student['num_inscription']) ?></td>
@@ -665,7 +671,7 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=4');
           <span><strong><?= $financeLate ?></strong><small>étudiants</small></span>
         </div>
         <h2>Paiements en retard</h2>
-        <p><?= $financeLatePctLabel ?> % des étudiants sous 9 800 DT</p>
+        <p><?= $financeLatePctLabel ?> % des étudiants sous <?= e(institution_money(institution_fee_amount())) ?></p>
       </article>
     </div>
   </div>
@@ -805,5 +811,56 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
 })();
 </script>
 <?php endif; ?>
-<script src="assets/dashboard-editor.js?v=4" defer></script>
+<script>
+(function () {
+  var workspace = document.querySelector('.dashboard-workspace');
+  var toggle = document.querySelector('[data-clarity-nav-toggle]');
+  var edge = document.querySelector('[data-clarity-nav-edge]');
+  if (!workspace || !toggle) return;
+  var key = 'clarity-nav-collapsed';
+  function collapsed() { return workspace.classList.contains('is-nav-collapsed'); }
+  function setCollapsed(on) {
+    workspace.classList.toggle('is-nav-collapsed', on);
+    toggle.setAttribute('aria-expanded', on ? 'false' : 'true');
+    var label = on ? 'Ouvrir la navigation' : 'Réduire la navigation';
+    toggle.title = label;
+    var hidden = toggle.querySelector('.visually-hidden');
+    if (hidden) hidden.textContent = label;
+    try { localStorage.setItem(key, on ? '1' : '0'); } catch (error) {}
+  }
+  try { setCollapsed(localStorage.getItem(key) !== '0'); } catch (error) { setCollapsed(true); }
+  toggle.addEventListener('click', function () { setCollapsed(!collapsed()); });
+  var startX = 0;
+  var startY = 0;
+  var tracking = false;
+  function begin(event) {
+    if (!document.body.classList.contains('theme-clarity')) return;
+    if (event.button !== undefined && event.button !== 0) return;
+    tracking = true;
+    startX = event.clientX;
+    startY = event.clientY;
+  }
+  if (edge) edge.addEventListener('pointerdown', begin);
+  workspace.addEventListener('pointerdown', function (event) {
+    if (!document.body.classList.contains('theme-clarity') || tracking) return;
+    var menu = workspace.querySelector('.dashboard-menu');
+    if (!menu) return;
+    var rect = menu.getBoundingClientRect();
+    var inside = event.clientX >= rect.left && event.clientX <= rect.right;
+    if (!inside) return;
+    if (!collapsed() && event.target.closest('a, button, input, select, textarea')) return;
+    begin(event);
+  });
+  window.addEventListener('pointerup', function (event) {
+    if (!tracking) return;
+    tracking = false;
+    var dx = event.clientX - startX;
+    var dy = event.clientY - startY;
+    if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+    setCollapsed(dx < 0);
+  });
+  window.addEventListener('pointercancel', function () { tracking = false; });
+})();
+</script>
+<script src="assets/dashboard-editor.js?v=5" defer></script>
 <?php page_foot(); ?>

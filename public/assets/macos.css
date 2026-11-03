@@ -3702,7 +3702,7 @@ button.macos-dock-item {
   cursor: pointer;
 }
 
-body.theme-macos .course-finder-layer {
+body.theme-macos .course-finder-layer , body.theme-clarity .course-finder-layer {
   position: fixed;
   inset: 0 0 5.2rem 0;
   z-index: 45;
@@ -3711,11 +3711,11 @@ body.theme-macos .course-finder-layer {
   padding: 1rem;
 }
 
-body.theme-macos .course-finder-layer[hidden] {
+body.theme-macos .course-finder-layer[hidden] , body.theme-clarity .course-finder-layer[hidden] {
   display: none;
 }
 
-body.theme-macos .course-finder-window {
+body.theme-macos .course-finder-window , body.theme-clarity .course-finder-window {
   display: flex;
   flex-direction: column;
   width: min(44rem, calc(100vw - 2rem));
@@ -3733,7 +3733,7 @@ body.theme-macos .course-finder-window {
   transform: translateY(28px) scale(0.92);
 }
 
-body.theme-macos .course-finder-window.is-in {
+body.theme-macos .course-finder-window.is-in , body.theme-clarity .course-finder-window.is-in {
   animation: course-finder-in 0.72s var(--macos-ease) forwards;
 }
 
@@ -3742,7 +3742,7 @@ body.theme-macos .course-finder-window.is-in {
   to { opacity: 1; transform: none; }
 }
 
-body.theme-macos .course-finder-titlebar {
+body.theme-macos .course-finder-titlebar , body.theme-clarity .course-finder-titlebar {
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -3751,7 +3751,7 @@ body.theme-macos .course-finder-titlebar {
   border-bottom: 1px solid var(--glass-border);
 }
 
-body.theme-macos .course-finder-titlebar h2 {
+body.theme-macos .course-finder-titlebar h2 , body.theme-clarity .course-finder-titlebar h2 {
   margin: 0;
   min-width: 0;
   overflow: hidden;
@@ -3761,11 +3761,11 @@ body.theme-macos .course-finder-titlebar h2 {
   font-weight: 600;
 }
 
-body.theme-macos .course-finder-window {
+body.theme-macos .course-finder-window , body.theme-clarity .course-finder-window {
   position: relative;
 }
 
-body.theme-macos .course-finder-toolbar {
+body.theme-macos .course-finder-toolbar , body.theme-clarity .course-finder-toolbar {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -3773,8 +3773,8 @@ body.theme-macos .course-finder-toolbar {
   margin-left: auto;
 }
 
-body.theme-macos .course-finder-toolbar button,
-body.theme-macos .course-finder-sheet-actions button {
+body.theme-macos .course-finder-toolbar button, body.theme-clarity .course-finder-toolbar button,
+body.theme-macos .course-finder-sheet-actions button , body.theme-clarity .course-finder-sheet-actions button {
   min-height: 2rem;
   padding: 0.2rem 0.65rem;
   border: 1px solid var(--glass-border);
@@ -3786,30 +3786,30 @@ body.theme-macos .course-finder-sheet-actions button {
   cursor: pointer;
 }
 
-body.theme-macos .course-finder-toolbar button:hover,
-body.theme-macos .course-finder-toolbar button:focus-visible {
+body.theme-macos .course-finder-toolbar button:hover, body.theme-clarity .course-finder-toolbar button:hover,
+body.theme-macos .course-finder-toolbar button:focus-visible , body.theme-clarity .course-finder-toolbar button:focus-visible {
   background: rgba(10, 132, 255, 0.28);
 }
 
-body.theme-macos .course-finder-status {
+body.theme-macos .course-finder-status , body.theme-clarity .course-finder-status {
   min-height: 1.4rem;
   margin: 0;
   padding: 0.35rem 0.9rem 0;
   font-size: 0.78rem;
 }
 
-body.theme-macos .course-finder-body.is-drop {
+body.theme-macos .course-finder-body.is-drop , body.theme-clarity .course-finder-body.is-drop {
   outline: 2px dashed rgba(126, 200, 255, 0.9);
   outline-offset: -8px;
   background: rgba(10, 132, 255, 0.12);
 }
 
-body.theme-macos .course-finder-item.is-drop {
+body.theme-macos .course-finder-item.is-drop , body.theme-clarity .course-finder-item.is-drop {
   background: rgba(10, 132, 255, 0.28);
   outline: 2px solid rgba(126, 200, 255, 0.95);
 }
 
-body.theme-macos .course-finder-open {
+body.theme-macos .course-finder-open , body.theme-clarity .course-finder-open {
   display: grid;
   justify-items: center;
   gap: 0.35rem;
@@ -3825,7 +3825,7 @@ body.theme-macos .course-finder-open {
   cursor: default;
 }
 
-body.theme-macos .course-finder-more {
+body.theme-macos .course-finder-more , body.theme-clarity .course-finder-more {
   min-height: 1.7rem;
   padding: 0 0.45rem;
   border: 0;
@@ -3837,12 +3837,12 @@ body.theme-macos .course-finder-more {
   cursor: pointer;
 }
 
-body.theme-macos .course-finder-more:hover,
-body.theme-macos .course-finder-more:focus-visible {
+body.theme-macos .course-finder-more:hover, body.theme-clarity .course-finder-more:hover,
+body.theme-macos .course-finder-more:focus-visible , body.theme-clarity .course-finder-more:focus-visible {
   background: rgba(255, 255, 255, 0.16);
 }
 
-body.theme-macos .course-finder-menu {
+body.theme-macos .course-finder-menu , body.theme-clarity .course-finder-menu {
   position: fixed;
   z-index: 80;
   display: grid;
@@ -3861,7 +3861,7 @@ body.theme-macos .course-finder-menu {
   transform-origin: top left;
 }
 
-body.theme-macos .course-finder-menu.is-in {
+body.theme-macos .course-finder-menu.is-in , body.theme-clarity .course-finder-menu.is-in {
   animation: course-finder-menu-in 0.18s var(--macos-ease);
 }
 
@@ -3870,11 +3870,11 @@ body.theme-macos .course-finder-menu.is-in {
   to { opacity: 1; transform: none; }
 }
 
-body.theme-macos .course-finder-menu[hidden] {
+body.theme-macos .course-finder-menu[hidden] , body.theme-clarity .course-finder-menu[hidden] {
   display: none;
 }
 
-body.theme-macos .course-finder-menu button {
+body.theme-macos .course-finder-menu button , body.theme-clarity .course-finder-menu button {
   display: block;
   width: 100%;
   min-height: 1.55rem;
@@ -3892,44 +3892,44 @@ body.theme-macos .course-finder-menu button {
   cursor: default;
 }
 
-body.theme-macos .course-finder-menu button:hover,
-body.theme-macos .course-finder-menu button:focus-visible {
+body.theme-macos .course-finder-menu button:hover, body.theme-clarity .course-finder-menu button:hover,
+body.theme-macos .course-finder-menu button:focus-visible , body.theme-clarity .course-finder-menu button:focus-visible {
   background: #0a84ff;
   color: #fff;
   outline: none;
 }
 
-body.theme-macos .course-finder-menu button.is-danger:hover,
-body.theme-macos .course-finder-menu button.is-danger:focus-visible {
+body.theme-macos .course-finder-menu button.is-danger:hover, body.theme-clarity .course-finder-menu button.is-danger:hover,
+body.theme-macos .course-finder-menu button.is-danger:focus-visible , body.theme-clarity .course-finder-menu button.is-danger:focus-visible {
   background: #ff3b30;
 }
 
-body.theme-macos .course-finder-menu-rule {
+body.theme-macos .course-finder-menu-rule , body.theme-clarity .course-finder-menu-rule {
   height: 1px;
   margin: 0.28rem 0.35rem;
   background: rgba(255, 255, 255, 0.14);
 }
 
-body.theme-macos .course-finder-more {
+body.theme-macos .course-finder-more , body.theme-clarity .course-finder-more {
   opacity: 0;
 }
 
-body.theme-macos .course-finder-item:hover .course-finder-more,
-body.theme-macos .course-finder-item:focus-within .course-finder-more {
+body.theme-macos .course-finder-item:hover .course-finder-more, body.theme-clarity .course-finder-item:hover .course-finder-more,
+body.theme-macos .course-finder-item:focus-within .course-finder-more , body.theme-clarity .course-finder-item:focus-within .course-finder-more {
   opacity: 1;
 }
 
-body.theme-macos.theme-light .course-finder-menu {
+body.theme-macos.theme-light .course-finder-menu , body.theme-clarity.theme-light .course-finder-menu {
   background: rgba(246, 246, 246, 0.78);
   color: #1d1d1f;
   border-color: rgba(0, 0, 0, 0.08);
 }
 
-body.theme-macos.theme-light .course-finder-menu-rule {
+body.theme-macos.theme-light .course-finder-menu-rule , body.theme-clarity.theme-light .course-finder-menu-rule {
   background: rgba(0, 0, 0, 0.12);
 }
 
-body.theme-macos .course-finder-sheet {
+body.theme-macos .course-finder-sheet , body.theme-clarity .course-finder-sheet {
   display: grid;
   gap: 0.55rem;
   margin: 0 0.85rem 0.85rem;
@@ -3938,16 +3938,16 @@ body.theme-macos .course-finder-sheet {
   background: rgba(255, 255, 255, 0.06);
 }
 
-body.theme-macos .course-finder-sheet[hidden] {
+body.theme-macos .course-finder-sheet[hidden] , body.theme-clarity .course-finder-sheet[hidden] {
   display: none;
 }
 
-body.theme-macos .course-finder-sheet p {
+body.theme-macos .course-finder-sheet p , body.theme-clarity .course-finder-sheet p {
   margin: 0;
 }
 
-body.theme-macos .course-finder-sheet input,
-body.theme-macos .course-finder-sheet select {
+body.theme-macos .course-finder-sheet input, body.theme-clarity .course-finder-sheet input,
+body.theme-macos .course-finder-sheet select , body.theme-clarity .course-finder-sheet select {
   display: block;
   width: 100%;
   margin-top: 0.3rem;
@@ -3960,37 +3960,37 @@ body.theme-macos .course-finder-sheet select {
   font: inherit;
 }
 
-body.theme-macos:not(.theme-light) .course-finder-sheet select {
+body.theme-macos:not(.theme-light) .course-finder-sheet select , body.theme-clarity:not(.theme-light) .course-finder-sheet select {
   color-scheme: dark;
   background-color: #2c2c2e;
   color: #f5f5f7;
 }
 
-body.theme-macos:not(.theme-light) .course-finder-sheet select option,
-body.theme-macos:not(.theme-light) .course-finder-sheet select optgroup {
+body.theme-macos:not(.theme-light) .course-finder-sheet select option, body.theme-clarity:not(.theme-light) .course-finder-sheet select option,
+body.theme-macos:not(.theme-light) .course-finder-sheet select optgroup , body.theme-clarity:not(.theme-light) .course-finder-sheet select optgroup {
   background-color: #2c2c2e;
   color: #f5f5f7;
 }
 
-body.theme-macos.theme-light .course-finder-sheet select {
+body.theme-macos.theme-light .course-finder-sheet select , body.theme-clarity.theme-light .course-finder-sheet select {
   color-scheme: light;
   background-color: #ffffff;
   color: #1d1d1f;
 }
 
-body.theme-macos.theme-light .course-finder-sheet select option,
-body.theme-macos.theme-light .course-finder-sheet select optgroup {
+body.theme-macos.theme-light .course-finder-sheet select option, body.theme-clarity.theme-light .course-finder-sheet select option,
+body.theme-macos.theme-light .course-finder-sheet select optgroup , body.theme-clarity.theme-light .course-finder-sheet select optgroup {
   background-color: #ffffff;
   color: #1d1d1f;
 }
 
-body.theme-macos .course-finder-sheet-actions {
+body.theme-macos .course-finder-sheet-actions , body.theme-clarity .course-finder-sheet-actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.4rem;
 }
 
-body.theme-macos .course-finder-back {
+body.theme-macos .course-finder-back , body.theme-clarity .course-finder-back {
   display: grid;
   place-items: center;
   width: 1.8rem;
@@ -4003,40 +4003,40 @@ body.theme-macos .course-finder-back {
   cursor: pointer;
 }
 
-body.theme-macos .course-finder-back:hover,
-body.theme-macos .course-finder-back:focus-visible {
+body.theme-macos .course-finder-back:hover, body.theme-clarity .course-finder-back:hover,
+body.theme-macos .course-finder-back:focus-visible , body.theme-clarity .course-finder-back:focus-visible {
   background: rgba(255, 255, 255, 0.12);
 }
 
-body.theme-macos .course-finder-body {
+body.theme-macos .course-finder-body , body.theme-clarity .course-finder-body {
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
   padding: 1.1rem;
 }
 
-body.theme-macos .course-finder-grid {
+body.theme-macos .course-finder-grid , body.theme-clarity .course-finder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
   gap: 0.85rem 0.4rem;
 }
 
-body.theme-macos .course-finder-body.is-opening .course-finder-item {
+body.theme-macos .course-finder-body.is-opening .course-finder-item , body.theme-clarity .course-finder-body.is-opening .course-finder-item {
   animation: course-finder-icon 0.62s var(--macos-ease) both;
 }
 
-body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(2) { animation-delay: 0.04s; }
-body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(3) { animation-delay: 0.08s; }
-body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(4) { animation-delay: 0.12s; }
-body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(5) { animation-delay: 0.16s; }
-body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(6) { animation-delay: 0.2s; }
+body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(2) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(2) { animation-delay: 0.04s; }
+body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(3) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(3) { animation-delay: 0.08s; }
+body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(4) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(4) { animation-delay: 0.12s; }
+body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(5) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(5) { animation-delay: 0.16s; }
+body.theme-macos .course-finder-body.is-opening .course-finder-item:nth-child(6) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(6) { animation-delay: 0.2s; }
 
 @keyframes course-finder-icon {
   from { opacity: 0; transform: translateY(10px) scale(0.96); }
   to { opacity: 1; transform: none; }
 }
 
-body.theme-macos .course-finder-item {
+body.theme-macos .course-finder-item , body.theme-clarity .course-finder-item {
   display: grid;
   justify-items: center;
   gap: 0.35rem;
@@ -4053,24 +4053,24 @@ body.theme-macos .course-finder-item {
   cursor: default;
 }
 
-body.theme-macos .course-finder-item:hover,
-body.theme-macos .course-finder-item:focus-visible {
+body.theme-macos .course-finder-item:hover, body.theme-clarity .course-finder-item:hover,
+body.theme-macos .course-finder-item:focus-visible , body.theme-clarity .course-finder-item:focus-visible {
   background: rgba(10, 132, 255, 0.18);
   outline: none;
 }
 
-body.theme-macos .course-finder-glyph svg {
+body.theme-macos .course-finder-glyph svg , body.theme-clarity .course-finder-glyph svg {
   width: 4.4rem;
   height: 3.6rem;
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25));
 }
 
-body.theme-macos .course-finder-item.is-file .course-finder-glyph svg {
+body.theme-macos .course-finder-item.is-file .course-finder-glyph svg , body.theme-clarity .course-finder-item.is-file .course-finder-glyph svg {
   width: 3.1rem;
   height: 3.8rem;
 }
 
-body.theme-macos .course-finder-item span {
+body.theme-macos .course-finder-item span , body.theme-clarity .course-finder-item span {
   display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
@@ -4078,18 +4078,18 @@ body.theme-macos .course-finder-item span {
   -webkit-box-orient: vertical;
 }
 
-body.theme-macos .course-finder-item small {
+body.theme-macos .course-finder-item small , body.theme-clarity .course-finder-item small {
   color: rgba(245, 245, 247, 0.62);
 }
 
-body.theme-macos .course-finder-empty {
+body.theme-macos .course-finder-empty , body.theme-clarity .course-finder-empty {
   margin: 2rem auto;
   max-width: 22rem;
   text-align: center;
   color: rgba(245, 245, 247, 0.75);
 }
 
-body.theme-macos .course-finder-preview {
+body.theme-macos .course-finder-preview , body.theme-clarity .course-finder-preview {
   width: 100%;
   height: 100%;
   min-height: 22rem;
@@ -4098,18 +4098,18 @@ body.theme-macos .course-finder-preview {
   background: #fff;
 }
 
-body.theme-macos.theme-light .course-finder-window {
+body.theme-macos.theme-light .course-finder-window , body.theme-clarity.theme-light .course-finder-window {
   background: rgba(255, 255, 255, 0.9);
   color: #1d1d1f;
 }
 
-body.theme-macos.theme-light .course-finder-item small,
-body.theme-macos.theme-light .course-finder-empty {
+body.theme-macos.theme-light .course-finder-item small, body.theme-clarity.theme-light .course-finder-item small,
+body.theme-macos.theme-light .course-finder-empty , body.theme-clarity.theme-light .course-finder-empty {
   color: #3a3a3c;
 }
 
 @media (max-width: 767.98px) {
-  body.theme-macos .course-finder-layer {
+  body.theme-macos .course-finder-layer , body.theme-clarity .course-finder-layer {
     inset: 0;
     place-items: center;
     padding:
@@ -4118,7 +4118,7 @@ body.theme-macos.theme-light .course-finder-empty {
       calc(4.8rem + env(safe-area-inset-bottom, 0px));
   }
 
-  body.theme-macos .course-finder-window {
+  body.theme-macos .course-finder-window , body.theme-clarity .course-finder-window {
     width: 100%;
     max-width: 100%;
     height: auto;
@@ -4127,7 +4127,7 @@ body.theme-macos.theme-light .course-finder-empty {
     border-radius: 12px;
   }
 
-  body.theme-macos .course-finder-titlebar {
+  body.theme-macos .course-finder-titlebar , body.theme-clarity .course-finder-titlebar {
     flex-wrap: wrap;
     align-items: center;
     height: auto;
@@ -4136,58 +4136,58 @@ body.theme-macos.theme-light .course-finder-empty {
     gap: 0.35rem;
   }
 
-  body.theme-macos .course-finder-titlebar h2 {
+  body.theme-macos .course-finder-titlebar h2 , body.theme-clarity .course-finder-titlebar h2 {
     flex: 1 1 auto;
     font-size: 0.92rem;
   }
 
-  body.theme-macos .course-finder-toolbar {
+  body.theme-macos .course-finder-toolbar , body.theme-clarity .course-finder-toolbar {
     flex: 1 1 100%;
     margin-left: 0;
   }
 
-  body.theme-macos .course-finder-toolbar button {
+  body.theme-macos .course-finder-toolbar button , body.theme-clarity .course-finder-toolbar button {
     flex: 1 1 auto;
     min-height: 2.25rem;
     font-size: 0.75rem;
   }
 
-  body.theme-macos .course-finder-body {
+  body.theme-macos .course-finder-body , body.theme-clarity .course-finder-body {
     padding: 0.65rem;
   }
 
-  body.theme-macos .course-finder-grid {
+  body.theme-macos .course-finder-grid , body.theme-clarity .course-finder-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.45rem 0.2rem;
   }
 
-  body.theme-macos .course-finder-glyph svg,
-  body.theme-macos .course-finder-item.is-file .course-finder-glyph svg {
+  body.theme-macos .course-finder-glyph svg, body.theme-clarity .course-finder-glyph svg,
+  body.theme-macos .course-finder-item.is-file .course-finder-glyph svg , body.theme-clarity .course-finder-item.is-file .course-finder-glyph svg {
     width: 3rem;
     height: 2.45rem;
   }
 
-  body.theme-macos .course-finder-open,
-  body.theme-macos .course-finder-more,
-  body.theme-macos .course-finder-window,
-  body.theme-macos .course-finder-menu button {
+  body.theme-macos .course-finder-open, body.theme-clarity .course-finder-open,
+  body.theme-macos .course-finder-more, body.theme-clarity .course-finder-more,
+  body.theme-macos .course-finder-window, body.theme-clarity .course-finder-window,
+  body.theme-macos .course-finder-menu button , body.theme-clarity .course-finder-menu button {
     touch-action: manipulation;
   }
 
-  body.theme-macos .course-finder-sheet input,
-  body.theme-macos .course-finder-sheet select {
+  body.theme-macos .course-finder-sheet input, body.theme-clarity .course-finder-sheet input,
+  body.theme-macos .course-finder-sheet select , body.theme-clarity .course-finder-sheet select {
     font-size: 16px;
   }
 
-  body.theme-macos .course-finder-preview {
+  body.theme-macos .course-finder-preview , body.theme-clarity .course-finder-preview {
     min-height: 14rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.theme-macos .course-finder-window,
-  body.theme-macos .course-finder-window.is-in,
-  body.theme-macos .course-finder-body.is-opening .course-finder-item {
+  body.theme-macos .course-finder-window, body.theme-clarity .course-finder-window,
+  body.theme-macos .course-finder-window.is-in, body.theme-clarity .course-finder-window.is-in,
+  body.theme-macos .course-finder-body.is-opening .course-finder-item , body.theme-clarity .course-finder-body.is-opening .course-finder-item {
     animation: none;
     opacity: 1;
     transform: none;

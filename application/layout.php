@@ -647,9 +647,10 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
         <link href="assets/motion.css?v=3" rel="stylesheet">
-        <link href="assets/style.css?v=89" rel="stylesheet">
+        <link href="assets/style.css?v=91" rel="stylesheet">
         <link href="assets/institut.css?v=3" rel="stylesheet">
         <link href="assets/macos.css?v=49" rel="stylesheet">
+        <link href="assets/clarity.css?v=8" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {
@@ -668,14 +669,14 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                     style = localStorage.getItem('app-style:' + accountScope) || localStorage.getItem('app-style') || 'original';
                     localStorage.setItem(styleKey, style);
                 }
-                if (style === 'alternate') style = 'atlas';
-                if (style !== 'atlas' && style !== 'glass' && style !== 'macos' && style !== 'institut') style = 'original';
+                if (style === 'alternate' || style === 'atlas') style = 'original';
+                if (style !== 'glass' && style !== 'macos' && style !== 'institut' && style !== 'clarity') style = 'original';
                 document.documentElement.classList.add('theme-boot');
                 document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
                 document.documentElement.dataset.appStyle = style;
                 document.documentElement.dataset.themeScope = themeScope;
                 document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
-                if (localStorage.getItem(styleKey) === 'alternate') localStorage.setItem(styleKey, 'atlas');
+                if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas') localStorage.setItem(styleKey, 'original');
             } catch (error) {}
         })();
         </script>
@@ -689,9 +690,10 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
             body.classList.toggle('theme-light', theme === 'light');
             body.classList.toggle('theme-dark', theme !== 'light');
             body.classList.remove('theme-alternate');
-            body.classList.toggle('theme-atlas', style === 'atlas');
+            body.classList.remove('theme-atlas');
             body.classList.toggle('theme-glass', style === 'glass');
             body.classList.toggle('theme-macos', style === 'macos');
+            body.classList.toggle('theme-clarity', style === 'clarity');
             body.classList.toggle('theme-institut', style === 'institut');
             document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
         })();
@@ -761,12 +763,15 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                 <span class="visually-hidden">Thème visuel</span>
                                 <select class="theme-style-select" data-style-select aria-label="Choisir le thème" title="Choisir le thème">
                                     <option value="original">Original</option>
-                                    <option value="atlas">Atlas</option>
                                     <option value="glass">Glass</option>
                                     <option value="macos">Mac OS</option>
+                                    <option value="clarity">Mac bureau</option>
                                     <option value="institut">Institut</option>
                                 </select>
                             </label>
+                        </li>
+                        <li class="nav-item">
+                            <time class="clarity-menu-clock" data-clarity-clock datetime=""></time>
                         </li>
                         <li class="nav-item">
                             <button type="button" class="theme-toggle" data-theme-toggle aria-label="Activer le mode clair" title="Activer le mode clair">
@@ -791,9 +796,9 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                         <label class="small mb-1 d-block" for="macos-style-select">Apparence</label>
                                         <select class="theme-style-select" id="macos-style-select" data-style-select aria-label="Choisir le thème">
                                             <option value="original">Original</option>
-                                            <option value="atlas">Atlas</option>
                                             <option value="glass">Glass</option>
                                             <option value="macos">Mac OS</option>
+                                            <option value="clarity">Mac bureau</option>
                                             <option value="institut">Institut</option>
                                         </select>
                                     </li>
@@ -847,6 +852,40 @@ function page_foot(): void {
             </div>
         </div>
         <?php macos_dock(); ?>
+        <script>
+        (function () {
+            var clock = document.querySelector('[data-clarity-clock]');
+            if (!clock) return;
+            function paint() {
+                if (!document.body.classList.contains('theme-clarity')) return;
+                var now = new Date();
+                var day = now.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+                var time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                clock.textContent = day + '  ' + time;
+                clock.dateTime = now.toISOString();
+            }
+            paint();
+            setInterval(paint, 15000);
+            new MutationObserver(paint).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        })();
+        (function () {
+            var name = document.querySelector('.navbar-institution-name');
+            var box = name ? name.closest('.navbar-institution') : null;
+            if (!name || !box) return;
+            function fit() {
+                name.classList.remove('is-marquee');
+                if (!document.body.classList.contains('theme-clarity')) return;
+                var overflow = name.scrollWidth - box.clientWidth;
+                if (overflow > 8) {
+                    name.style.setProperty('--shift', (-overflow - 16) + 'px');
+                    name.classList.add('is-marquee');
+                }
+            }
+            fit();
+            window.addEventListener('resize', fit);
+            new MutationObserver(fit).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+        })();
+        </script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="assets/motion.js?v=3" defer></script>
         <?php if (logged_in() && !is_admin() && !is_student()): ?>
@@ -870,20 +909,22 @@ function page_foot(): void {
                 body.classList.toggle('theme-light', light);
                 body.classList.toggle('theme-dark', !light);
                 document.documentElement.setAttribute('data-bs-theme', light ? 'light' : 'dark');
-                if (toggle) {
-                    const themeLabel = light ? 'Activer le mode sombre' : 'Activer le mode clair';
-                    toggle.setAttribute('aria-label', themeLabel);
-                    toggle.title = themeLabel;
-                    toggle.querySelector('[data-theme-icon]').textContent = light ? '☾' : '☀';
-                    toggle.querySelector('[data-theme-label]').textContent = light ? 'Sombre' : 'Clair';
-                }
+                if (!toggle) return;
+                const themeLabel = light ? 'Activer le mode sombre' : 'Activer le mode clair';
+                toggle.setAttribute('aria-label', themeLabel);
+                toggle.title = themeLabel;
+                const icon = toggle.querySelector('[data-theme-icon]');
+                const label = toggle.querySelector('[data-theme-label]');
+                if (icon) icon.textContent = light ? '☾' : '☀';
+                if (label) label.textContent = light ? 'Sombre' : 'Clair';
             }
 
             applyTheme(savedTheme);
             function normalizeStyle(style) {
-                if (style === 'atlas' || style === 'alternate') return 'atlas';
+                if (style === 'atlas' || style === 'alternate') return 'original';
                 if (style === 'glass') return 'glass';
                 if (style === 'macos' || style === 'mac' || style === 'mac-os') return 'macos';
+                if (style === 'clarity' || style === 'mac-clair') return 'clarity';
                 if (style === 'institut' || style === 'accueil') return 'institut';
                 return 'original';
             }
@@ -895,13 +936,13 @@ function page_foot(): void {
 
             function applyStyle(style) {
                 const normalized = normalizeStyle(style);
-                if (localStorage.getItem(styleKey) === 'alternate') {
-                    localStorage.setItem(styleKey, 'atlas');
+                if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas') {
+                    localStorage.setItem(styleKey, 'original');
                 }
-                body.classList.remove('theme-alternate');
-                body.classList.toggle('theme-atlas', normalized === 'atlas');
+                body.classList.remove('theme-alternate', 'theme-atlas');
                 body.classList.toggle('theme-glass', normalized === 'glass');
                 body.classList.toggle('theme-macos', normalized === 'macos');
+                body.classList.toggle('theme-clarity', normalized === 'clarity');
                 body.classList.toggle('theme-institut', normalized === 'institut');
                 document.documentElement.dataset.appStyle = normalized;
                 styleSelects.forEach(function (el) {
@@ -912,8 +953,8 @@ function page_foot(): void {
 
             function currentStyle() {
                 if (body.classList.contains('theme-macos')) return 'macos';
+                if (body.classList.contains('theme-clarity')) return 'clarity';
                 if (body.classList.contains('theme-glass')) return 'glass';
-                if (body.classList.contains('theme-atlas')) return 'atlas';
                 if (body.classList.contains('theme-institut')) return 'institut';
                 return 'original';
             }
@@ -921,29 +962,13 @@ function page_foot(): void {
             function syncThemeToFrames(theme, style) {
                 document.querySelectorAll('iframe').forEach(function (frame) {
                     try {
-                        const frameBody = frame.contentDocument && frame.contentDocument.body;
-                        if (frameBody) {
-                            frameBody.classList.toggle('theme-light', theme === 'light');
-                            frameBody.classList.toggle('theme-dark', theme !== 'light');
-                            frameBody.classList.remove('theme-alternate');
-                            frameBody.classList.toggle('theme-atlas', style === 'atlas');
-                            frameBody.classList.toggle('theme-glass', style === 'glass');
-                            frameBody.classList.toggle('theme-macos', style === 'macos');
-                            frameBody.classList.toggle('theme-institut', style === 'institut');
-                        }
-                        if (frame.contentDocument && frame.contentDocument.documentElement) {
-                            frame.contentDocument.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
-                            frame.contentDocument.documentElement.dataset.appStyle = style;
-                            frame.contentDocument.documentElement.dataset.appTheme = theme;
-                        }
-                        if (frame.contentWindow) {
-                            frame.contentWindow.postMessage({
-                                type: 'app-theme-sync',
-                                scope: themeScope,
-                                theme: theme,
-                                style: style
-                            }, window.location.origin);
-                        }
+                        if (!frame.contentWindow) return;
+                        frame.contentWindow.postMessage({
+                            type: 'app-theme-sync',
+                            scope: themeScope,
+                            theme: theme,
+                            style: style
+                        }, window.location.origin);
                     } catch (error) {
                         /* Cross-origin frames are ignored. */
                     }
@@ -1211,21 +1236,36 @@ function page_foot(): void {
             let drag = null;
 
             function isMacos() {
-                return body.classList.contains('theme-macos');
+                return body.classList.contains('theme-macos') || body.classList.contains('theme-clarity');
             }
 
             function clearWindowInline() {
                 if (!win) return;
                 win.style.left = '';
                 win.style.top = '';
+                win.style.right = '';
+                win.style.bottom = '';
                 win.style.position = '';
                 win.style.width = '';
+                win.style.height = '';
+                win.style.margin = '';
+            }
+
+            function lockWindowBox() {
+                if (!win) return;
+                var rect = win.getBoundingClientRect();
+                win.classList.remove('is-maximized');
+                win.style.margin = '0';
+                win.style.position = 'fixed';
+                win.style.left = rect.left + 'px';
+                win.style.top = rect.top + 'px';
+                win.style.width = rect.width + 'px';
+                win.style.height = rect.height + 'px';
             }
 
             function restoreWindow() {
                 if (!win) return;
                 win.classList.remove('is-minimized', 'is-closed', 'is-dragging', 'is-maximized');
-                clearWindowInline();
             }
 
             function setTitle(text) {
@@ -1250,12 +1290,19 @@ function page_foot(): void {
                             window.history.back();
                             return;
                         }
-                        win.classList.remove('is-maximized', 'is-minimized');
+                        win.classList.remove('is-minimized');
+                        lockWindowBox();
                         win.classList.add('is-closed');
                     } else if (action === 'minimize') {
-                        win.classList.remove('is-maximized');
-                        clearWindowInline();
-                        win.classList.toggle('is-minimized');
+                        if (win.classList.contains('is-minimized')) {
+                            restoreWindow();
+                            return;
+                        }
+                        win.classList.remove('is-closed');
+                        lockWindowBox();
+                        window.requestAnimationFrame(function () {
+                            win.classList.add('is-minimized');
+                        });
                     } else if (action === 'maximize') {
                         win.classList.remove('is-minimized', 'is-closed');
                         clearWindowInline();
@@ -1267,13 +1314,17 @@ function page_foot(): void {
             if (restoreBtn) {
                 restoreBtn.addEventListener('click', restoreWindow);
             }
-            document.querySelectorAll('[data-macos-dock] a').forEach(function (link) {
+            document.querySelectorAll('[data-macos-dock] a, [data-macos-dock] button').forEach(function (link) {
                 const href = link.getAttribute('href') || '';
                 const path = window.location.pathname.replace(/\\/g, '/');
                 if (href && (path.endsWith('/' + href) || (href === 'index.php' && /\/(index\.php)?$/.test(path)))) {
                     link.classList.add('is-active');
                 }
                 link.addEventListener('click', function () {
+                    if (body.classList.contains('theme-clarity')) {
+                        if (win) win.classList.remove('is-closed');
+                        return;
+                    }
                     restoreWindow();
                 });
             });
@@ -1291,20 +1342,28 @@ function page_foot(): void {
                     const rect = win.getBoundingClientRect();
                     drag = {
                         offsetX: event.clientX - rect.left,
-                        offsetY: event.clientY - rect.top
+                        offsetY: event.clientY - rect.top,
+                        width: rect.width,
+                        height: rect.height
                     };
                     titlebar.classList.add('is-grabbing');
                     win.classList.add('is-dragging');
+                    win.style.margin = '0';
                     win.style.position = 'fixed';
                     win.style.left = rect.left + 'px';
                     win.style.top = rect.top + 'px';
                     win.style.width = rect.width + 'px';
+                    win.style.height = rect.height + 'px';
                     titlebar.setPointerCapture(event.pointerId);
                 });
                 titlebar.addEventListener('pointermove', function (event) {
                     if (!drag) return;
-                    win.style.left = Math.max(8, event.clientX - drag.offsetX) + 'px';
-                    win.style.top = Math.max(8, event.clientY - drag.offsetY) + 'px';
+                    var maxX = Math.max(8, window.innerWidth - Math.min(drag.width, 160));
+                    var maxY = Math.max(36, window.innerHeight - 48);
+                    var x = Math.min(Math.max(8 - drag.width + 120, event.clientX - drag.offsetX), maxX);
+                    var y = Math.min(Math.max(36, event.clientY - drag.offsetY), maxY);
+                    win.style.left = x + 'px';
+                    win.style.top = y + 'px';
                 });
                 function endDrag() {
                     drag = null;
@@ -1374,7 +1433,11 @@ function page_foot(): void {
 
             function openCommandTarget(item) {
                 closeCommand();
-                restoreWindow();
+                if (body.classList.contains('theme-clarity')) {
+                    if (win) win.classList.remove('is-closed');
+                } else {
+                    restoreWindow();
+                }
                 if (!item || !item.href) return;
                 if (item.download && typeof window.appAskDownload === 'function') {
                     window.appAskDownload(item.href, item.question);

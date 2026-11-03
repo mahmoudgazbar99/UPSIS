@@ -134,9 +134,9 @@
 
   function themeStyle() {
     const body = document.body;
-    if (body.classList.contains('theme-atlas')) return 'atlas';
     if (body.classList.contains('theme-glass')) return 'glass';
     if (body.classList.contains('theme-macos')) return 'macos';
+    if (body.classList.contains('theme-clarity')) return 'clarity';
     if (body.classList.contains('theme-institut')) return 'institut';
     return 'original';
   }
