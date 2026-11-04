@@ -3636,6 +3636,77 @@ body.theme-macos .macos-dock {
   z-index: 30;
 }
 
+@media (max-width: 767.98px) {
+  body.theme-macos:not(.embedded-view):not(.login-page) {
+    padding-bottom: calc(5.2rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  body.theme-macos:not(.embedded-view) .dashboard-workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  body.theme-macos:not(.embedded-view) .dashboard-menu {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: none !important;
+    margin: 0 0 0.8rem !important;
+    overflow: visible !important;
+  }
+
+  body.theme-macos .dashboard-menu-list,
+  body.theme-macos .dashboard-menu-rail {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 0.45rem !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    padding-bottom: 0.35rem !important;
+  }
+
+  body.theme-macos .dashboard-menu-item {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-height: 2.75rem !important;
+  }
+
+  body.theme-macos .macos-dock {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    max-width: none !important;
+    bottom: max(6px, env(safe-area-inset-bottom, 0px)) !important;
+    transform: none !important;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  body.theme-macos .macos-dock-item:hover,
+  body.theme-macos .macos-dock-item:focus-visible {
+    transform: none;
+  }
+
+  body.theme-macos .form-control,
+  body.theme-macos .form-select,
+  body.theme-macos textarea.form-control {
+    font-size: 16px;
+  }
+
+  body.theme-macos .macos-window.is-maximized {
+    position: relative !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
+}
+
 /* Phone: the page scrolls, and an opened module fills a tall pane */
 @media (max-width: 767.98px) {
   html:has(> body.theme-macos:not(.embedded-view)) {
@@ -4181,6 +4252,58 @@ body.theme-macos.theme-light .course-finder-empty , body.theme-clarity.theme-lig
 
   body.theme-macos .course-finder-preview , body.theme-clarity .course-finder-preview {
     min-height: 14rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  body.theme-macos:not(.embedded-view):not(.login-page) .app-chrome.navbar {
+    width: calc(100% - 16px) !important;
+    margin-top: max(8px, env(safe-area-inset-top, 0px)) !important;
+    padding: 6px 8px !important;
+  }
+
+  body.theme-macos .app-chrome-inner {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  body.theme-macos .navbar-collapse,
+  body.theme-macos .navbar-collapse.show {
+    display: contents !important;
+  }
+
+  body.theme-macos .macos-toolbar-search {
+    order: 0;
+    flex: none;
+    width: auto;
+    min-width: 0;
+  }
+
+  body.theme-macos .macos-search-hit {
+    width: 100%;
+    min-height: 36px;
+  }
+
+  body.theme-macos .macos-search-hit kbd,
+  body.theme-macos .app-chrome-welcome {
+    display: none !important;
+  }
+
+  body.theme-macos .app-chrome-actions {
+    margin-left: 0 !important;
+    gap: 4px;
+  }
+
+  body.theme-macos .theme-toggle,
+  body.theme-macos .settings-button,
+  body.theme-macos .macos-toolbar-btn,
+  body.theme-macos .macos-profile {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
   }
 }
 

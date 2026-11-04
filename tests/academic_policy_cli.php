@@ -41,7 +41,7 @@ try {
         'pass_threshold' => '12.00',
         'graduate_status' => 'diplome',
     ]);
-    academic_add_period('T1', 'Trimestre 1', 20, 'trimester');
+    academic_add_period('T1', 'Trimestre 1', 'الثلاثي الأول', 20, 'trimester');
     academic_publish_replace('fee_plan', $programId, [
         'label' => 'Frais test',
         'total_amount' => '1500.00',
@@ -49,6 +49,14 @@ try {
     ]);
     $check(count(study_levels($programId)) === 5, 'five levels on program B');
     $check(in_array('T1', academic_period_codes(), true), 'non-semester period T1');
+    $periodId = (int) $pdo->query("SELECT id_period FROM academic_period WHERE code = 'T1'")->fetchColumn();
+    academic_update_period($periodId, 'Premier trimestre', 'الثلاثي الأول المعدل', 21, 'trimester');
+    $updatedPeriod = $pdo->query("SELECT label, label_ar, sequence FROM academic_period WHERE id_period = " . $periodId)->fetch();
+    $check($updatedPeriod['label'] === 'Premier trimestre' && $updatedPeriod['label_ar'] === 'الثلاثي الأول المعدل' && (int) $updatedPeriod['sequence'] === 21, 'period edit updates French and Arabic labels');
+    $levelId = (int) $pdo->query("SELECT id_level FROM study_level WHERE id_program = " . $programId . " AND code = '4'")->fetchColumn();
+    academic_update_level($levelId, '4e modifié', 'السنة الرابعة المعدلة', 4, false, 'S1,S2');
+    $updatedLevel = $pdo->query("SELECT label, label_ar FROM study_level WHERE id_level = " . $levelId)->fetch();
+    $check($updatedLevel['label'] === '4e modifié' && $updatedLevel['label_ar'] === 'السنة الرابعة المعدلة', 'level edit updates French and Arabic labels');
     $high = progression_plan('4', 12.0, $programId);
     $check($high['decision'] === 'admis' && $high['next_level'] === '5' && $high['statut'] === 'diplome', 'program B threshold 12');
     $low = progression_plan('4', 11.5, $programId);

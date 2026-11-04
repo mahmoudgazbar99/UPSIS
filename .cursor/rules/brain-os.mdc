@@ -1,0 +1,22 @@
+---
+description: Always read and update the remember_me Brain OS vault.
+alwaysApply: true
+---
+
+# Brain OS memory
+
+The only memory vault is `C:\Users\USER\Documents\remember_me`. Do not create another vault. There is no Brain OS MCP server. Read and write the Markdown files.
+
+At the start of every conversation, before other work:
+
+1. Read `C:\Users\USER\Documents\remember_me\BRAIN_STATE.md`.
+2. Read the newest decision note in `C:\Users\USER\Documents\remember_me\30_logs` when the task continues earlier work.
+3. If the task names a project, search `20_projects` and `10_knowledge` in that vault before repeating a solved problem.
+
+When a decision, completed feature, or blocker should survive this chat:
+
+1. Write it with the shape in `C:\Users\USER\Documents\remember_me\_system\templates\TPL_Decision.md`, under `30_logs`, or update the existing project note.
+2. Update `BRAIN_STATE.md` when focus, active projects, or system status changed.
+3. Append `BRAIN_CHANGELOG.md` only when the Brain OS system itself changed.
+
+Do not store passwords, API keys, or one-line chatter. Do not invent identity or metrics. Leave unknown fields as Unknown.

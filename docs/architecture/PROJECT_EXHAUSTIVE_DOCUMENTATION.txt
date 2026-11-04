@@ -53,9 +53,11 @@ They require an existing cookie session; they are not a third-party API.
 - Promotion: promotion.php preview then commit. Requires admin password AND
   typed confirmation “PROMOUVOIR”. Archives JSON payloads, fee rows, grades;
   resets finance_solde; increments niveau for “admis”.
-- Certificates: PhpWord TemplateProcessor on templates/template_inscription_2.docx
-  (inscription); PhpWord-generated DOCX for presence/success. Preview via
-  CDN jszip + docx-preview. Bulk PDF uses LibreOffice (Docker) or Word COM
+- Certificates: inscription and presence generators copy their respective DOCX
+  templates, then replace placeholders across split Word XML runs while retaining
+  paragraph and run formatting. Bidi isolates protect Arabic and mixed-direction
+  values. Success certificates are generated with PhpWord. Preview via CDN jszip +
+  docx-preview. Bulk PDF uses LibreOffice (Docker) or Word COM
   (Windows convert_inscriptions_to_pdf.ps1).
 
 1.3 User roles and permission tiers
@@ -251,7 +253,8 @@ webapp/
 ├── certificate.php
 │     Shared CIN search + docx-preview fetch of generate_*?preview=1.
 ├── generate_word.php
-│     PhpWord TemplateProcessor → inscription DOCX. GET cin, optional preview=1.
+│     Copies the inscription DOCX template and replaces its placeholders. GET cin,
+│     optional preview=1.
 ├── generate_presence.php
 │     PhpWord presence attestation DOCX (Arabic heading).
 ├── generate_reussite.php
@@ -303,8 +306,8 @@ webapp/
 │     student-campus.jpg, student-hall.jpg, attendance-logo.jpg, logo.png
 │     (README). Binary contents not dumped.
 ├── templates/
-│     Expected template_inscription_2.docx (generate_word.php / Docker volume).
-│     Glob of templates/ was empty at scan time — generator exits if missing.
+│     Required templates: template_inscription_3.docx and template_presence_2.docx.
+│     Generators exit if their required template is missing.
 ├── SQL schema & migrations (see §5 and §8):
 │     db_new.sql, db.sql, ecole_sante_gabes_full.sql,
 │     ecole_sante_gabes_export_2026-09-18.sql, seed_tronc_commun.sql,
@@ -605,12 +608,17 @@ FILE: attestation_inscription.php / attestation_presence.php /
   One-liners requiring certificate.php.
 
 FILE: generate_word.php
-  TemplateProcessor templates/template_inscription_2.docx placeholders:
-  nom, prenom, dates, cin, specialite, etc. Stream DOCX. preview=1 skips
-  Content-Disposition attachment filename.
+  Copies templates/template_inscription_3.docx and replaces placeholders:
+  nom, prenom, dates, cin, specialite, establishment_fr, establishment_ar, etc.
+  Embeds the current institution logo at each ${logo} placeholder in the copy.
+  Applies readable font and expanded character spacing to all generated text,
+  including Arabic text, titles, and dates.
+  Stream the template-based DOCX. preview=1 uses inline Content-Disposition.
 
 FILE: generate_presence.php / generate_reussite.php
-  PhpWord from scratch (not template); Arabic strings; logo no_bg_logo.png.
+  Presence copies templates/template_presence_2.docx and replaces placeholders;
+  it embeds the current institution logo at each ${logo} placeholder in the copy.
+  success certificates are generated with PhpWord.
 
 FILE: download_all_inscriptions.php
   Loops students, generate_word to temp dir, LibreOffice --headless or
@@ -866,10 +874,6 @@ DB_PORT                  3307                     PDO port. Docker web uses 3306
 DB_NAME                  ecole_sante_gabes        Database name
 DB_USER                  myapp_user               DB user
 DB_PASS                  myapp_password           DB password
-INSCRIPTION_TEMPLATE     (unset in PHP)           Docker-only path
-                                                  /opt/templates/template_inscription_2.docx
-                                                  generate_word.php actually uses
-                                                  __DIR__/templates/template_inscription_2.docx
 LANG / LC_ALL / LANGUAGE en_US.UTF-8              Dockerfile locale
 HTTPS                    auto from $_SERVER       session cookie secure flag
 
@@ -1035,7 +1039,8 @@ README documented logins (operational, not env):
   XAMPP schema, or the running app will not see them.
 
 8.7 Missing runtime files often required
-  templates/template_inscription_2.docx — generate_word.php exits if absent.
+  templates/template_inscription_3.docx — registration generator exits if absent.
+  templates/template_presence_2.docx — presence generator exits if absent.
   images/no_bg_logo.png and wallpaper JPEGs — UI backgrounds/logo.
   vendor/ — must exist via composer install for DOCX/PDF.
 

@@ -649,8 +649,8 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="assets/motion.css?v=3" rel="stylesheet">
         <link href="assets/style.css?v=91" rel="stylesheet">
         <link href="assets/institut.css?v=3" rel="stylesheet">
-        <link href="assets/macos.css?v=49" rel="stylesheet">
-        <link href="assets/clarity.css?v=8" rel="stylesheet">
+        <link href="assets/macos.css?v=51" rel="stylesheet">
+        <link href="assets/clarity.css?v=19" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {

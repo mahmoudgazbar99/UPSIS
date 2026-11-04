@@ -80,6 +80,7 @@ function academic_policy_tables(PDO $pdo): void
           id_period INT UNSIGNED NOT NULL AUTO_INCREMENT,
           code VARCHAR(20) NOT NULL,
           label VARCHAR(80) NOT NULL,
+          label_ar VARCHAR(80) NOT NULL DEFAULT '',
           sequence INT NOT NULL,
           period_type VARCHAR(20) NOT NULL DEFAULT 'semester',
           active TINYINT(1) NOT NULL DEFAULT 1,
@@ -87,6 +88,9 @@ function academic_policy_tables(PDO $pdo): void
           UNIQUE KEY uq_academic_period_code (code)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
     );
+    if (!$pdo->query("SHOW COLUMNS FROM academic_period LIKE 'label_ar'")->fetch()) {
+        $pdo->exec("ALTER TABLE academic_period ADD COLUMN label_ar VARCHAR(80) NOT NULL DEFAULT '' AFTER label");
+    }
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS fee_plan (
           id_fee INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -238,11 +242,28 @@ function academic_policy_seed(PDO $pdo): void
     for ($index = 1; $index <= 6; $index++) {
         $code = 'S' . $index;
         $pdo->prepare(
-            'INSERT INTO academic_period (code, label, sequence, period_type, active)
-             SELECT ?, ?, ?, "semester", 1 FROM DUAL
+            'INSERT INTO academic_period (code, label, label_ar, sequence, period_type, active)
+             SELECT ?, ?, ?, ?, "semester", 1 FROM DUAL
              WHERE NOT EXISTS (SELECT 1 FROM academic_period WHERE code = ?)'
-        )->execute([$code, 'Semestre ' . $index, $index, $code]);
+        )->execute([$code, 'Semestre ' . $index, 'السداسي ' . ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'][$index - 1], $index, $code]);
     }
+    $pdo->exec(
+        "UPDATE academic_period
+         SET label_ar = CONCAT(
+           CASE period_type
+             WHEN 'semester' THEN 'السداسي '
+             WHEN 'trimester' THEN 'الثلاثي '
+             WHEN 'quarter' THEN 'الرباعي '
+             ELSE 'الفترة '
+           END,
+           CASE sequence
+             WHEN 1 THEN 'الأول' WHEN 2 THEN 'الثاني' WHEN 3 THEN 'الثالث'
+             WHEN 4 THEN 'الرابع' WHEN 5 THEN 'الخامس' WHEN 6 THEN 'السادس'
+             ELSE CONCAT('', sequence)
+           END
+         )
+         WHERE label_ar = ''"
+    );
     $year = ((int) date('Y') - 1) . '-' . date('Y');
     $pdo->prepare(
         'INSERT INTO academic_year (label, status) SELECT ?, "active" FROM DUAL
@@ -419,7 +440,13 @@ function academic_periods(): array
     }
     $fallback = [];
     for ($index = 1; $index <= 6; $index++) {
-        $fallback[] = ['code' => 'S' . $index, 'label' => 'Semestre ' . $index, 'sequence' => $index, 'period_type' => 'semester'];
+        $fallback[] = [
+            'code' => 'S' . $index,
+            'label' => 'Semestre ' . $index,
+            'label_ar' => 'السداسي ' . ['الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس'][$index - 1],
+            'sequence' => $index,
+            'period_type' => 'semester',
+        ];
     }
     return $fallback;
 }
@@ -649,17 +676,21 @@ function academic_publish_replace(string $table, ?int $programId, array $columns
     }
 }
 
-function academic_add_period(string $code, string $label, int $sequence, string $type): void
+function academic_add_period(string $code, string $label, string $labelAr, int $sequence, string $type): void
 {
     academic_policy_ensure();
     $code = strtoupper(trim($code));
     $label = trim(preg_replace('/\s+/u', ' ', $label) ?? '');
+    $labelAr = trim(preg_replace('/\s+/u', ' ', $labelAr) ?? '');
     $type = trim($type);
     if (!preg_match('/^[A-Z0-9]{1,12}$/', $code)) {
         throw new InvalidArgumentException('Le code de période contient 1 à 12 lettres ou chiffres.');
     }
     if ($label === '' || mb_strlen($label) > 80) {
         throw new InvalidArgumentException('Saisissez le libellé de la période.');
+    }
+    if ($labelAr === '' || mb_strlen($labelAr) > 80 || !preg_match('/\p{Arabic}/u', $labelAr)) {
+        throw new InvalidArgumentException('Saisissez le libellé arabe de la période.');
     }
     if (!in_array($type, ['semester', 'trimester', 'quarter', 'custom'], true)) {
         throw new InvalidArgumentException('Choisissez le type de période.');
@@ -672,9 +703,45 @@ function academic_add_period(string $code, string $label, int $sequence, string 
     if ($exists->fetchColumn()) {
         throw new InvalidArgumentException('Cette période existe déjà.');
     }
-    db()->prepare('INSERT INTO academic_period (code, label, sequence, period_type, active) VALUES (?, ?, ?, ?, 1)')
-        ->execute([$code, $label, $sequence, $type]);
+    db()->prepare('INSERT INTO academic_period (code, label, label_ar, sequence, period_type, active) VALUES (?, ?, ?, ?, ?, 1)')
+        ->execute([$code, $label, $labelAr, $sequence, $type]);
     academic_policy_note('periode', 'Période ' . $code . ' ajoutée');
+}
+
+function academic_update_period(int $periodId, string $label, string $labelAr, int $sequence, string $type): void
+{
+    academic_policy_ensure();
+    $label = trim(preg_replace('/\s+/u', ' ', $label) ?? '');
+    $labelAr = trim(preg_replace('/\s+/u', ' ', $labelAr) ?? '');
+    $type = trim($type);
+    if ($periodId < 1) {
+        throw new InvalidArgumentException('La période sélectionnée est invalide.');
+    }
+    if ($label === '' || mb_strlen($label) > 80) {
+        throw new InvalidArgumentException('Saisissez le libellé de la période.');
+    }
+    if ($labelAr === '' || mb_strlen($labelAr) > 80 || !preg_match('/\p{Arabic}/u', $labelAr)) {
+        throw new InvalidArgumentException('Saisissez le libellé arabe de la période.');
+    }
+    if (!in_array($type, ['semester', 'trimester', 'quarter', 'custom'], true)) {
+        throw new InvalidArgumentException('Choisissez le type de période.');
+    }
+    if ($sequence < 1 || $sequence > 40) {
+        throw new InvalidArgumentException('L’ordre doit être entre 1 et 40.');
+    }
+
+    $statement = db()->prepare(
+        'UPDATE academic_period SET label = ?, label_ar = ?, sequence = ?, period_type = ? WHERE id_period = ? AND active = 1'
+    );
+    $statement->execute([$label, $labelAr, $sequence, $type, $periodId]);
+    if ($statement->rowCount() === 0) {
+        $exists = db()->prepare('SELECT 1 FROM academic_period WHERE id_period = ? AND active = 1');
+        $exists->execute([$periodId]);
+        if (!$exists->fetchColumn()) {
+            throw new InvalidArgumentException('Cette période est introuvable ou inactive.');
+        }
+    }
+    academic_policy_note('periode', 'Période ' . $periodId . ' mise à jour');
 }
 
 function academic_add_level(int $programId, string $code, string $label, string $labelAr, int $sequence, bool $final, string $periods): void
@@ -705,6 +772,58 @@ function academic_add_level(int $programId, string $code, string $label, string 
     academic_policy_note('niveau', 'Niveau ' . $code . ' ajouté');
 }
 
+function academic_update_level(int $levelId, string $label, string $labelAr, int $sequence, bool $final, string $periods): void
+{
+    academic_policy_ensure();
+    $label = trim($label);
+    $labelAr = trim(preg_replace('/\s+/u', ' ', $labelAr) ?? $labelAr);
+    $periods = strtoupper(str_replace(' ', '', $periods));
+    if ($levelId < 1) {
+        throw new InvalidArgumentException('Le niveau sélectionné est invalide.');
+    }
+    if ($label === '' || mb_strlen($label) > 80) {
+        throw new InvalidArgumentException('Saisissez le libellé français du niveau.');
+    }
+    if ($labelAr === '' || mb_strlen($labelAr) > 80 || !preg_match('/\p{Arabic}/u', $labelAr)) {
+        throw new InvalidArgumentException('Saisissez le libellé arabe du niveau.');
+    }
+    if ($sequence < 1 || $sequence > 20) {
+        throw new InvalidArgumentException('L’ordre du niveau doit être entre 1 et 20.');
+    }
+    $known = academic_period_codes();
+    foreach (array_filter(explode(',', $periods)) as $period) {
+        if (!in_array($period, $known, true)) {
+            throw new InvalidArgumentException('Période inconnue : ' . $period);
+        }
+    }
+
+    $pdo = db();
+    $lookup = $pdo->prepare('SELECT id_program FROM study_level WHERE id_level = ? AND active = 1');
+    $lookup->execute([$levelId]);
+    $programId = $lookup->fetchColumn();
+    if ($programId === false) {
+        throw new InvalidArgumentException('Ce niveau est introuvable ou inactif.');
+    }
+
+    $pdo->beginTransaction();
+    try {
+        if ($final) {
+            $pdo->prepare('UPDATE study_level SET is_final = 0 WHERE id_program <=> ?')
+                ->execute([$programId !== null ? (int) $programId : null]);
+        }
+        $pdo->prepare(
+            'UPDATE study_level SET label = ?, label_ar = ?, sequence = ?, is_final = ?, period_codes = ? WHERE id_level = ?'
+        )->execute([$label, $labelAr, $sequence, $final ? 1 : 0, $periods, $levelId]);
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $exception;
+    }
+    academic_policy_note('niveau', 'Niveau ' . $levelId . ' mis à jour');
+}
+
 function academic_add_program(string $code, string $name, string $nameAr, string $award, string $awardAr): int
 {
     academic_policy_ensure();
@@ -720,32 +839,4 @@ function academic_add_program(string $code, string $name, string $nameAr, string
         ->execute([$code, $name, $nameAr, $award, $awardAr]);
     academic_policy_note('programme', 'Programme ' . $code . ' créé');
     return (int) db()->lastInsertId();
-}
-
-function institution_personalize_docx(string $sourcePath): string
-{
-    $copy = tempnam(sys_get_temp_dir(), 'brand-docx');
-    if ($copy === false || !copy($sourcePath, $copy)) {
-        return $sourcePath;
-    }
-    $zip = new ZipArchive();
-    if ($zip->open($copy) !== true) {
-        return $sourcePath;
-    }
-    $xml = $zip->getFromName('word/document.xml');
-    if (is_string($xml)) {
-        $xml = str_replace(
-            ['Licence en sciences infirmières', 'Université privée des sciences infirmières et de santé de Gabès', 'Gabès, le'],
-            ['${diplome}', '${universite}', institution_city() . ', le'],
-            $xml
-        );
-        $xml = str_replace(
-            '<w:tblpPr w:leftFromText="141" w:rightFromText="141" w:vertAnchor="text" w:horzAnchor="margin" w:tblpY="-126"/>',
-            '',
-            $xml
-        );
-        $zip->addFromString('word/document.xml', $xml);
-    }
-    $zip->close();
-    return $copy;
 }
