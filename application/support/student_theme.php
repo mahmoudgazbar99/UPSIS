@@ -112,8 +112,10 @@ function student_theme_select(): void
     var to = 'translate3d(-50%, -50%, 0) scale(1)';
     apply(next);
     busy = true;
+    var spread = Math.ceil(reach * (1 / startScale - 1) + 32);
     blob.style.background = 'transparent';
-    blob.style.boxShadow = '0 0 0 100vmax ' + colors[previous];
+    blob.style.border = '0';
+    blob.style.boxShadow = '0 0 0 1px ' + colors[previous] + ', 0 0 0 ' + spread + 'px ' + colors[previous];
     blob.style.width = size + 'px';
     blob.style.height = size + 'px';
     blob.style.left = x + 'px';
