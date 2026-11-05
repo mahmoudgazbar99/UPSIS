@@ -257,8 +257,10 @@ function db_connect(): AppPdo
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
-    // Direct connection: this process keeps session SET and native prepared statements.
-    $url = getenv('DATABASE_URL_UNPOOLED') ?: getenv('DATABASE_URL') ?: '';
+    // Neon only on Render. Local Docker keeps its own Postgres so logins stay fast.
+    $url = getenv('RENDER') === 'true'
+        ? (getenv('DATABASE_URL_UNPOOLED') ?: getenv('DATABASE_URL') ?: '')
+        : '';
     if ($url !== '') {
         $parts = parse_url($url);
         if ($parts === false || empty($parts['host'])) {

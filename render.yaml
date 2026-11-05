@@ -4,11 +4,15 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
-    healthCheckPath: /connexion_etudiant
+    # Cheap path: do not hit DB-backed login pages for health probes.
+    healthCheckPath: /
     envVars:
+      - key: RENDER
+        value: "true"
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_URL_UNPOOLED
         sync: false
       - key: NEON_BRANCH
         sync: false
+

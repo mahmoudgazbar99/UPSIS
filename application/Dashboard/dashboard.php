@@ -337,7 +337,7 @@ if (!empty($explorerFragment)) {
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-space.css?v=13" rel="stylesheet">
-  <link href="assets/student-portal-shell.css?v=6" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=7" rel="stylesheet">
   <link href="assets/student-theme.css?v=11" rel="stylesheet">
   <link href="assets/course-explorer.css?v=2" rel="stylesheet">
   <script src="assets/course-explorer.js?v=2" defer></script>
@@ -762,8 +762,12 @@ if (!empty($explorerFragment)) {
     function drawerOpen() {
       return !!(phone && phone.classList.contains('is-drawer-open'));
     }
+    function isPhoneShell() {
+      return window.matchMedia('(max-width: 767.98px)').matches;
+    }
     function setPortal(open) {
       if (!portal || !phone) return;
+      if (!isPhoneShell()) open = false;
       phone.classList.toggle('is-drawer-open', open);
       portal.setAttribute('aria-hidden', open ? 'false' : 'true');
       if (open) portal.removeAttribute('inert');
@@ -771,7 +775,13 @@ if (!empty($explorerFragment)) {
       if (portalOpen) portalOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
       document.body.classList.toggle('portal-lock', open);
     }
-    if (portalOpen) portalOpen.addEventListener('click', function () { setPortal(!drawerOpen()); });
+    if (portalOpen) portalOpen.addEventListener('click', function () {
+      if (!isPhoneShell()) return;
+      setPortal(!drawerOpen());
+    });
+    window.addEventListener('resize', function () {
+      if (!isPhoneShell()) setPortal(false);
+    });
     if (backdrop) backdrop.addEventListener('click', function () { setPortal(false); });
     var drag = null;
     function clearDragStyles() {
@@ -783,7 +793,7 @@ if (!empty($explorerFragment)) {
       }
     }
     function beginDrag(event, fromEdge) {
-      if (!portal || event.pointerType === 'mouse' && event.button !== 0) return;
+      if (!isPhoneShell() || !portal || event.pointerType === 'mouse' && event.button !== 0) return;
       drag = { id: event.pointerId, x: event.clientX, y: event.clientY, open: drawerOpen(), fromEdge: fromEdge, axis: '' };
     }
     function moveDrag(event) {

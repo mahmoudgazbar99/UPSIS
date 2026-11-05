@@ -2,7 +2,7 @@
 require_once app_path('bootstrap.php');
 $requestedRole = (string) ($_GET['role'] ?? '');
 if (logged_in() && $requestedRole === '' && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: ' . (is_student() ? 'dashboard.php' : 'index.php'));
+    header('Location: ' . (is_student() ? 'dashboard' : 'index'));
     exit;
 }
 
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         app_enter_role_session('admin', [
             'admin_auth_generation' => admin_auth_generation(),
         ]);
-        header('Location: index.php');
+        header('Location: index');
         exit;
     }
     if ($error === '' && $role === 'enseignant') {
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'teacher_id' => (int) $teacher['id_enseignant'],
                 'teacher_auth_generation' => (int) $teacher['auth_generation'],
             ]);
-            header('Location: index.php');
+            header('Location: index');
             exit;
         }
     }
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'stage_auth_generation' => (int) $stage['auth_generation'],
                     'stage_duty' => (string) ($stage['responsabilite'] ?? 'officer'),
                 ]);
-                header('Location: stage_portal.php');
+                header('Location: stage_portal');
                 exit;
             }
         }
@@ -87,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'finance_id' => (int) $finance['id_finance'],
                 'finance_auth_generation' => (int) $finance['auth_generation'],
             ]);
-            header('Location: index.php');
+            header('Location: index');
             exit;
         }
     }
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'scolarite_id' => (int) $office['id_scolarite'],
                 'scolarite_auth_generation' => (int) $office['auth_generation'],
             ]);
-            header('Location: index.php');
+            header('Location: index');
             exit;
         }
     }
@@ -204,7 +204,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="card shadow-lg login-card">
       <div class="card-body p-5">
         <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
-        <form method="post" action="login.php">
+        <form method="post" action="login">
           <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <label class="form-label" for="role">Se connecter en tant que</label>
           <?php

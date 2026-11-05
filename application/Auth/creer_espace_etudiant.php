@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'Création de l’espace étudiant de ' . trim($student['prenom'] . ' ' . $student['nom'])
                     );
                     flash('success', 'Votre espace étudiant est ouvert.');
-                    header('Location: dashboard.php');
+                    header('Location: dashboard');
                     exit;
             }
         } catch (PDOException $exception) {
@@ -97,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Créer mon espace</h1>
     <p class="student-gate-school">Réservé aux CIN déjà inscrits</p>
     <?php if ($error !== ''): ?><div class="alert" role="alert"><?= e($error) ?></div><?php endif; ?>
-    <form method="post" action="creer_espace_etudiant.php" autocomplete="off">
+    <form method="post" action="creer_espace_etudiant" autocomplete="off">
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
       <label for="cin">CIN / passeport</label>
       <input id="cin" name="cin" value="<?= e($cin) ?>" maxlength="40" required autofocus>

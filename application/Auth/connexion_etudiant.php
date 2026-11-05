@@ -5,7 +5,7 @@ require_once app_path('bootstrap.php');
 require_once app_path('support/student_theme.php');
 
 if (logged_in()) {
-    header('Location: ' . (is_student() ? 'dashboard.php' : 'index.php'));
+    header('Location: ' . (is_student() ? 'dashboard' : 'index'));
     exit;
 }
 
@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_role'] = 'etudiant';
                 $_SESSION['id_etudiant'] = (int) $row['id_etudiant'];
                 $_SESSION['student_auth_generation'] = (int) $account['auth_generation'];
-                header('Location: dashboard.php');
+                header('Location: dashboard');
                 exit;
             }
         }
@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <h1>Espace étudiant</h1>
     <p class="student-gate-school"><?php foreach (institution_name_lines() as $index => $institutionLine): ?><?= $index > 0 ? '<br>' : '' ?><?= e($institutionLine) ?><?php endforeach; ?></p>
     <?php if ($error !== ''): ?><div class="alert" role="alert"><?= e($error) ?></div><?php endif; ?>
-    <form method="post" action="connexion_etudiant.php" autocomplete="on">
+    <form method="post" action="connexion_etudiant" autocomplete="on">
       <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
       <label for="cin">CIN / passeport</label>
       <input id="cin" name="cin" value="<?= e($cin) ?>" maxlength="40" required autofocus autocomplete="username">
