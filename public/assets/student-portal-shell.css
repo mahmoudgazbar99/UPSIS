@@ -1,0 +1,272 @@
+/* Student portal phone shell. Existing panels stay; this only frames them. */
+
+.portal-stage {
+  min-height: 100vh;
+  background: #07080c;
+}
+
+.portal-phone {
+  position: relative;
+  width: min(430px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  background: #101114;
+  color: #f4f1ea;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+@media (min-width: 768px) {
+  .portal-stage {
+    display: grid;
+    place-items: center;
+    padding: 28px 16px;
+  }
+
+  .portal-phone {
+    display: flex;
+    flex-direction: column;
+    height: min(900px, calc(100vh - 56px));
+    min-height: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 32px;
+    overflow: hidden;
+  }
+
+  .portal-phone .student-space-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .portal-backdrop,
+  .portal-drawer {
+    position: absolute;
+  }
+}
+
+.portal-phone .student-space-bar,
+.portal-phone .student-space-main {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.portal-phone .student-space-bar {
+  border-radius: 0;
+  margin-top: 0;
+}
+
+.portal-menu-btn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f1ea;
+}
+
+.portal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.portal-phone .student-space-cards {
+  display: none;
+}
+
+.portal-phone .student-space-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  gap: 10px;
+  margin: 0;
+  padding: max(10px, env(safe-area-inset-top)) 12px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  background: rgba(16, 17, 20, 0.94);
+  box-shadow: none;
+}
+
+.portal-phone .student-space-bar p,
+.portal-phone .student-space-bar-actions > a {
+  display: none;
+}
+
+.portal-phone .student-space-bar img {
+  width: 28px;
+}
+
+.portal-phone .student-space-bar strong {
+  font-family: "Outfit", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+html[data-theme="light"] .portal-stage {
+  background: #c5c5ce;
+}
+
+html[data-theme="light"] .portal-phone {
+  background: #d9d9e1;
+  color: #1a191d;
+}
+
+html[data-theme="light"] .portal-drawer {
+  background: #e4e4eb;
+  color: #1a191d;
+}
+
+html[data-theme="light"] .portal-drawer-kicker {
+  color: #5c5a63;
+}
+
+html[data-theme="light"] .portal-drawer button,
+html[data-theme="light"] .portal-drawer a {
+  color: #1a191d;
+}
+
+html[data-theme="light"] .portal-drawer button[aria-pressed="true"] {
+  background: rgba(26, 25, 29, 0.1);
+}
+
+html[data-theme="light"] .portal-menu-btn,
+html[data-theme="light"] .portal-theme-toggle {
+  background: rgba(26, 25, 29, 0.08);
+  color: #1a191d;
+}
+
+.portal-phone .student-space-main {
+  width: 100%;
+  margin: 0;
+  padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+}
+
+.portal-phone .student-space-sheet {
+  margin-top: 0;
+  border-radius: 16px;
+}
+
+.portal-phone .student-space-sheet h1 {
+  font-size: 1.5rem;
+}
+
+.portal-phone .student-space-form input,
+.portal-phone .student-space-form select,
+.portal-phone .student-space-form textarea {
+  font-size: 16px;
+  min-height: 48px;
+}
+
+.portal-phone .student-space-table-wrap {
+  overflow-x: auto;
+}
+
+.portal-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 55;
+  width: 22px;
+  touch-action: none;
+}
+
+.portal-phone.is-drawer-open .portal-edge {
+  display: none;
+}
+
+.portal-backdrop {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.portal-phone.is-drawer-open .portal-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.portal-drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 70;
+  width: min(300px, 86vw);
+  padding: max(28px, env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: #16181d;
+  color: #f4f1ea;
+  box-shadow: 16px 0 40px rgba(0, 0, 0, 0.35);
+  transform: translateX(-100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  touch-action: pan-y;
+}
+
+.portal-phone.is-drawer-open .portal-drawer {
+  transform: translateX(0);
+}
+
+.portal-drawer-kicker {
+  margin: 0;
+  color: #a7a29a;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.portal-drawer-name {
+  display: block;
+  margin: 4px 0 18px;
+  font-size: 18px;
+}
+
+.portal-drawer button,
+.portal-drawer a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #f4f1ea;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+}
+
+.portal-drawer button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.portal-drawer svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.portal-lock {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-drawer,
+  .portal-backdrop {
+    transition: none;
+  }
+}

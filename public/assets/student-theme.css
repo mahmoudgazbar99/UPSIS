@@ -21,15 +21,15 @@ html[data-student-skin="nursing"] {
 
 html[data-student-skin="nursing"][data-theme="light"] {
   color-scheme: light;
-  --bg: var(--ux-base, #f2f2f7);
-  --bg-soft: var(--ux-base-soft, #e8e8ed);
-  --surface: var(--ux-card, #ffffff);
-  --surface-2: #ffffff;
-  --ink: var(--ux-text, #1d1b20);
-  --ink-soft: var(--ux-text-secondary, #49454f);
-  --muted: var(--ux-text-secondary, #49454f);
-  --line: var(--ux-divider, #e5e5ea);
-  --line-strong: #d1d1d6;
+  --bg: #d9d9e1;
+  --bg-soft: #cfd0d8;
+  --surface: #e7e7ee;
+  --surface-2: #dedee6;
+  --ink: #1a191d;
+  --ink-soft: #3f3d45;
+  --muted: #3f3d45;
+  --line: #c4c4cc;
+  --line-strong: #b0b0ba;
   --accent: #0f766e;
   --accent-hover: #115e59;
   --accent-ink: #ffffff;
@@ -116,7 +116,7 @@ html[data-student-skin="nursing"] .student-gate-card {
 html[data-student-skin="nursing"][data-theme="light"] .student-space-cards button,
 html[data-student-skin="nursing"][data-theme="light"] .student-space-sheet,
 html[data-student-skin="nursing"][data-theme="light"] .student-space-bar {
-  background: var(--ux-card, #ffffff);
+  background: var(--surface);
   box-shadow: var(--ux-elev-1);
 }
 
@@ -169,6 +169,7 @@ html[data-student-skin="nursing"] .student-space-form label {
 
 html[data-student-skin="nursing"] .student-gate input,
 html[data-student-skin="nursing"] .student-space-form input,
+html[data-student-skin="nursing"] .student-space-form select,
 html[data-student-skin="nursing"] .student-space-form textarea {
   border: 1px solid var(--line-strong);
   border-radius: 0.85rem;
@@ -176,8 +177,14 @@ html[data-student-skin="nursing"] .student-space-form textarea {
   color: var(--ink);
 }
 
+html[data-student-skin="nursing"] .student-space-form select option {
+  background: var(--surface);
+  color: var(--ink);
+}
+
 html[data-student-skin="nursing"] .student-gate input:focus,
 html[data-student-skin="nursing"] .student-space-form input:focus,
+html[data-student-skin="nursing"] .student-space-form select:focus,
 html[data-student-skin="nursing"] .student-space-form textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
@@ -337,6 +344,60 @@ html[data-student-skin="nursing"] .student-space-bar-actions > a {
     border-color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     color 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.portal-theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.portal-theme-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.portal-theme-toggle [data-theme-icon="moon"] {
+  fill: currentColor;
+  stroke: none;
+}
+
+html[data-theme="light"] .portal-theme-toggle {
+  background: rgba(26, 25, 29, 0.08);
+}
+
+.theme-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  overflow: hidden;
+  pointer-events: none;
+  contain: paint;
+}
+
+.theme-wipe-blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  background: transparent;
+  transform: translate3d(-50%, -50%, 0) scale(0);
+  transform-origin: center;
+  backface-visibility: hidden;
+  will-change: transform;
 }
 
 @media (max-width: 640px) {

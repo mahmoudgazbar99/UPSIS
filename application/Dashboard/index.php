@@ -300,6 +300,16 @@ function dashboard_menu(): void {
         true,
         attestation_pending_count(db())
       );
+      require_once app_path('support/student_portal.php');
+      dashboard_menu_item(
+        'demandes_etudiants.php?embed=1',
+        'Demandes étudiantes',
+        'Groupes, rendez-vous et réclamations',
+        'attestation',
+        $num(),
+        true,
+        student_portal_pending_count(db())
+      );
       dashboard_menu_item(
         'journal_audit.php?embed=1',
         'Journal d’audit',
@@ -767,15 +777,17 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
 <?php if (is_admin()): ?>
 <script>
 (function () {
-  const item = document.querySelector('.dashboard-menu-item[data-menu-icon="attestation"]');
-  if (!item) return;
+  const item = document.querySelector('.dashboard-menu-item[href^="demandes_presence.php"]');
+  const studentItem = document.querySelector('.dashboard-menu-item[href^="demandes_etudiants.php"]');
+  if (!item && !studentItem) return;
   let stamp = '';
-  function paint(count) {
-    const strong = item.querySelector('.dashboard-menu-copy strong');
+  function paint(target, count) {
+    if (!target) return;
+    const strong = target.querySelector('.dashboard-menu-copy strong');
     if (!strong) return;
     let badge = strong.querySelector('.dashboard-alert-count');
     if (count > 0) {
-      item.setAttribute('data-alert-count', String(count));
+      target.setAttribute('data-alert-count', String(count));
       if (!badge) {
         badge = document.createElement('span');
         badge.className = 'dashboard-alert-count';
@@ -784,16 +796,28 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
       }
       badge.textContent = String(count);
     } else {
-      item.removeAttribute('data-alert-count');
+      target.removeAttribute('data-alert-count');
       if (badge) badge.remove();
     }
   }
+  function tickStudent() {
+    if (!studentItem) return;
+    fetch('demandes_etudiants_live.php', { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+        paint(studentItem, Number(data.count) || 0);
+      })
+      .catch(function () {});
+  }
   function tick() {
+    tickStudent();
+    if (!item) return;
     fetch('attestation_live.php', { credentials: 'same-origin', cache: 'no-store' })
       .then(function (response) { return response.ok ? response.json() : null; })
       .then(function (data) {
         if (!data) return;
-        paint(Number(data.count) || 0);
+        paint(item, Number(data.count) || 0);
         if (stamp && data.stamp !== stamp) {
           const frame = document.querySelector('iframe[name="dashboard-content"]');
           try {

@@ -64,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-login.css?v=5" rel="stylesheet">
-  <link href="assets/student-theme.css?v=4" rel="stylesheet">
+  <link href="assets/student-theme.css?v=11" rel="stylesheet">
 </head>
 <body class="student-gate">
   <?php student_theme_select(); ?>

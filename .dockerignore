@@ -1,0 +1,13 @@
+.git
+.cursor
+.agents
+.env
+.env.*
+node_modules
+tests
+storage/logs
+storage/cache
+storage/uploads
+storage/generated
+storage/tmp
+terminals

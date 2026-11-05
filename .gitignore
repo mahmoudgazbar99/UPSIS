@@ -15,3 +15,4 @@ storage/tmp/*
 *.log
 database/backups/*.sql
 database/seeds/db_new.sql
+.neon

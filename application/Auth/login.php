@@ -127,8 +127,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/style.css?v=91" rel="stylesheet">
   <link href="assets/institut.css?v=3" rel="stylesheet">
-  <link href="assets/macos.css?v=41" rel="stylesheet">
-  <link href="assets/clarity.css?v=8" rel="stylesheet">
+  <link href="assets/macos.css?v=52" rel="stylesheet">
+  <link href="assets/clarity.css?v=22" rel="stylesheet">
   <script>
   (function () {
     try {

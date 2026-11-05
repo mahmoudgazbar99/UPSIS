@@ -24,3 +24,6 @@ WORKDIR /var/www/html
 COPY . /var/www/html/
 
 RUN chown -R www-data:www-data /var/www/html
+
+ENV PORT=10000
+CMD ["bash", "/var/www/html/docker/start-render.sh"]

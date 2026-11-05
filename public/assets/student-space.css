@@ -547,3 +547,292 @@
     grid-template-columns: 1fr;
   }
 }
+
+.portal-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.portal-picker[hidden] {
+  display: none;
+}
+
+.portal-picker-card {
+  width: min(340px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 20px 20px 8px;
+  border-radius: 28px;
+  background: #2b2b2b;
+  color: #fff;
+}
+
+.portal-picker-kicker {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portal-picker-date,
+.portal-picker-clockline button,
+.portal-picker-period button,
+.portal-picker-tabs button,
+.portal-picker-actions button,
+.portal-cal button,
+.portal-cal-head button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.portal-picker-date {
+  display: block;
+  margin: 4px 0 8px;
+  padding: 0;
+  font-size: 1.7rem;
+  text-align: left;
+}
+
+.portal-picker-clockline {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.portal-picker-clockline > span {
+  margin-top: 6px;
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.portal-picker-clockline > button {
+  min-width: 72px;
+  min-height: 56px;
+  padding: 0;
+  font-size: 3.4rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.5;
+}
+
+.portal-picker-clockline > button[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.portal-picker-period {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.portal-picker-period button {
+  min-width: 52px;
+  min-height: 32px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.portal-picker-period button[aria-pressed="true"] {
+  background: var(--accent, #f3d7a1);
+  color: var(--accent-ink, #1c1408);
+}
+
+.portal-picker-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.portal-picker-tabs button {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 40px;
+  border-radius: 20px;
+}
+
+.portal-picker-tabs button[aria-pressed="true"] {
+  background: var(--accent-soft, rgba(243, 215, 161, 0.22));
+  color: var(--accent, #f3d7a1);
+}
+
+.portal-picker-tabs svg,
+.portal-cal-head svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.portal-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.portal-cal-head button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+
+.portal-cal-head button:disabled {
+  opacity: 0.3;
+}
+
+.portal-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.portal-cal-dow {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem;
+  line-height: 32px;
+}
+
+.portal-cal button {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 50%;
+}
+
+.portal-cal button[aria-pressed="true"] {
+  background: var(--accent, #f3d7a1);
+  color: var(--accent-ink, #1c1408);
+}
+
+.portal-cal button:disabled {
+  opacity: 0.28;
+}
+
+.portal-dial {
+  display: grid;
+  justify-items: center;
+  margin: 4px 0 8px;
+}
+
+.portal-dial-face {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  max-width: 100%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  touch-action: none;
+  cursor: pointer;
+}
+
+.portal-dial-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 100px;
+  background: var(--accent, #f3d7a1);
+  transform-origin: center bottom;
+  transform: translate(-50%, -100%) rotate(var(--hand-angle, 0deg));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.portal-dial-knob {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent, #f3d7a1);
+  transform: translate(-50%, -50%);
+}
+
+.portal-dial-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #f3d7a1);
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.portal-dial-numbers {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.portal-dial-num {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-100px) rotate(calc(var(--angle) * -1));
+}
+
+.portal-dial-num.is-selected {
+  color: var(--accent-ink, #1c1408);
+}
+
+.portal-picker-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.portal-picker-actions button {
+  min-height: 44px;
+  padding: 0 14px;
+  color: var(--accent, #f3d7a1);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+html[data-theme="light"] .portal-picker-card {
+  background: #e7e7ee;
+  color: #1a191d;
+}
+
+html[data-theme="light"] .portal-picker-kicker,
+html[data-theme="light"] .portal-cal-dow {
+  color: rgba(28, 28, 28, 0.62);
+}
+
+html[data-theme="light"] .portal-picker-period {
+  border-color: rgba(28, 28, 28, 0.28);
+}
+
+html[data-theme="light"] .portal-dial-face {
+  background: rgba(28, 28, 28, 0.05);
+}

@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: upsis
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /connexion_etudiant
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: NEON_BRANCH
+        sync: false

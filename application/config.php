@@ -86,9 +86,18 @@ function app_request_wants_stage_session(): bool
     return str_starts_with($script, 'stage_') || str_starts_with($referer, 'stage_');
 }
 
+function app_request_is_https(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        return true;
+    }
+    return getenv('RENDER') === 'true'
+        && strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+}
+
 function app_session_cookie_params(): void
 {
-    $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+    $https = app_request_is_https();
     session_set_cookie_params([
         'lifetime' => 0,
         'path' => '/',
@@ -194,20 +203,87 @@ const DB_PASS = 'myapp_password';
 
 require_once __DIR__ . '/pgsql.php';
 
+function app_load_env_file(string $path): void
+{
+    if (!is_file($path)) {
+        return;
+    }
+    $lines = file($path, FILE_IGNORE_NEW_LINES);
+    if ($lines === false) {
+        return;
+    }
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+        $eq = strpos($line, '=');
+        if ($eq === false) {
+            continue;
+        }
+        $key = trim(substr($line, 0, $eq));
+        $value = trim(substr($line, $eq + 1));
+        if ($key === '' || getenv($key) !== false) {
+            continue;
+        }
+        if (
+            (str_starts_with($value, '"') && str_ends_with($value, '"'))
+            || (str_starts_with($value, "'") && str_ends_with($value, "'"))
+        ) {
+            $value = substr($value, 1, -1);
+        }
+        putenv($key . '=' . $value);
+        $_ENV[$key] = $value;
+    }
+}
+
+function app_load_env(): void
+{
+    static $loaded = false;
+    if ($loaded) {
+        return;
+    }
+    $loaded = true;
+    $root = dirname(__DIR__);
+    app_load_env_file($root . DIRECTORY_SEPARATOR . '.env');
+    app_load_env_file($root . DIRECTORY_SEPARATOR . '.env.local');
+}
+
 function db_connect(): AppPdo
 {
-    $host = getenv('DB_HOST') ?: DB_HOST;
-    $port = getenv('DB_PORT') ?: DB_PORT;
-    $pdo = new AppPdo(
-        'pgsql:host=' . $host . ';port=' . $port . ';dbname=' . (getenv('DB_NAME') ?: DB_NAME),
-        getenv('DB_USER') ?: DB_USER,
-        getenv('DB_PASS') ?: DB_PASS,
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]
-    );
+    app_load_env();
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ];
+    // Direct connection: this process keeps session SET and native prepared statements.
+    $url = getenv('DATABASE_URL_UNPOOLED') ?: getenv('DATABASE_URL') ?: '';
+    if ($url !== '') {
+        $parts = parse_url($url);
+        if ($parts === false || empty($parts['host'])) {
+            throw new RuntimeException('Database URL is invalid.');
+        }
+        $query = [];
+        if (!empty($parts['query'])) {
+            parse_str($parts['query'], $query);
+        }
+        $sslmode = (string) ($query['sslmode'] ?? 'require');
+        $dsn = 'pgsql:host=' . $parts['host']
+            . ';port=' . (string) ($parts['port'] ?? '5432')
+            . ';dbname=' . ltrim((string) ($parts['path'] ?? ''), '/')
+            . ';sslmode=' . $sslmode;
+        $pdo = new AppPdo($dsn, rawurldecode((string) ($parts['user'] ?? '')), rawurldecode((string) ($parts['pass'] ?? '')), $options);
+    } else {
+        $host = getenv('DB_HOST') ?: DB_HOST;
+        $port = getenv('DB_PORT') ?: DB_PORT;
+        $pdo = new AppPdo(
+            'pgsql:host=' . $host . ';port=' . $port . ';dbname=' . (getenv('DB_NAME') ?: DB_NAME),
+            getenv('DB_USER') ?: DB_USER,
+            getenv('DB_PASS') ?: DB_PASS,
+            $options
+        );
+    }
     $pdo->exec("SET client_encoding TO 'UTF8'");
     $pdo->exec("SET TIME ZONE 'UTC'");
     return $pdo;
@@ -271,7 +347,7 @@ function app_send_security_headers(): void
     header('Referrer-Policy: strict-origin-when-cross-origin');
     header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
     header('X-Permitted-Cross-Domain-Policies: none');
-    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    if (app_request_is_https()) {
         header('Strict-Transport-Security: max-age=15552000');
     }
 }
@@ -787,7 +863,7 @@ function student_notifications_ensure_tables(PDO $pdo): void
 function student_notification_link(?string $link): ?string
 {
     $link = trim((string) $link);
-    if ($link === '' || strlen($link) > 255 || !preg_match('/^dashboard\.php\?panel=cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?\z/', $link)) {
+    if ($link === '' || strlen($link) > 255 || !preg_match('/^dashboard\.php\?panel=(?:cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?|profil|emploi|notes|plan|absences|groupe|psy|contacts|reclamation|attestation)\z/', $link)) {
         return null;
     }
     return $link;

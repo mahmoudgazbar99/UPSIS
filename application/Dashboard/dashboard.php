@@ -6,6 +6,7 @@ require_once app_path('support/student_theme.php');
 require_once app_path('support/emploi_pdf.php');
 require_once app_path('support/course_library.php');
 require_once app_path('support/course_explorer_view.php');
+require_once app_path('support/student_portal.php');
 
 /**
  * Ferme une session qui n'est pas une session étudiante valide.
@@ -80,6 +81,14 @@ $attestationMotif = '';
 $attestationQueued = false;
 $attestationBoard = ['state' => 'none', 'message' => ''];
 $inbox = ['unread' => 0, 'stamp' => '0', 'messages' => []];
+$portalPlan = [];
+$portalAbsences = [];
+$portalGroup = null;
+$portalTargets = [];
+$portalSwapGroups = [];
+$portalPartners = [];
+$portalContacts = [];
+$portalMine = ['groups' => [], 'appointments' => [], 'complaints' => []];
 $explorerFragment = false;
 
 try {
@@ -88,8 +97,10 @@ try {
 
     // Étape 2 — Profil : le compte doit rester actif et lié à un dossier inscrit.
     $profileQuery = $pdo->prepare(
-        'SELECT e.nom, e.prenom, e.niveau, e.email, e.cin_passeport
+        'SELECT e.nom, e.prenom, e.niveau, e.email, e.cin_passeport, e.id_spec, e.num_tel, e.adresse,
+                e.date_naissance, e.nationalite, e.lieu_naissance, s.nom_spec
          FROM etudiant e
+         INNER JOIN specialite s ON s.id_spec = e.id_spec
          INNER JOIN etudiant_compte c ON c.id_etudiant = e.id_etudiant AND c.active = 1
          WHERE e.id_etudiant = ?
          LIMIT 1'
@@ -151,6 +162,27 @@ try {
         }
     }
 
+    student_portal_ensure($pdo);
+    $portalAction = (string) ($_POST['action'] ?? '');
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_starts_with($portalAction, 'portal_')) {
+        verify_csrf();
+        $portalError = match ($portalAction) {
+            'portal_profile' => student_portal_update_profile($pdo, $studentId, trim((string) ($_POST['email'] ?? '')), trim((string) ($_POST['telephone'] ?? '')), trim((string) ($_POST['adresse'] ?? ''))),
+            'portal_group' => student_portal_submit_group($pdo, $studentId, (int) $profile['id_spec'], (string) ($_POST['request_type'] ?? ''), (int) ($_POST['id_groupe'] ?? 0), (int) ($_POST['id_partenaire'] ?? 0), trim((string) ($_POST['commentaire'] ?? ''))),
+            'portal_psy' => student_portal_submit_appointment($pdo, $studentId, (string) ($_POST['jour'] ?? ''), (string) ($_POST['heure'] ?? ''), trim((string) ($_POST['motif'] ?? ''))),
+            'portal_complaint' => student_portal_submit_complaint($pdo, $studentId, (string) ($_POST['categorie'] ?? ''), trim((string) ($_POST['description'] ?? ''))),
+            default => 'Action inconnue.',
+        };
+        $back = match ($portalAction) {
+            'portal_profile' => 'profil',
+            'portal_group' => 'groupe',
+            'portal_psy' => 'psy',
+            default => 'reclamation',
+        };
+        flash($portalError === '' ? 'success' : 'danger', $portalError === '' ? 'Enregistré.' : $portalError);
+        header('Location: dashboard.php?panel=' . $back);
+        exit;
+    }
     $attestationBoard = student_attestation_board($pdo, $studentId);
     $attestationQueued = $attestationBoard['state'] !== 'none';
 
@@ -196,6 +228,14 @@ try {
     $gradesQuery->execute([$studentId]);
     $grades = $gradesQuery->fetchAll();
     $emploiPdfs = emploi_pdf_for_student($studentId);
+    $portalPlan = student_portal_plan($pdo, $studentId);
+    $portalAbsences = student_portal_absences($pdo, $studentId);
+    $portalGroup = student_portal_current_group($pdo, $studentId);
+    $portalTargets = $portalGroup ? student_portal_target_groups($pdo, $studentId, (int) $profile['id_spec'], (int) $portalGroup['id_groupe'], true) : [];
+    $portalSwapGroups = $portalGroup ? student_portal_target_groups($pdo, $studentId, (int) $profile['id_spec'], (int) $portalGroup['id_groupe'], false) : [];
+    $portalPartners = $portalGroup ? student_portal_swap_students($pdo, array_column($portalSwapGroups, 'id_groupe'), (int) $profile['id_spec'], $studentId) : [];
+    $portalContacts = student_portal_contacts($pdo, $studentId);
+    $portalMine = student_portal_requests($pdo, $studentId);
 
     // Étape 5 — Cours publiés : une panne de la bibliothèque ne doit pas bloquer l’espace.
     try {
@@ -219,7 +259,7 @@ $gradesBySemester = [];
 foreach ($grades as $grade) {
     $gradesBySemester[(string) $grade['semestre']][] = $grade;
 }
-$panels = ['profil', 'emploi', 'cours', 'notes'];
+$panels = ['profil', 'emploi', 'cours', 'notes', 'plan', 'absences', 'groupe', 'psy', 'contacts', 'reclamation'];
 if ($attestationOpen) {
     $panels[] = 'attestation';
 }
@@ -296,13 +336,19 @@ if (!empty($explorerFragment)) {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=7" rel="stylesheet">
-  <link href="assets/student-theme.css?v=5" rel="stylesheet">
+  <link href="assets/student-space.css?v=13" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=6" rel="stylesheet">
+  <link href="assets/student-theme.css?v=11" rel="stylesheet">
   <link href="assets/course-explorer.css?v=2" rel="stylesheet">
   <script src="assets/course-explorer.js?v=2" defer></script>
 </head>
 <body class="student-space">
+  <div class="portal-stage">
+  <div class="portal-phone">
   <header class="student-space-bar">
+    <button type="button" class="portal-menu-btn" data-portal-open aria-controls="portalDrawer" aria-expanded="false" aria-label="Ouvrir le menu">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
     <img src="<?= e(institution_logo_src()) ?>" alt="Logo de l'école">
     <div>
       <p><?= e(institution_name_inline()) ?></p>
@@ -335,6 +381,27 @@ if (!empty($explorerFragment)) {
       <a href="logout.php?espace=etudiant">Déconnexion</a>
     </div>
   </header>
+  <div class="portal-edge" data-portal-edge aria-hidden="true"></div>
+  <div class="portal-backdrop" data-portal-close></div>
+  <nav class="portal-drawer" id="portalDrawer" aria-label="Navigation étudiante" aria-hidden="true" inert>
+    <p class="portal-drawer-kicker">Espace étudiant</p>
+    <strong class="portal-drawer-name"><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
+    <button type="button" data-panel="profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 19c1-3 3-4.5 6-4.5s5 1.5 6 4.5"/></svg><span>Profil</span></button>
+    <button type="button" data-panel="emploi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3.5V7M16 3.5V7M4 10h16"/></svg><span>Emploi du temps</span></button>
+    <button type="button" data-panel="cours"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h8l3 3v13H7z"/><path d="M15 4v3h3"/></svg><span>Cours</span></button>
+    <button type="button" data-panel="plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6"/></svg><span>Plan d’étude</span></button>
+    <button type="button" data-panel="absences"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v16H8z"/><path d="M10 15l2 2 3-4"/></svg><span>Absences</span></button>
+    <button type="button" data-panel="notes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v16H8z"/><path d="M10 9h4M10 13h4"/></svg><span>Résultats et suivi</span></button>
+    <button type="button" data-panel="groupe"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="2.4"/><circle cx="16" cy="9" r="2.4"/><path d="M4 18c.6-2 2-3 4-3s3.4 1 4 3M12 18c.6-2 2-3 4-3s3.4 1 4 3"/></svg><span>Gestion des demandes</span></button>
+    <button type="button" data-panel="psy"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg><span>Psychologue</span></button>
+    <button type="button" data-panel="reclamation"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v5M12 16h.01"/></svg><span>Réclamation</span></button>
+    <button type="button" data-panel="contacts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg><span>Contacts et e-mails</span></button>
+    <?php if ($attestationOpen): ?>
+    <button type="button" data-panel="attestation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-2.4L7 20z"/></svg><span>Demandes</span></button>
+    <?php endif; ?>
+    <a href="stage_demande.php?espace=etudiant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9l7-4 7 4v10"/><path d="M9 19v-5h6v5"/></svg><span>Stage d’été</span></a>
+    <a href="logout.php?espace=etudiant">Déconnexion</a>
+  </nav>
   <p class="visually-hidden" id="studentLive" aria-live="polite"></p>
   <main class="student-space-main">
     <?php if ($dbError !== ''): ?><div class="student-space-alert" role="alert"><?= e($dbError) ?></div><?php endif; ?>
@@ -357,12 +424,42 @@ if (!empty($explorerFragment)) {
       </button>
       <button type="button" data-panel="notes" aria-pressed="<?= $openPanel === 'notes' ? 'true' : 'false' ?>">
         <span>04</span>
-        <strong>Notes</strong>
+        <strong>Résultats et suivi</strong>
         <small><?= count($grades) ?> matière<?= count($grades) > 1 ? 's' : '' ?></small>
+      </button>
+      <button type="button" data-panel="plan" aria-pressed="<?= $openPanel === 'plan' ? 'true' : 'false' ?>">
+        <span>05</span>
+        <strong>Plan d’étude</strong>
+        <small><?= count($portalPlan) ?> matière<?= count($portalPlan) > 1 ? 's' : '' ?></small>
+      </button>
+      <button type="button" data-panel="absences" aria-pressed="<?= $openPanel === 'absences' ? 'true' : 'false' ?>">
+        <span>06</span>
+        <strong>Absences</strong>
+        <small><?php $portalMissed = 0.0; foreach ($portalAbsences as $portalAbsence) { $portalMissed += (float) $portalAbsence['duree_heures']; } ?><?= e(number_format($portalMissed, 1, ',', ' ')) ?> h</small>
+      </button>
+      <button type="button" data-panel="groupe" aria-pressed="<?= $openPanel === 'groupe' ? 'true' : 'false' ?>">
+        <span>07</span>
+        <strong>Gestion des demandes</strong>
+        <small><?= $portalGroup ? e($portalGroup['type_groupe'] . ' ' . $portalGroup['numero']) : 'Groupe' ?></small>
+      </button>
+      <button type="button" data-panel="psy" aria-pressed="<?= $openPanel === 'psy' ? 'true' : 'false' ?>">
+        <span>08</span>
+        <strong>Psychologue</strong>
+        <small>Rendez-vous</small>
+      </button>
+      <button type="button" data-panel="reclamation" aria-pressed="<?= $openPanel === 'reclamation' ? 'true' : 'false' ?>">
+        <span>09</span>
+        <strong>Réclamation</strong>
+        <small><?= count($portalMine['complaints']) ?> envoyée<?= count($portalMine['complaints']) > 1 ? 's' : '' ?></small>
+      </button>
+      <button type="button" data-panel="contacts" aria-pressed="<?= $openPanel === 'contacts' ? 'true' : 'false' ?>">
+        <span>10</span>
+        <strong>Contacts et e-mails</strong>
+        <small><?= count($portalContacts) ?> enseignant<?= count($portalContacts) > 1 ? 's' : '' ?></small>
       </button>
       <?php if ($attestationOpen): ?>
       <button type="button" data-panel="attestation" aria-pressed="<?= $openPanel === 'attestation' ? 'true' : 'false' ?>">
-        <span>05</span>
+        <span>11</span>
         <strong>Attestation</strong>
         <small>Demande de présence</small>
       </button>
@@ -377,9 +474,23 @@ if (!empty($explorerFragment)) {
           <div><dt>Prénom</dt><dd><?= e((string) $profile['prenom']) ?></dd></div>
           <div><dt>Niveau</dt><dd><?= e(level_label((string) $profile['niveau'])) ?> année</dd></div>
           <div><dt>E-mail</dt><dd><?= e((string) $profile['email']) ?></dd></div>
+          <div><dt>Téléphone</dt><dd><?= e((string) ($profile['num_tel'] ?? '')) ?></dd></div>
+          <div><dt>Adresse</dt><dd><?= e((string) ($profile['adresse'] ?? '')) ?></dd></div>
+          <div><dt>Spécialité</dt><dd><?= e((string) ($profile['nom_spec'] ?? '')) ?></dd></div>
+          <div><dt>Date de naissance</dt><dd><?= e((string) ($profile['date_naissance'] ?? '')) ?></dd></div>
+          <div><dt>Nationalité</dt><dd><?= e((string) ($profile['nationalite'] ?? '')) ?></dd></div>
+          <div><dt>Lieu de naissance</dt><dd><?= e((string) ($profile['lieu_naissance'] ?? '')) ?></dd></div>
           <?php $publishedStages = stage_student_published((int) $studentId); ?>
           <div><dt>Stage publié</dt><dd><?php if (!$publishedStages): ?>Aucun stage publié.<?php else: foreach ($publishedStages as $stage): ?><?= e($stage['organisme']) ?><?= $stage['service'] ? ' · ' . e((string) $stage['service']) : '' ?> · <?= e($stage['date_debut'] . ' → ' . $stage['date_fin']) ?> · <?= e(stage_statuses()[(string) $stage['statut']] ?? (string) $stage['statut']) ?> · <a href="stage_dossier.php?id=<?= (int) $stage['id_placement'] ?>&amp;espace=etudiant">Dossier documentaire du stage</a><br><?php endforeach; endif; ?> <a href="stage_demande.php?espace=etudiant">Demande de stage d’été</a></dd></div>
         </dl>
+        <form method="post" class="student-space-form">
+          <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+          <input type="hidden" name="action" value="portal_profile">
+          <label>E-mail<input type="email" name="email" value="<?= e((string) $profile['email']) ?>" required></label>
+          <label>Téléphone<input name="telephone" value="<?= e((string) $profile['num_tel']) ?>" required></label>
+          <label>Adresse<textarea name="adresse" required><?= e((string) $profile['adresse']) ?></textarea></label>
+          <button type="submit">Enregistrer les coordonnées</button>
+        </form>
       <?php endif; ?>
     </section>
 
@@ -427,6 +538,90 @@ if (!empty($explorerFragment)) {
       <?php endif; ?>
     </section>
 
+    <section class="student-space-sheet" data-sheet="plan"<?= $openPanel === 'plan' ? '' : ' hidden' ?>>
+      <h1>Plan d’étude</h1>
+      <p class="student-space-lead">Matières publiées dans l’emploi de vos groupes.</p>
+      <?php if ($portalPlan === []): ?><p class="student-space-lead">Aucune matière n’est encore liée à vos groupes.</p><?php else: ?>
+      <div class="student-space-table-wrap"><table><thead><tr><th>Semestre</th><th>Module</th><th>Matière</th><th>Enseignant</th><th>Coefficient</th><th>Charge</th></tr></thead><tbody>
+      <?php $load = 0.0; $coeff = 0.0; foreach ($portalPlan as $row): $hours = (float) $row['volume_cours'] + (float) $row['volume_td'] + (float) $row['volume_tp']; $load += $hours; $coeff += (float) $row['coefficient_ecue']; ?>
+        <tr><td><?= e((string) $row['semestre']) ?></td><td><?= e((string) $row['code_ue']) ?></td><td><?= e((string) $row['code_ecue'] . ' — ' . $row['description_ecue']) ?></td><td><?= e(implode(', ', $row['teachers'] ?? [])) ?></td><td><?= e((string) $row['coefficient_ecue']) ?></td><td><?= e(number_format($hours, 1, ',', ' ')) ?> h</td></tr>
+      <?php endforeach; ?>
+      </tbody></table></div>
+      <p class="student-space-lead">Charge totale <?= e(number_format($load, 1, ',', ' ')) ?> h · coefficient <?= e(number_format($coeff, 2, ',', ' ')) ?></p>
+      <?php endif; ?>
+    </section>
+    <section class="student-space-sheet" data-sheet="absences"<?= $openPanel === 'absences' ? '' : ' hidden' ?>>
+      <h1>Absences</h1>
+      <?php $missed = 0.0; $modules = []; foreach ($portalAbsences as $absence) { $missed += (float) $absence['duree_heures']; $modules[(string) ($absence['code_ue'] ?? '')] = true; } ?>
+      <p class="student-space-lead"><?= count($portalAbsences) ?> absence<?= count($portalAbsences) > 1 ? 's' : '' ?> · <?= e(number_format($missed, 2, ',', ' ')) ?> h manquées · <?= count(array_filter(array_keys($modules))) ?> module<?= count($modules) > 1 ? 's' : '' ?></p>
+      <?php if ($portalAbsences === []): ?><p class="student-space-lead">Aucune absence enregistrée.</p><?php else: ?>
+      <div class="student-space-table-wrap"><table><thead><tr><th>Date</th><th>Module</th><th>Matière</th><th>Enseignant</th><th>Heures</th><th>Type</th></tr></thead><tbody>
+      <?php foreach ($portalAbsences as $absence): ?><tr><td><?= e((string) $absence['date_seance']) ?></td><td><?= e((string) ($absence['code_ue'] ?? '')) ?></td><td><?= e((string) ($absence['description_ecue'] ?? '')) ?></td><td><?= e(trim((string) ($absence['prof_prenom'] ?? '') . ' ' . (string) ($absence['prof_nom'] ?? ''))) ?></td><td><?= e((string) $absence['duree_heures']) ?></td><td><?= e((string) $absence['statut']) ?></td></tr><?php endforeach; ?>
+      </tbody></table></div>
+      <?php endif; ?>
+    </section>
+    <section class="student-space-sheet" data-sheet="groupe"<?= $openPanel === 'groupe' ? '' : ' hidden' ?>>
+      <h1>Groupe</h1>
+      <p class="student-space-lead">Groupe actuel : <?= $portalGroup ? e($portalGroup['semestre'] . ' · ' . $portalGroup['type_groupe'] . ' ' . $portalGroup['numero']) : 'aucun' ?></p>
+      <form method="post" class="student-space-form">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="action" value="portal_group">
+        <label>Type<select name="request_type" data-group-type><option value="changement">Changement de groupe</option><option value="permutation">Permutation</option></select></label>
+        <label>Groupe souhaité<select name="id_groupe" data-group-target required><option value="">Choisir</option><?php
+          $portalGroupOptions = [];
+          foreach ($portalTargets as $group) {
+              $portalGroupOptions[(int) $group['id_groupe']] = $group + ['kind' => 'changement'];
+          }
+          foreach ($portalSwapGroups as $group) {
+              $id = (int) $group['id_groupe'];
+              if (isset($portalGroupOptions[$id])) {
+                  $portalGroupOptions[$id]['kind'] = 'both';
+              } else {
+                  $portalGroupOptions[$id] = $group + ['kind' => 'permutation'];
+              }
+          }
+          foreach ($portalGroupOptions as $group): ?>
+          <option value="<?= (int) $group['id_groupe'] ?>" data-kind="<?= e((string) $group['kind']) ?>"><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero'] . ' · ' . $group['inscrits'] . '/' . $group['capacite']) ?></option>
+        <?php endforeach; ?></select></label>
+        <label data-partner-field>Étudiant pour la permutation<select name="id_partenaire" data-group-partner><option value="">Choisir</option><?php foreach ($portalPartners as $person): ?><option value="<?= (int) $person['id_etudiant'] ?>" data-groupe="<?= (int) $person['id_groupe'] ?>"><?= e($person['prenom'] . ' ' . $person['nom']) ?></option><?php endforeach; ?></select></label>
+        <label>Commentaire<textarea name="commentaire" maxlength="1000"></textarea></label>
+        <button type="submit">Soumettre la demande</button>
+      </form>
+      <?php foreach ($portalMine['groups'] as $request): ?><p><?= e((string) $request['request_type']) ?> · <?= e(student_portal_status_label((string) $request['statut'])) ?> · <?= e((string) $request['created_at']) ?><?= $request['admin_comment'] ? ' · ' . e((string) $request['admin_comment']) : '' ?></p><?php endforeach; ?>
+    </section>
+    <section class="student-space-sheet" data-sheet="psy"<?= $openPanel === 'psy' ? '' : ' hidden' ?>>
+      <h1>Consultation psychologique</h1>
+      <p class="student-space-lead">Le motif n’est pas montré aux enseignants.</p>
+      <form method="post" class="student-space-form">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="action" value="portal_psy">
+        <button type="button" data-slot-open>Réserver un rendez-vous</button>
+        <p class="student-space-lead" data-slot-summary>Aucune date choisie.</p>
+        <input type="hidden" name="jour" data-slot-date value="">
+        <input type="hidden" name="heure" data-slot-time value="">
+        <label>Motif<textarea name="motif" required minlength="5" maxlength="2000"></textarea></label>
+        <button type="submit">Soumettre la demande de rendez-vous</button>
+      </form>
+      <?php foreach ($portalMine['appointments'] as $appointment): ?><p><?= e((string) $appointment['requested_date']) ?> <?= e(substr((string) $appointment['requested_time'], 0, 5)) ?> · <?= e(student_portal_status_label((string) $appointment['statut'])) ?><?= $appointment['admin_comment'] ? ' · ' . e((string) $appointment['admin_comment']) : '' ?></p><?php endforeach; ?>
+    </section>
+    <section class="student-space-sheet" data-sheet="reclamation"<?= $openPanel === 'reclamation' ? '' : ' hidden' ?>>
+      <h1>Réclamation</h1>
+      <form method="post" class="student-space-form">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="action" value="portal_complaint">
+        <label>Type<select name="categorie"><option value="infrastructure">Infrastructure</option><option value="absence">Absence</option><option value="note">Note</option><option value="module">Module</option></select></label>
+        <label>Description<textarea name="description" required minlength="5"></textarea></label>
+        <button type="submit">Envoyer la réclamation</button>
+      </form>
+      <?php foreach ($portalMine['complaints'] as $complaint): ?><p><?= e((string) $complaint['categorie']) ?> · <?= e(student_portal_status_label((string) $complaint['statut'])) ?> · <?= e((string) $complaint['created_at']) ?><?= $complaint['admin_response'] ? ' · ' . e((string) $complaint['admin_response']) : '' ?></p><?php endforeach; ?>
+    </section>
+    <section class="student-space-sheet" data-sheet="contacts"<?= $openPanel === 'contacts' ? '' : ' hidden' ?>>
+      <h1>Contacts</h1>
+      <p class="student-space-lead">Enseignants affectés à vos groupes seulement.</p>
+      <?php if ($portalContacts === []): ?><p class="student-space-lead">Aucun enseignant affecté.</p><?php else: foreach ($portalContacts as $contact): ?>
+        <p><?= e(trim($contact['prenom'] . ' ' . $contact['nom'])) ?> · <?= e((string) $contact['description_ecue']) ?> · <a href="mailto:<?= e((string) $contact['email']) ?>"><?= e((string) $contact['email']) ?></a></p>
+      <?php endforeach; endif; ?>
+    </section>
     <section class="student-space-sheet<?= $openPanel === 'cours' ? ' is-entering' : '' ?>" data-sheet="cours"<?= $openPanel === 'cours' ? '' : ' hidden' ?>>
       <h1>Mes cours</h1>
       <p class="student-space-lead">Les cours publiés par vos enseignants pour vos matières.</p>
@@ -490,6 +685,46 @@ if (!empty($explorerFragment)) {
     </section>
     <?php endif; ?>
   </main>
+  </div>
+  </div>
+  <div class="portal-picker" data-portal-picker hidden data-today="<?= e(date('Y-m-d')) ?>">
+    <div class="portal-picker-card" role="dialog" aria-modal="true" aria-labelledby="portalPickerTitle">
+      <p class="portal-picker-kicker" id="portalPickerTitle">Date et heure</p>
+      <button type="button" class="portal-picker-date" data-picker-date>5 nov.</button>
+      <div class="portal-picker-clockline">
+        <button type="button" data-picker-edit="hour" aria-pressed="true" aria-label="Modifier l’heure">11</button>
+        <span aria-hidden="true">:</span>
+        <button type="button" data-picker-edit="minute" aria-pressed="false" aria-label="Modifier les minutes">00</button>
+        <div class="portal-picker-period" role="group" aria-label="AM ou PM">
+          <button type="button" data-period="AM" aria-pressed="true">AM</button>
+          <button type="button" data-period="PM" aria-pressed="false">PM</button>
+        </div>
+      </div>
+      <div class="portal-picker-tabs" role="group" aria-label="Calendrier ou horloge">
+        <button type="button" data-picker-view="date" aria-pressed="false" aria-label="Calendrier"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3.5V7M16 3.5V7M4 10h16"/></svg></button>
+        <button type="button" data-picker-view="time" aria-pressed="true" aria-label="Horloge"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></button>
+      </div>
+      <div class="portal-cal-wrap" data-picker-calendar hidden>
+        <div class="portal-cal-head">
+          <button type="button" data-cal-prev aria-label="Mois précédent"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 6l-6 6 6 6"/></svg></button>
+          <strong data-cal-label></strong>
+          <button type="button" data-cal-next aria-label="Mois suivant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6l6 6-6 6"/></svg></button>
+        </div>
+        <div class="portal-cal" data-cal-grid></div>
+      </div>
+      <div class="portal-dial" data-picker-clock>
+        <div class="portal-dial-face" data-picker-face>
+          <span class="portal-dial-hand" data-picker-hand><span class="portal-dial-knob"></span></span>
+          <span class="portal-dial-hub" aria-hidden="true"></span>
+          <div class="portal-dial-numbers" data-picker-numbers></div>
+        </div>
+      </div>
+      <div class="portal-picker-actions">
+        <button type="button" data-picker-cancel>Annuler</button>
+        <button type="button" data-picker-ok>OK</button>
+      </div>
+    </div>
+  </div>
 
   <div class="modal fade student-mail-modal" id="studentMailModal" tabindex="-1" aria-labelledby="studentMailSubject" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -518,7 +753,92 @@ if (!empty($explorerFragment)) {
   <script>
   (function () {
     var COURSE_LINK = /^dashboard\.php\?panel=cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?$/;
-    var buttons = document.querySelectorAll('.student-space-cards > [data-panel]');
+    var buttons = document.querySelectorAll('.portal-drawer [data-panel], .student-space-cards > [data-panel]');
+    var portal = document.getElementById('portalDrawer');
+    var backdrop = document.querySelector('[data-portal-close]');
+    var portalOpen = document.querySelector('[data-portal-open]');
+    var phone = document.querySelector('.portal-phone');
+    var edge = document.querySelector('[data-portal-edge]');
+    function drawerOpen() {
+      return !!(phone && phone.classList.contains('is-drawer-open'));
+    }
+    function setPortal(open) {
+      if (!portal || !phone) return;
+      phone.classList.toggle('is-drawer-open', open);
+      portal.setAttribute('aria-hidden', open ? 'false' : 'true');
+      if (open) portal.removeAttribute('inert');
+      else portal.setAttribute('inert', '');
+      if (portalOpen) portalOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+      document.body.classList.toggle('portal-lock', open);
+    }
+    if (portalOpen) portalOpen.addEventListener('click', function () { setPortal(!drawerOpen()); });
+    if (backdrop) backdrop.addEventListener('click', function () { setPortal(false); });
+    var drag = null;
+    function clearDragStyles() {
+      portal.style.transition = '';
+      portal.style.transform = '';
+      if (backdrop) {
+        backdrop.style.transition = '';
+        backdrop.style.opacity = '';
+      }
+    }
+    function beginDrag(event, fromEdge) {
+      if (!portal || event.pointerType === 'mouse' && event.button !== 0) return;
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, open: drawerOpen(), fromEdge: fromEdge, axis: '' };
+    }
+    function moveDrag(event) {
+      if (!drag || event.pointerId !== drag.id) return;
+      var dx = event.clientX - drag.x;
+      var dy = event.clientY - drag.y;
+      if (!drag.axis) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        drag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+        if (drag.axis !== 'x') {
+          drag = null;
+          return;
+        }
+      }
+      var width = portal.getBoundingClientRect().width || 280;
+      var next = drag.open ? Math.max(-width, Math.min(0, dx)) : Math.max(-width, Math.min(0, -width + Math.max(0, dx)));
+      portal.style.transition = 'none';
+      portal.style.transform = 'translateX(' + next + 'px)';
+      if (backdrop) {
+        backdrop.style.transition = 'none';
+        backdrop.style.opacity = String(Math.max(0, Math.min(1, 1 + next / width)));
+      }
+    }
+    function endDrag(event) {
+      if (!drag || event.pointerId !== drag.id) return;
+      var dx = event.clientX - drag.x;
+      var wasOpen = drag.open;
+      var moved = drag.axis === 'x' && Math.abs(dx) > 8;
+      clearDragStyles();
+      drag = null;
+      if (!moved) return;
+      var blockClick = function (clickEvent) {
+        clickEvent.preventDefault();
+        clickEvent.stopPropagation();
+        document.removeEventListener('click', blockClick, true);
+      };
+      document.addEventListener('click', blockClick, true);
+      setTimeout(function () { document.removeEventListener('click', blockClick, true); }, 400);
+      setPortal(wasOpen ? dx > -72 : dx > 48);
+    }
+    if (edge) {
+      edge.addEventListener('pointerdown', function (event) { beginDrag(event, true); });
+    }
+    if (portal) {
+      portal.addEventListener('pointerdown', function (event) {
+        if (event.target.closest('button, a, input, select, textarea')) return;
+        beginDrag(event, false);
+      });
+    }
+    document.addEventListener('pointermove', moveDrag);
+    document.addEventListener('pointerup', endDrag);
+    document.addEventListener('pointercancel', endDrag);
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') setPortal(false);
+    });
     var sheets = document.querySelectorAll('.student-space-main > [data-sheet]');
     var liveEl = document.getElementById('studentLive');
     function announce(message) {
@@ -560,6 +880,277 @@ if (!empty($explorerFragment)) {
       });
       if (!opts.silent) rememberPanel(panel);
     }
+    var groupType = document.querySelector('[data-group-type]');
+    var groupTarget = document.querySelector('[data-group-target]');
+    var partnerField = document.querySelector('[data-partner-field]');
+    var groupPartner = document.querySelector('[data-group-partner]');
+    function syncPartners() {
+      if (!groupPartner || !groupTarget) return;
+      Array.prototype.forEach.call(groupPartner.options, function (option) {
+        if (!option.getAttribute('data-groupe')) return;
+        var show = option.getAttribute('data-groupe') === groupTarget.value;
+        option.hidden = !show;
+        option.disabled = !show;
+      });
+      if (groupPartner.selectedOptions[0] && groupPartner.selectedOptions[0].disabled) groupPartner.value = '';
+    }
+    function syncGroups() {
+      if (!groupType || !groupTarget) return;
+      if (partnerField) partnerField.hidden = groupType.value !== 'permutation';
+      Array.prototype.forEach.call(groupTarget.options, function (option) {
+        if (!option.getAttribute('data-kind')) return;
+        var kind = option.getAttribute('data-kind');
+        var show = kind === groupType.value || kind === 'both';
+        option.hidden = !show;
+        option.disabled = !show;
+      });
+      if (groupTarget.selectedOptions[0] && groupTarget.selectedOptions[0].disabled) groupTarget.value = '';
+      syncPartners();
+    }
+    if (groupType) groupType.addEventListener('change', syncGroups);
+    if (groupTarget) groupTarget.addEventListener('change', syncPartners);
+    syncGroups();
+    var slotOpen = document.querySelector('[data-slot-open]');
+    var picker = document.querySelector('[data-portal-picker]');
+    if (slotOpen && picker) {
+      var slotForm = slotOpen.closest('form');
+      var slotDate = slotForm.querySelector('[data-slot-date]');
+      var slotTime = slotForm.querySelector('[data-slot-time]');
+      var slotSummary = slotForm.querySelector('[data-slot-summary]');
+      var months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+      var monthsFull = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+      var todayIso = picker.getAttribute('data-today');
+      var todayParts = todayIso.split('-').map(Number);
+      var selected = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
+      var shown = new Date(selected.getFullYear(), selected.getMonth(), 1);
+      var hour12 = 11;
+      var minute = 0;
+      var period = 'AM';
+      var mode = 'hour';
+      var view = 'time';
+      var numbersKey = '';
+      var dragging = false;
+      var face = picker.querySelector('[data-picker-face]');
+      var hand = picker.querySelector('[data-picker-hand]');
+      var numbers = picker.querySelector('[data-picker-numbers]');
+      function iso(date) {
+        return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+      }
+      function to24() {
+        var hour = period === 'AM' ? (hour12 === 12 ? 0 : hour12) : (hour12 === 12 ? 12 : hour12 + 12);
+        return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
+      }
+      function paintHand() {
+        var angle = mode === 'hour' ? (hour12 % 12) * 30 : minute * 6;
+        if (hand) hand.style.setProperty('--hand-angle', angle + 'deg');
+      }
+      function paintReadout() {
+        var hourButton = picker.querySelector('[data-picker-edit="hour"]');
+        var minuteButton = picker.querySelector('[data-picker-edit="minute"]');
+        var dateButton = picker.querySelector('[data-picker-date]');
+        hourButton.textContent = String(hour12);
+        minuteButton.textContent = String(minute).padStart(2, '0');
+        hourButton.setAttribute('aria-pressed', mode === 'hour' && view === 'time' ? 'true' : 'false');
+        minuteButton.setAttribute('aria-pressed', mode === 'minute' && view === 'time' ? 'true' : 'false');
+        dateButton.textContent = selected.getDate() + ' ' + months[selected.getMonth()];
+        picker.querySelectorAll('[data-period]').forEach(function (button) {
+          button.setAttribute('aria-pressed', button.getAttribute('data-period') === period ? 'true' : 'false');
+        });
+        picker.querySelectorAll('[data-picker-view]').forEach(function (button) {
+          button.setAttribute('aria-pressed', button.getAttribute('data-picker-view') === view ? 'true' : 'false');
+        });
+      }
+      function markSelected() {
+        numbers.querySelectorAll('[data-value]').forEach(function (node) {
+          var value = Number(node.getAttribute('data-value'));
+          var selectedValue = mode === 'hour' ? hour12 : minute;
+          node.classList.toggle('is-selected', value === selectedValue);
+        });
+      }
+      function renderNumbers() {
+        var key = mode;
+        if (key === numbersKey && numbers.childElementCount) {
+          markSelected();
+          return;
+        }
+        numbersKey = key;
+        numbers.replaceChildren();
+        var values = mode === 'hour' ? [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] : [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+        values.forEach(function (value, index) {
+          var node = document.createElement('span');
+          node.className = 'portal-dial-num';
+          node.style.setProperty('--angle', (index * 30) + 'deg');
+          node.setAttribute('data-value', String(value));
+          node.textContent = mode === 'hour' ? String(value) : String(value).padStart(2, '0');
+          numbers.appendChild(node);
+        });
+        markSelected();
+      }
+      function renderCalendar() {
+        var label = picker.querySelector('[data-cal-label]');
+        var grid = picker.querySelector('[data-cal-grid]');
+        label.textContent = monthsFull[shown.getMonth()] + ' ' + shown.getFullYear();
+        var first = new Date(shown.getFullYear(), shown.getMonth(), 1);
+        var offset = (first.getDay() + 6) % 7;
+        var count = new Date(shown.getFullYear(), shown.getMonth() + 1, 0).getDate();
+        grid.replaceChildren();
+        ['L', 'M', 'M', 'J', 'V', 'S', 'D'].forEach(function (day) {
+          var head = document.createElement('span');
+          head.className = 'portal-cal-dow';
+          head.textContent = day;
+          grid.appendChild(head);
+        });
+        for (var blank = 0; blank < offset; blank += 1) {
+          var gap = document.createElement('span');
+          grid.appendChild(gap);
+        }
+        for (var day = 1; day <= count; day += 1) {
+          var date = new Date(shown.getFullYear(), shown.getMonth(), day);
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = String(day);
+          button.disabled = iso(date) < todayIso;
+          if (iso(date) === iso(selected)) button.setAttribute('aria-pressed', 'true');
+          button.addEventListener('click', function (event) {
+            var chosen = Number(event.currentTarget.textContent);
+            selected = new Date(shown.getFullYear(), shown.getMonth(), chosen);
+            renderCalendar();
+            paintReadout();
+          });
+          grid.appendChild(button);
+        }
+        var earliest = new Date(todayParts[0], todayParts[1] - 1, 1);
+        picker.querySelector('[data-cal-prev]').disabled = shown <= earliest;
+      }
+      function paint() {
+        picker.querySelector('[data-picker-calendar]').hidden = view !== 'date';
+        picker.querySelector('[data-picker-clock]').hidden = view !== 'time';
+        paintReadout();
+        if (view === 'date') renderCalendar();
+        else {
+          renderNumbers();
+          paintHand();
+        }
+      }
+      function degrees(event) {
+        var rect = face.getBoundingClientRect();
+        var dx = event.clientX - (rect.left + rect.width / 2);
+        var dy = event.clientY - (rect.top + rect.height / 2);
+        return (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+      }
+      function applyPointer(event) {
+        var angle = degrees(event);
+        if (mode === 'hour') {
+          var next = Math.round(angle / 30) % 12;
+          hour12 = next === 0 ? 12 : next;
+        } else {
+          minute = Math.round(angle / 6) % 60;
+        }
+        paintReadout();
+        markSelected();
+        paintHand();
+      }
+      function openPicker() {
+        if (slotDate.value && slotTime.value) {
+          var dateParts = slotDate.value.split('-').map(Number);
+          var timeParts = slotTime.value.split(':').map(Number);
+          selected = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+          shown = new Date(selected.getFullYear(), selected.getMonth(), 1);
+          minute = timeParts[1];
+          period = timeParts[0] >= 12 ? 'PM' : 'AM';
+          hour12 = timeParts[0] % 12;
+          if (hour12 === 0) hour12 = 12;
+        }
+        mode = 'hour';
+        view = 'time';
+        numbersKey = '';
+        picker.hidden = false;
+        document.body.classList.add('portal-lock');
+        paint();
+        var ok = picker.querySelector('[data-picker-ok]');
+        if (ok) ok.focus();
+      }
+      function closePicker() {
+        picker.hidden = true;
+        document.body.classList.remove('portal-lock');
+      }
+      slotOpen.addEventListener('click', openPicker);
+      picker.addEventListener('click', function (event) {
+        if (event.target === picker) closePicker();
+      });
+      picker.querySelector('[data-picker-cancel]').addEventListener('click', closePicker);
+      picker.querySelector('[data-picker-ok]').addEventListener('click', function () {
+        slotDate.value = iso(selected);
+        slotTime.value = to24();
+        slotSummary.textContent = selected.getDate() + ' ' + months[selected.getMonth()] + ' · ' + to24();
+        closePicker();
+      });
+      picker.querySelectorAll('[data-picker-view]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          view = button.getAttribute('data-picker-view');
+          paint();
+        });
+      });
+      picker.querySelectorAll('[data-picker-edit]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          mode = button.getAttribute('data-picker-edit');
+          view = 'time';
+          numbersKey = '';
+          paint();
+        });
+      });
+      picker.querySelector('[data-picker-date]').addEventListener('click', function () {
+        view = 'date';
+        paint();
+      });
+      picker.querySelectorAll('[data-period]').forEach(function (button) {
+        button.addEventListener('click', function () {
+          period = button.getAttribute('data-period');
+          paintReadout();
+        });
+      });
+      picker.querySelector('[data-cal-prev]').addEventListener('click', function () {
+        shown = new Date(shown.getFullYear(), shown.getMonth() - 1, 1);
+        renderCalendar();
+      });
+      picker.querySelector('[data-cal-next]').addEventListener('click', function () {
+        shown = new Date(shown.getFullYear(), shown.getMonth() + 1, 1);
+        renderCalendar();
+      });
+      face.addEventListener('pointerdown', function (event) {
+        if (view !== 'time') return;
+        dragging = true;
+        face.setPointerCapture(event.pointerId);
+        applyPointer(event);
+        event.preventDefault();
+      });
+      face.addEventListener('pointermove', function (event) {
+        if (!dragging) return;
+        applyPointer(event);
+      });
+      function endDrag(event) {
+        if (!dragging) return;
+        dragging = false;
+        applyPointer(event);
+        if (mode === 'hour') {
+          mode = 'minute';
+          numbersKey = '';
+          paint();
+        }
+      }
+      face.addEventListener('pointerup', endDrag);
+      face.addEventListener('pointercancel', endDrag);
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !picker.hidden) closePicker();
+      });
+      if (slotForm) {
+        slotForm.addEventListener('submit', function (event) {
+          if (slotDate.value && slotTime.value) return;
+          event.preventDefault();
+          openPicker();
+        });
+      }
+    }
     window.studentSpace = {
       openPanel: openPanel,
       announce: announce
@@ -567,6 +1158,7 @@ if (!empty($explorerFragment)) {
     buttons.forEach(function (button) {
       button.addEventListener('click', function () {
         openPanel(button.getAttribute('data-panel'));
+        setPortal(false);
       });
     });
     var courseRefresh = document.getElementById('studentCourseRefresh');

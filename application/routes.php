@@ -88,6 +88,8 @@ return [
     'etudiants_import.php' => 'Scolarite/etudiants_import.php',
 
     'journal_audit.php' => 'Admin/journal_audit.php',
+    'demandes_etudiants.php' => 'Admin/demandes_etudiants.php',
+    'demandes_etudiants_live.php' => 'Admin/demandes_etudiants_live.php',
     'fix_utf8.php' => 'Admin/fix_utf8.php',
 
     'brand_logo.php' => 'support/brand_logo.php',
