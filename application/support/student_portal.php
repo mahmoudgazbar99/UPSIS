@@ -4,7 +4,8 @@ declare(strict_types=1);
 function student_portal_ensure(PDO $pdo): void
 {
     static $ready = false;
-    if ($ready) {
+    if ($ready || app_schema_is_ready('student_portal')) {
+        $ready = true;
         return;
     }
     $ready = true;
@@ -59,6 +60,7 @@ function student_portal_ensure(PDO $pdo): void
           KEY idx_complaint_student (id_etudiant, statut)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
     );
+    app_schema_mark_ready('student_portal');
 }
 
 function student_portal_pending_count(PDO $pdo): int

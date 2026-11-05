@@ -249,6 +249,26 @@ function app_load_env(): void
     app_load_env_file($root . DIRECTORY_SEPARATOR . '.env.local');
 }
 
+function app_schema_flag_path(string $name): string
+{
+    return storage_path('cache' . DIRECTORY_SEPARATOR . 'schema_' . preg_replace('/[^a-z0-9_]+/i', '_', $name) . '.ready');
+}
+
+function app_schema_is_ready(string $name): bool
+{
+    return is_file(app_schema_flag_path($name));
+}
+
+function app_schema_mark_ready(string $name): void
+{
+    $path = app_schema_flag_path($name);
+    $dir = dirname($path);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0775, true);
+    }
+    touch($path);
+}
+
 function db_connect(): AppPdo
 {
     app_load_env();
@@ -257,9 +277,10 @@ function db_connect(): AppPdo
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
-    // Neon only on Render. Local Docker keeps its own Postgres so logins stay fast.
+    // Neon only on Render. Prefer the pooled URL for web requests (faster handshakes).
+    // Local Docker keeps its own Postgres so logins stay fast.
     $url = getenv('RENDER') === 'true'
-        ? (getenv('DATABASE_URL_UNPOOLED') ?: getenv('DATABASE_URL') ?: '')
+        ? (getenv('DATABASE_URL') ?: getenv('DATABASE_URL_UNPOOLED') ?: '')
         : '';
     if ($url !== '') {
         $parts = parse_url($url);
@@ -274,13 +295,14 @@ function db_connect(): AppPdo
         $dsn = 'pgsql:host=' . $parts['host']
             . ';port=' . (string) ($parts['port'] ?? '5432')
             . ';dbname=' . ltrim((string) ($parts['path'] ?? ''), '/')
-            . ';sslmode=' . $sslmode;
+            . ';sslmode=' . $sslmode
+            . ';connect_timeout=5';
         $pdo = new AppPdo($dsn, rawurldecode((string) ($parts['user'] ?? '')), rawurldecode((string) ($parts['pass'] ?? '')), $options);
     } else {
         $host = getenv('DB_HOST') ?: DB_HOST;
         $port = getenv('DB_PORT') ?: DB_PORT;
         $pdo = new AppPdo(
-            'pgsql:host=' . $host . ';port=' . $port . ';dbname=' . (getenv('DB_NAME') ?: DB_NAME),
+            'pgsql:host=' . $host . ';port=' . $port . ';dbname=' . (getenv('DB_NAME') ?: DB_NAME) . ';connect_timeout=5',
             getenv('DB_USER') ?: DB_USER,
             getenv('DB_PASS') ?: DB_PASS,
             $options
@@ -288,6 +310,9 @@ function db_connect(): AppPdo
     }
     $pdo->exec("SET client_encoding TO 'UTF8'");
     $pdo->exec("SET TIME ZONE 'UTC'");
+    if (getenv('RENDER') === 'true') {
+        $pdo->exec('SET statement_timeout TO 20000');
+    }
     return $pdo;
 }
 
@@ -1023,7 +1048,8 @@ function student_notifications_payload(PDO $pdo, int $studentId): array
 function ensure_etudiant_compte_table(PDO $pdo): void
 {
     static $ready = false;
-    if ($ready) {
+    if ($ready || app_schema_is_ready('etudiant_compte')) {
+        $ready = true;
         return;
     }
     $pdo->exec(
@@ -1043,6 +1069,7 @@ function ensure_etudiant_compte_table(PDO $pdo): void
         $pdo->exec('ALTER TABLE etudiant_compte ADD COLUMN auth_generation INT UNSIGNED NOT NULL DEFAULT 1');
     }
     $ready = true;
+    app_schema_mark_ready('etudiant_compte');
 }
 
 function assign_tronc_commun_groups(PDO $pdo, int $studentId): void {

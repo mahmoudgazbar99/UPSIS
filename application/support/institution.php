@@ -11,7 +11,8 @@ const FORMULA_CREDIT_DEFAULT = 'moyenne >= 10 ? credit : 0';
 function institution_ensure(): void
 {
     static $ready = false;
-    if ($ready) {
+    if ($ready || app_schema_is_ready('institution')) {
+        $ready = true;
         return;
     }
     $ready = true;
@@ -79,6 +80,7 @@ function institution_ensure(): void
     $legacyName->execute(['university_name']);
     $insert->execute(['establishment_fr', (string) ($legacyName->fetchColumn() ?: INSTITUTION_NAME_DEFAULT)]);
     $insert->execute(['establishment_ar', '']);
+    app_schema_mark_ready('institution');
 }
 
 function institution_settings(bool $refresh = false): array
