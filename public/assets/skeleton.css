@@ -1,0 +1,87 @@
+.app-skeleton,
+.sk {
+  --sk-base: #1e232a;
+  --sk-shine: #2c333d;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--sk-base);
+}
+
+.app-skeleton::after,
+.sk::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, var(--sk-shine) 45%, transparent 70%);
+  transform: translateX(-100%);
+  animation: sk-shimmer 1.35s ease-in-out infinite;
+}
+
+.sk-line {
+  height: 0.85rem;
+  margin-bottom: 0.55rem;
+  border-radius: 999px;
+}
+
+.sk-line.is-short { width: 42%; }
+.sk-line.is-mid { width: 68%; }
+
+.sk-avatar {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.sk-btn {
+  width: 8.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+}
+
+.sk-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border-radius: 1.25rem;
+  background: #242930;
+}
+
+.sk-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-skeleton-stage {
+  display: grid;
+  gap: 0.85rem;
+  min-height: 18rem;
+  padding: 0.2rem 0;
+}
+
+.app-skeleton-stage[hidden] {
+  display: none;
+}
+
+.dashboard-content-panel iframe.is-ready {
+  animation: sk-fade 0.3s ease;
+}
+
+@keyframes sk-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@keyframes sk-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-skeleton::after,
+  .sk::after,
+  .dashboard-content-panel iframe.is-ready {
+    animation: none;
+  }
+}

@@ -224,6 +224,151 @@
   font-size: 1.05rem;
 }
 
+.student-profile-hint {
+  margin-bottom: 0.55rem;
+}
+
+.student-profile-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(11.5rem, 72%);
+  gap: 0.75rem;
+  margin: 0 0 1.1rem;
+  padding: 0.15rem 0.15rem 0.55rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.student-profile-rail::-webkit-scrollbar {
+  height: 6px;
+}
+
+.student-profile-rail::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.student-profile-slide {
+  scroll-snap-align: start;
+  min-height: 6.5rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.16);
+}
+
+.student-profile-slide-wide {
+  grid-column: span 1;
+  min-width: min(22rem, 82vw);
+}
+
+.student-profile-label {
+  margin: 0;
+  color: rgba(247, 243, 234, 0.7);
+  font-size: 0.82rem;
+}
+
+.student-profile-value {
+  margin: 0.35rem 0 0;
+  font-size: 1.08rem;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.student-profile-value p {
+  margin: 0 0 0.45rem;
+}
+
+.student-profile-value a {
+  color: #f3d7a1;
+}
+
+.student-contact-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-contact-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 4.5rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  background:
+    linear-gradient(135deg, rgba(45, 212, 191, 0.16), rgba(5, 150, 105, 0.08) 55%, rgba(255, 255, 255, 0.06));
+}
+
+.student-contact-avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: #2dd4bf;
+  color: #042f2e;
+  font-weight: 700;
+}
+
+.student-contact-card strong,
+.student-contact-card span,
+.student-contact-card a {
+  display: block;
+}
+
+.student-contact-card span {
+  color: rgba(247, 243, 234, 0.72);
+  font-size: 0.88rem;
+}
+
+.student-contact-card a {
+  margin-top: 0.2rem;
+  color: #5eead4;
+  word-break: break-all;
+}
+
+.student-demand-toggle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0.85rem 0 0;
+  padding: 0.55rem 1rem;
+  border: 1px solid rgba(45, 212, 191, 0.55);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.student-demand-toggle[aria-expanded="true"] {
+  background: rgba(45, 212, 191, 0.16);
+}
+
+.student-demand-list {
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .student-profile-rail {
+    grid-auto-columns: minmax(14rem, 18rem);
+  }
+
+  .student-profile-slide-wide {
+    min-width: 22rem;
+  }
+}
+
 .student-space-table-wrap {
   overflow-x: auto;
 }

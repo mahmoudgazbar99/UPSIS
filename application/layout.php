@@ -84,7 +84,7 @@ function macos_dock(): void {
             <?php if (is_admin() || is_scolarite()): ?>
             <a class="macos-dock-item" href="inscription.php?embed=1" target="dashboard-content" data-dock="enroll" title="Inscrire" aria-label="Inscrire"><?= $icon('<path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/>') ?></a>
             <?php endif; ?>
-            <?php if (is_teacher()): ?>
+            <?php if (is_admin() || is_teacher()): ?>
             <button type="button" class="macos-dock-item" data-dock="courses" data-course-finder-open title="Cours" aria-label="Ouvrir le dossier des cours" aria-haspopup="dialog" aria-controls="courseFinderWindow"><?= $icon('<path d="M3.5 8.2A2.2 2.2 0 0 1 5.7 6h3.1l1.6 1.8h7.9A2.2 2.2 0 0 1 20.5 10v7.2a2.2 2.2 0 0 1-2.2 2.2H5.7a2.2 2.2 0 0 1-2.2-2.2z"/>') ?></button>
             <?php endif; ?>
             <?php if (is_admin() || is_teacher()): ?>
@@ -100,7 +100,7 @@ function macos_dock(): void {
             <a class="macos-dock-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content" data-dock="settings" title="Réglages" aria-label="Réglages"><?= $icon('<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/>') ?></a>
             <?php endif; ?>
         </nav>
-        <?php if (is_teacher()): ?>
+        <?php if (is_admin() || is_teacher()): ?>
         <div class="course-finder-layer no-print" id="courseFinderLayer" data-csrf="<?= e(csrf_token()) ?>" hidden>
             <div class="course-finder-window" id="courseFinderWindow" role="dialog" aria-modal="true" aria-labelledby="courseFinderTitle">
                 <header class="course-finder-titlebar">
@@ -125,6 +125,9 @@ function macos_dock(): void {
                 <div class="course-finder-menu" data-course-finder-menu hidden role="menu"></div>
                 <form class="course-finder-sheet" data-course-finder-sheet hidden>
                     <p data-course-finder-sheet-text></p>
+                    <label data-course-finder-teacher-label hidden>Enseignant
+                        <select data-course-finder-teacher></select>
+                    </label>
                     <label data-course-finder-subject-label hidden>Matière
                         <select data-course-finder-subject></select>
                     </label>
@@ -146,7 +149,7 @@ function macos_dock(): void {
                 <ul data-macos-command-list></ul>
             </div>
         </div>
-        <?php if (is_teacher()): ?>
+        <?php if (is_admin() || is_teacher()): ?>
         <script>
         (function () {
             var openButton = document.querySelector('[data-course-finder-open]');
@@ -157,6 +160,7 @@ function macos_dock(): void {
             if (!openButton || !layer || !body || !title || !back) return;
             var courses = null;
             var subjects = [];
+            var teachers = [];
             var stack = [];
             var loading = false;
             var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -186,7 +190,7 @@ function macos_dock(): void {
                 body.replaceChildren();
                 body.classList.remove('is-opening');
                 if (!courses) {
-                    body.appendChild(message('Chargement des dossiers…'));
+                    body.appendChild(courseSkeleton());
                     return;
                 }
                 if (!folders.length && !files.length) {
@@ -201,6 +205,30 @@ function macos_dock(): void {
                 if (!reduced) {
                     window.requestAnimationFrame(function () { body.classList.add('is-opening'); });
                 }
+            }
+            function courseSkeleton() {
+                var wrap = document.createElement('div');
+                wrap.className = 'app-skeleton-stage';
+                wrap.setAttribute('aria-busy', 'true');
+                wrap.setAttribute('aria-label', 'Chargement des dossiers');
+                for (var i = 0; i < 4; i++) {
+                    var row = document.createElement('div');
+                    row.className = 'sk-row';
+                    var avatar = document.createElement('span');
+                    avatar.className = 'sk sk-avatar';
+                    var copy = document.createElement('div');
+                    copy.style.flex = '1';
+                    var a = document.createElement('span');
+                    a.className = 'sk sk-line';
+                    var b = document.createElement('span');
+                    b.className = 'sk sk-line is-short';
+                    copy.appendChild(a);
+                    copy.appendChild(b);
+                    row.appendChild(avatar);
+                    row.appendChild(copy);
+                    wrap.appendChild(row);
+                }
+                return wrap;
             }
             function message(text) {
                 var p = document.createElement('p');
@@ -314,6 +342,7 @@ function macos_dock(): void {
                         .then(function (data) {
                             courses = data && data.courses ? data.courses : [];
                             subjects = data && data.subjects ? data.subjects : [];
+                            teachers = data && data.teachers ? data.teachers : [];
                             stack = [];
                             render();
                         })
@@ -332,6 +361,8 @@ function macos_dock(): void {
             var sheetLabel = document.querySelector('[data-course-finder-sheet-label]');
             var subjectLabel = document.querySelector('[data-course-finder-subject-label]');
             var subjectSelect = document.querySelector('[data-course-finder-subject]');
+            var teacherLabel = document.querySelector('[data-course-finder-teacher-label]');
+            var teacherSelect = document.querySelector('[data-course-finder-teacher]');
             var newCourse = document.querySelector('[data-course-finder-course]');
             var newFolder = document.querySelector('[data-course-finder-new]');
             var addFiles = document.querySelector('[data-course-finder-add]');
@@ -369,6 +400,7 @@ function macos_dock(): void {
                         if (data && data.courses) {
                             courses = data.courses;
                             if (data.subjects) subjects = data.subjects;
+                            if (data.teachers) teachers = data.teachers;
                             restorePath(keep);
                             render();
                         }
@@ -390,6 +422,23 @@ function macos_dock(): void {
                 sheet.hidden = true;
                 sheetMode = null;
             }
+            function teacherSubjectIds() {
+                if (!teacherSelect || !teachers.length) return null;
+                var chosen = teachers.filter(function (teacher) { return String(teacher.id) === teacherSelect.value; })[0];
+                return chosen && chosen.subjects ? chosen.subjects.map(String) : [];
+            }
+            function fillSubjects() {
+                if (!subjectSelect) return;
+                var allowed = teacherSubjectIds();
+                subjectSelect.replaceChildren();
+                subjects.forEach(function (subject) {
+                    if (allowed && allowed.indexOf(String(subject.id)) === -1) return;
+                    var option = document.createElement('option');
+                    option.value = String(subject.id);
+                    option.textContent = subject.label;
+                    subjectSelect.appendChild(option);
+                });
+            }
             function openSheet(mode, entry, isFolder) {
                 hideMenu();
                 sheetMode = { mode: mode, entry: entry, isFolder: isFolder };
@@ -399,16 +448,18 @@ function macos_dock(): void {
                     ? 'Supprimer « ' + (entry.name || 'cet élément') + ' » ? Cette action est définitive.'
                     : (creatingCourse ? 'Nom du nouveau cours' : (mode === 'create' ? 'Nom du nouveau dossier' : 'Nouveau nom'));
                 sheetLabel.hidden = removing;
-                if (subjectLabel) subjectLabel.hidden = !creatingCourse;
-                if (creatingCourse && subjectSelect) {
-                    subjectSelect.replaceChildren();
-                    subjects.forEach(function (subject) {
+                if (teacherLabel) teacherLabel.hidden = !(creatingCourse && teachers.length);
+                if (creatingCourse && teacherSelect && teachers.length) {
+                    teacherSelect.replaceChildren();
+                    teachers.forEach(function (teacher) {
                         var option = document.createElement('option');
-                        option.value = String(subject.id);
-                        option.textContent = subject.label;
-                        subjectSelect.appendChild(option);
+                        option.value = String(teacher.id);
+                        option.textContent = teacher.label;
+                        teacherSelect.appendChild(option);
                     });
                 }
+                if (subjectLabel) subjectLabel.hidden = !creatingCourse;
+                if (creatingCourse) fillSubjects();
                 sheetName.value = mode === 'rename' ? (entry.name || '').replace(/\.pdf$/i, '') : '';
                 sheet.querySelector('[data-course-finder-sheet-ok]').textContent = removing ? 'Supprimer' : 'Enregistrer';
                 sheet.hidden = false;
@@ -504,6 +555,7 @@ function macos_dock(): void {
                     .then(function (data) {
                         courses = data && data.courses ? data.courses : [];
                         subjects = data && data.subjects ? data.subjects : [];
+                        teachers = data && data.teachers ? data.teachers : [];
                         restorePath(keep);
                         render();
                         setStatus('Dossiers à jour.');
@@ -527,6 +579,7 @@ function macos_dock(): void {
                 menu.style.top = Math.max(8, Math.min(event.clientY, window.innerHeight - bounds.height - 8)) + 'px';
                 if (!reduced) window.requestAnimationFrame(function () { menu.classList.add('is-in'); });
             }
+            if (teacherSelect) teacherSelect.addEventListener('change', fillSubjects);
             if (newCourse) newCourse.addEventListener('click', function () {
                 if (!subjects.length) {
                     setStatus('Aucune matière ne vous est affectée. Le cours ne peut pas être créé.');
@@ -589,7 +642,9 @@ function macos_dock(): void {
                         : { action: 'delete_file', id_fichier: String(entry.id) });
                 } else if (sheetMode.mode === 'course') {
                     if (!name || !subjectSelect || !subjectSelect.value) return;
-                    postFinder({ action: 'create_course', id_mat: subjectSelect.value, nom: name });
+                    var courseFields = { action: 'create_course', id_mat: subjectSelect.value, nom: name };
+                    if (teacherSelect && teacherSelect.value) courseFields.id_enseignant = teacherSelect.value;
+                    postFinder(courseFields);
                 } else if (sheetMode.mode === 'create') {
                     if (!name) return;
                     postFinder({ action: 'create_folder', id_parent: String(entry.id), nom: name });
@@ -647,10 +702,11 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
         <link href="assets/motion.css?v=3" rel="stylesheet">
-        <link href="assets/style.css?v=91" rel="stylesheet">
+        <link href="assets/style.css?v=94" rel="stylesheet">
         <link href="assets/institut.css?v=3" rel="stylesheet">
         <link href="assets/macos.css?v=52" rel="stylesheet">
-        <link href="assets/clarity.css?v=23" rel="stylesheet">
+        <link href="assets/clarity.css?v=24" rel="stylesheet">
+        <link href="assets/skeleton.css?v=1" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {
@@ -886,7 +942,9 @@ function page_foot(): void {
             new MutationObserver(fit).observe(document.body, { attributes: true, attributeFilter: ['class'] });
         })();
         </script>
+        <link href="assets/success-lottie.css?v=3" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script type="module" src="assets/success-lottie.js?v=6"></script>
         <script src="assets/motion.js?v=3" defer></script>
         <?php if (logged_in() && !is_admin() && !is_student()): ?>
         <script src="assets/account-session.js?v=2"></script>

@@ -3069,9 +3069,10 @@ body.theme-macos .macos-dock-item {
   }
 
   body.theme-macos .dashboard-menu-item[data-alert-count]::after {
-    top: 0.38rem;
-    left: calc(50% + 0.58rem);
+    top: 0.28rem;
+    left: 1.55rem;
     right: auto;
+    box-shadow: 0 0 0 2px rgba(28, 28, 30, 0.95);
   }
 
   body.theme-macos .macos-inner-titlebar {

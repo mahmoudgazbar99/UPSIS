@@ -266,6 +266,38 @@ html[data-student-skin="nursing"] .student-mail-headers {
   border-color: var(--line);
 }
 
+html[data-student-skin="nursing"] .student-profile-label {
+  color: var(--muted);
+}
+
+html[data-student-skin="nursing"] .student-profile-value,
+html[data-student-skin="nursing"] .student-profile-value a {
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-profile-value a {
+  color: var(--accent);
+}
+
+html[data-student-skin="nursing"] .student-contact-card {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-contact-card span {
+  color: var(--muted);
+}
+
+html[data-student-skin="nursing"] .student-contact-card a {
+  color: var(--accent);
+}
+
+html[data-student-skin="nursing"] .student-contact-avatar {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 html[data-student-skin="nursing"] .student-space th,
 html[data-student-skin="nursing"] .student-space td {
   border-bottom-color: var(--line);

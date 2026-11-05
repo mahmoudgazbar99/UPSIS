@@ -488,8 +488,8 @@ main.container {
   .dashboard-menu-item[data-alert-count]::after {
     content: attr(data-alert-count);
     position: absolute;
-    top: 0.42rem;
-    left: calc(50% + 0.62rem);
+    top: 0.28rem;
+    left: 1.55rem;
     right: auto;
     z-index: 2;
     display: inline-flex;
@@ -504,6 +504,7 @@ main.container {
     color: #fff;
     background: linear-gradient(135deg, #d9534f, #b02a37);
     pointer-events: none;
+    box-shadow: 0 0 0 2px var(--app-surface, #16181d);
   }
 
   .dashboard-menu-item[data-menu-icon="home"] .dashboard-menu-icon::before { content: "⌂"; }
@@ -2057,20 +2058,64 @@ html.is-mobile-tables table.table.mobile-card-table > tbody > tr > td.table-acti
   color: var(--app-muted);
 }
 
-.dashboard-alert-count {
+.dashboard-menu-title-row {
   display: inline-flex;
   align-items: center;
+  gap: 0.45rem;
+  max-width: 100%;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.dashboard-menu-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-menu-copy strong.dashboard-menu-title-row {
+  display: inline-flex;
+}
+
+.dashboard-alert-count {
+  display: inline-flex;
+  flex: 0 0 auto;
+  order: 2;
+  align-items: center;
   justify-content: center;
+  align-self: center;
   min-width: 1.45rem;
   height: 1.45rem;
-  margin-left: 0.35rem;
+  margin: 0;
   padding: 0 0.4rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
+  line-height: 1;
   color: #fff;
   background: linear-gradient(135deg, #d9534f, #b02a37);
   vertical-align: middle;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-surface, #16181d) 85%, transparent);
+}
+
+.login-home-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--app-border, rgba(255, 255, 255, 0.28));
+  background: transparent;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-home-link:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: inherit;
 }
 
 @keyframes attestation-badge-bounce {

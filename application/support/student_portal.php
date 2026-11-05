@@ -317,8 +317,16 @@ function student_portal_update_profile(PDO $pdo, int $studentId, string $email, 
     return '';
 }
 
-function student_portal_admin_decide(PDO $pdo, string $kind, int $id, string $decision, string $comment, int $adminId): string
-{
+function student_portal_admin_decide(
+    PDO $pdo,
+    string $kind,
+    int $id,
+    string $decision,
+    string $comment,
+    int $adminId,
+    string $responseDate = '',
+    string $responseTime = ''
+): string {
     student_portal_ensure($pdo);
     if (!in_array($decision, ['validee', 'refusee', 'reprogrammee'], true)) {
         return 'Décision inconnue.';
@@ -373,13 +381,46 @@ function student_portal_admin_decide(PDO $pdo, string $kind, int $id, string $de
         return '';
     }
     if ($kind === 'psy') {
-        $pdo->prepare('UPDATE student_appointment SET statut = ?, admin_comment = ?, processed_by = ?, processed_at = CURRENT_TIMESTAMP WHERE id_appointment = ? AND statut = "en_attente"')->execute([$decision === 'validee' ? 'validee' : ($decision === 'reprogrammee' ? 'reprogrammee' : 'refusee'), mb_substr($comment, 0, 1000), $adminId, $id]);
+        $status = match ($decision) {
+            'validee' => 'validee',
+            'reprogrammee' => 'reprogrammee',
+            default => 'refusee',
+        };
+        $newDate = '';
+        $newTime = '';
+        if ($decision === 'reprogrammee') {
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $responseDate) || !preg_match('/^\d{2}:\d{2}(?::\d{2})?$/', $responseTime)) {
+                return 'Choisissez une date et une heure pour reprogrammer.';
+            }
+            $newDate = $responseDate;
+            $newTime = strlen($responseTime) === 5 ? $responseTime . ':00' : $responseTime;
+            $stamp = $newDate . ' ' . substr($newTime, 0, 5);
+            if ($comment === '') {
+                $comment = 'Nouveau créneau : ' . $stamp;
+            } elseif (!str_contains($comment, $stamp)) {
+                $comment = 'Nouveau créneau : ' . $stamp . ' — ' . $comment;
+            }
+        }
+        $pdo->prepare(
+            'UPDATE student_appointment
+             SET statut = ?, admin_comment = ?, response_date = ?, response_time = ?, processed_by = ?, processed_at = CURRENT_TIMESTAMP
+             WHERE id_appointment = ? AND statut = "en_attente"'
+        )->execute([
+            $status,
+            mb_substr($comment, 0, 1000),
+            $newDate !== '' ? $newDate : null,
+            $newTime !== '' ? $newTime : null,
+            $adminId,
+            $id,
+        ]);
         $who = $pdo->prepare('SELECT id_etudiant FROM student_appointment WHERE id_appointment = ?');
         $who->execute([$id]);
         $student = (int) $who->fetchColumn();
         $text = match ($decision) {
             'validee' => 'Votre rendez-vous psychologique a été confirmé.',
-            'reprogrammee' => 'Votre rendez-vous a été reprogrammé. ' . $comment,
+            'reprogrammee' => 'Votre rendez-vous a été reprogrammé'
+                . ($newDate !== '' ? ' au ' . $newDate . ' à ' . substr($newTime, 0, 5) : '')
+                . ($comment !== '' ? '. ' . $comment : '.'),
             default => 'Votre demande de rendez-vous a été refusée.',
         };
         if ($student > 0) {

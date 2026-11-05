@@ -149,6 +149,23 @@
 
   .portal-phone .student-space-table-wrap {
     overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .portal-phone .student-space table {
+    width: max-content;
+    min-width: 100%;
+  }
+
+  .portal-phone .student-space th,
+  .portal-phone .student-space td {
+    white-space: nowrap;
+  }
+
+  .portal-phone .student-unite-name {
+    display: none;
   }
 
   .portal-edge {
@@ -249,5 +266,96 @@
     .portal-backdrop {
       transition: none;
     }
+  }
+
+  .portal-drawer-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(45, 212, 191, 0.35);
+  }
+
+  .portal-drawer-head img {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    border-radius: 12px;
+    background: rgba(45, 212, 191, 0.16);
+  }
+
+  .portal-drawer-head .portal-drawer-name {
+    margin: 2px 0 0;
+  }
+
+  .portal-phone .student-space-sheet,
+  .portal-phone .student-contact-card,
+  .portal-phone .student-profile-slide {
+    border-color: rgba(45, 212, 191, 0.42);
+  }
+
+  .portal-phone .student-space th {
+    color: #042f2e;
+    background: #2dd4bf;
+  }
+
+  .portal-phone .student-space-table-wrap {
+    border: 1px solid rgba(45, 212, 191, 0.4);
+    border-radius: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .portal-phone .student-profile-slide:nth-child(3n + 1) {
+    background: linear-gradient(155deg, rgba(45, 212, 191, 0.42), rgba(12, 16, 18, 0.94) 72%);
+  }
+
+  .portal-phone .student-profile-slide:nth-child(3n + 2) {
+    background: linear-gradient(165deg, rgba(16, 185, 129, 0.34), rgba(8, 12, 14, 0.96) 70%);
+  }
+
+  .portal-phone .student-profile-slide:nth-child(3n) {
+    background: linear-gradient(175deg, rgba(13, 148, 136, 0.28), rgba(10, 10, 12, 0.96) 68%);
+  }
+
+  .portal-phone .student-space-sheet:not([hidden]),
+  .portal-phone .student-contact-card {
+    animation: portal-rise 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .portal-phone .student-contact-card:nth-child(2) { animation-delay: 0.05s; }
+  .portal-phone .student-contact-card:nth-child(3) { animation-delay: 0.1s; }
+  .portal-phone .student-contact-card:nth-child(4) { animation-delay: 0.15s; }
+
+  .portal-drawer button,
+  .portal-drawer a {
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .portal-drawer button:active,
+  .portal-drawer a:active {
+    transform: scale(0.98);
+  }
+}
+
+@keyframes portal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 767.98px) and (prefers-reduced-motion: reduce) {
+  .portal-phone .student-space-sheet:not([hidden]),
+  .portal-phone .student-contact-card,
+  .portal-drawer button:active,
+  .portal-drawer a:active {
+    animation: none;
+    transform: none;
   }
 }

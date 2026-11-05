@@ -937,6 +937,60 @@ function course_tree_for_teacher(int $teacherId): array
     return course_build_tree(array_map('intval', $query->fetchAll(PDO::FETCH_COLUMN)));
 }
 
+function course_tree_all(): array
+{
+    $ids = course_db()->query('SELECT id_dossier FROM cours_dossier WHERE id_parent IS NULL ORDER BY nom')->fetchAll(PDO::FETCH_COLUMN);
+    return course_build_tree(array_map('intval', $ids));
+}
+
+function course_subjects_all(): array
+{
+    return course_db()->query(
+        'SELECT id_mat, code_ecue, description_ecue, semestre FROM matiere ORDER BY semestre, code_ecue, id_mat'
+    )->fetchAll();
+}
+
+function course_teachers_with_subjects(): array
+{
+    $rows = course_db()->query(
+        'SELECT e.id_enseignant, e.prenom, e.nom, a.id_mat
+         FROM enseignant e
+         LEFT JOIN enseignant_affectation a ON a.id_enseignant = e.id_enseignant
+         ORDER BY e.nom, e.prenom, a.id_mat'
+    )->fetchAll();
+    $teachers = [];
+    foreach ($rows as $row) {
+        $id = (int) $row['id_enseignant'];
+        if (!isset($teachers[$id])) {
+            $teachers[$id] = [
+                'id' => $id,
+                'label' => trim((string) $row['prenom'] . ' ' . (string) $row['nom']),
+                'subjects' => [],
+            ];
+        }
+        if ($row['id_mat'] !== null) {
+            $teachers[$id]['subjects'][] = (int) $row['id_mat'];
+        }
+    }
+    return array_values($teachers);
+}
+
+function course_teacher_of_folder(int $folderId): int
+{
+    if ($folderId <= 0) {
+        return 0;
+    }
+    $query = course_db()->prepare('SELECT id_enseignant FROM cours_dossier WHERE id_dossier = ? LIMIT 1');
+    $query->execute([$folderId]);
+    return (int) $query->fetchColumn();
+}
+
+function course_teacher_of_file(int $fileId): int
+{
+    $meta = $fileId > 0 ? course_file_meta($fileId) : null;
+    return $meta ? (int) $meta['id_enseignant'] : 0;
+}
+
 function course_tree_for_student(int $studentId): array
 {
     return course_build_tree(course_student_course_ids($studentId));

@@ -174,7 +174,10 @@ function dashboard_menu_item(
       <span class="dashboard-menu-icon" aria-hidden="true"></span>
       <?php if ($number !== ''): ?><span class="dashboard-menu-number"><?= e($number) ?></span><?php endif; ?>
       <span class="dashboard-menu-copy">
-        <strong><?= e($title) ?><?php if ($badgeCount > 0): ?> <span class="dashboard-alert-count"><?= $badgeCount ?></span><?php endif; ?></strong>
+        <strong class="dashboard-menu-title-row">
+          <span class="dashboard-menu-title-text"><?= e($title) ?></span>
+          <?php if ($badgeCount > 0): ?><span class="dashboard-alert-count" aria-label="<?= $badgeCount ?> en attente"><?= $badgeCount ?></span><?php endif; ?>
+        </strong>
         <small><?= e($subtitle) ?></small>
       </span>
     </a>
@@ -305,7 +308,7 @@ function dashboard_menu(): void {
         'demandes_etudiants.php?embed=1',
         'Demandes étudiantes',
         'Groupes, rendez-vous et réclamations',
-        'attestation',
+        'groups',
         $num(),
         true,
         student_portal_pending_count(db())
@@ -690,6 +693,20 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=6');
     <p class="mb-0 text-center">Sélectionnez un module dans le menu pour commencer.</p>
   </div>
   <?php endif; ?>
+  <div class="app-skeleton-stage" data-module-skeleton hidden aria-busy="true" aria-label="Chargement du module">
+    <span class="sk sk-line is-mid"></span>
+    <span class="sk sk-line is-short"></span>
+    <div class="sk-card">
+      <span class="sk sk-line"></span>
+      <span class="sk sk-line"></span>
+      <span class="sk sk-line is-short"></span>
+      <span class="sk sk-btn"></span>
+    </div>
+    <div class="sk-card">
+      <span class="sk sk-line"></span>
+      <span class="sk sk-line is-mid"></span>
+    </div>
+  </div>
   <iframe name="dashboard-content" title="Contenu du module" hidden></iframe>
 </section>
 </div>
@@ -707,14 +724,36 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
   function modulePieces() {
     return panel.querySelectorAll(':scope > :not(iframe)');
   }
+  const skeleton = panel.querySelector('[data-module-skeleton]');
   function showModule() {
-    modulePieces().forEach(function (piece) { piece.hidden = true; });
-    frame.hidden = false;
+    modulePieces().forEach(function (piece) {
+      if (piece === skeleton) return;
+      piece.hidden = true;
+    });
+    if (skeleton) skeleton.hidden = false;
+    frame.hidden = true;
+    frame.classList.remove('is-ready');
     document.body.classList.add('module-open');
   }
+  function revealModule() {
+    if (skeleton) skeleton.hidden = true;
+    frame.hidden = false;
+    frame.classList.add('is-ready');
+  }
+  frame.addEventListener('load', function () {
+    if (!frame.getAttribute('src')) return;
+    revealModule();
+  });
   function showHome() {
-    modulePieces().forEach(function (piece) { piece.hidden = false; });
+    modulePieces().forEach(function (piece) {
+      if (piece === skeleton) {
+        piece.hidden = true;
+        return;
+      }
+      piece.hidden = false;
+    });
     frame.hidden = true;
+    frame.classList.remove('is-ready');
     frame.removeAttribute('src');
     document.body.classList.remove('module-open');
   }
@@ -740,7 +779,11 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
     var current = '';
     try { current = frame.contentWindow.location.href; } catch (error) { current = frame.getAttribute('src') || ''; }
     if (current && new URL(current, window.location.href).href === url.href) {
-      showModule();
+      modulePieces().forEach(function (piece) {
+        if (piece !== skeleton) piece.hidden = true;
+      });
+      revealModule();
+      document.body.classList.add('module-open');
       return;
     }
     frame.src = url.href;
@@ -783,17 +826,17 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   let stamp = '';
   function paint(target, count) {
     if (!target) return;
-    const strong = target.querySelector('.dashboard-menu-copy strong');
-    if (!strong) return;
-    let badge = strong.querySelector('.dashboard-alert-count');
+    const row = target.querySelector('.dashboard-menu-title-row') || target.querySelector('.dashboard-menu-copy strong');
+    if (!row) return;
+    let badge = row.querySelector('.dashboard-alert-count');
     if (count > 0) {
       target.setAttribute('data-alert-count', String(count));
       if (!badge) {
         badge = document.createElement('span');
         badge.className = 'dashboard-alert-count';
-        strong.appendChild(document.createTextNode(' '));
-        strong.appendChild(badge);
+        row.appendChild(badge);
       }
+      badge.setAttribute('aria-label', String(count) + ' en attente');
       badge.textContent = String(count);
     } else {
       target.removeAttribute('data-alert-count');

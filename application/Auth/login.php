@@ -125,10 +125,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/style.css?v=91" rel="stylesheet">
+  <link href="assets/style.css?v=94" rel="stylesheet">
   <link href="assets/institut.css?v=3" rel="stylesheet">
   <link href="assets/macos.css?v=52" rel="stylesheet">
-  <link href="assets/clarity.css?v=22" rel="stylesheet">
+  <link href="assets/clarity.css?v=24" rel="stylesheet">
   <script>
   (function () {
     try {
@@ -227,7 +227,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
           <button type="submit" class="btn btn-primary w-100 btn-lg">Se connecter</button>
         </form>
-        <p class="small text-secondary text-center mt-3 mb-0">Accès personnel</p>
+        <p class="small text-secondary text-center mt-3 mb-2">Accès personnel</p>
+        <p class="text-center mb-0"><a class="login-home-link" href="accueil">Accueil</a></p>
       </div>
     </div>
   </div>

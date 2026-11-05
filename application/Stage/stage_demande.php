@@ -107,12 +107,27 @@ if (!$studentSpace) {
   <title>Stage d’été</title>
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=7" rel="stylesheet">
+  <link href="assets/student-space.css?v=15" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=8" rel="stylesheet">
+  <link href="assets/student-theme.css?v=13" rel="stylesheet">
+  <link href="assets/success-lottie.css?v=3" rel="stylesheet">
 </head>
 <body class="student-space">
+<div class="portal-stage">
+<div class="portal-phone">
+<header class="student-space-bar">
+  <img src="<?= e(institution_logo_src()) ?>" alt="Logo de l'école">
+  <div>
+    <p><?= e(institution_name_inline()) ?></p>
+    <strong>Stage d’été</strong>
+  </div>
+  <div class="student-space-bar-actions">
+    <a href="dashboard.php">Retour</a>
+  </div>
+</header>
 <main class="student-space-main">
+  <section class="student-space-sheet is-entering">
   <h1>Demande de stage d’été</h1>
-  <p><a href="dashboard.php">Retour à l’espace étudiant</a></p>
   <?php if ($message !== ''): ?><div class="student-space-alert is-success"><?= e($message) ?></div><?php endif; ?>
   <?php if ($error !== ''): ?><div class="student-space-alert"><?= e($error) ?></div><?php endif; ?>
   <?php if ($open): ?>
@@ -143,9 +158,13 @@ if (!$studentSpace) {
   <?php endif; ?>
   <?php if ($mine): ?>
   <h2>Mes demandes</h2>
-  <ul><?php foreach ($mine as $row): ?><li><?= e((string) $row['organisme_nom']) ?> · <?= e((string) $row['statut']) ?><?php if ((string) $row['stored_name'] !== ''): ?> · <a href="stage_demande.php?espace=etudiant&amp;piece=<?= (int) $row['id_demande'] ?>">Justificatif</a><?php endif; ?></li><?php endforeach; ?></ul>
+  <ul class="student-contact-list"><?php foreach ($mine as $row): ?><li class="student-contact-card"><div><strong><?= e((string) $row['organisme_nom']) ?></strong><span><?= e((string) $row['statut']) ?></span><?php if ((string) $row['stored_name'] !== ''): ?><a href="stage_demande.php?espace=etudiant&amp;piece=<?= (int) $row['id_demande'] ?>">Justificatif</a><?php endif; ?></div></li><?php endforeach; ?></ul>
   <?php endif; ?>
+  </section>
 </main>
+</div>
+</div>
 <script src="assets/motion.js?v=3" defer></script>
+<script type="module" src="assets/success-lottie.js?v=6"></script>
 </body>
 </html>

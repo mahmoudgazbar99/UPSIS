@@ -6,13 +6,51 @@ require_once app_path('support/course_library.php');
 require_once app_path('support/course_explorer_view.php');
 require_login();
 
-if (!is_teacher() || current_teacher_id() <= 0) {
+$courseAdmin = is_admin();
+$teacherId = current_teacher_id();
+$finderRequest = ($_GET['finder'] ?? '') === '1' || ($_POST['finder'] ?? '') === '1';
+if (!$courseAdmin && (!is_teacher() || $teacherId <= 0)) {
+    http_response_code(403);
+    exit('Accès réservé aux enseignants : cet espace contient la bibliothèque de cours de chaque enseignant.');
+}
+if ($courseAdmin && !$finderRequest && $teacherId <= 0) {
     http_response_code(403);
     exit('Accès réservé aux enseignants : cet espace contient la bibliothèque de cours de chaque enseignant.');
 }
 
-$teacherId = current_teacher_id();
 course_library_ensure(db());
+
+function mes_cours_subject_rows(bool $courseAdmin, int $teacherId): array
+{
+    $rows = $courseAdmin ? course_subjects_all() : course_teacher_subjects($teacherId);
+    return array_map(static function (array $subject): array {
+        return [
+            'id' => (int) $subject['id_mat'],
+            'label' => trim((string) $subject['semestre'] . ' · ' . (string) $subject['code_ecue'] . ' — ' . (string) $subject['description_ecue']),
+        ];
+    }, $rows);
+}
+
+function mes_cours_actor(bool $courseAdmin, int $teacherId, string $action): int
+{
+    if (!$courseAdmin) {
+        return $teacherId;
+    }
+    if ($action === 'create_course') {
+        $id = (int) ($_POST['id_enseignant'] ?? 0);
+        if ($id <= 0) {
+            throw new InvalidArgumentException('Choisissez l’enseignant.');
+        }
+        return $id;
+    }
+    $owner = in_array($action, ['rename_file', 'delete_file', 'move_file'], true)
+        ? course_teacher_of_file((int) ($_POST['id_fichier'] ?? 0))
+        : course_teacher_of_folder((int) ($_POST['id_dossier'] ?? $_POST['id_parent'] ?? 0));
+    if ($owner <= 0) {
+        throw new InvalidArgumentException('Dossier introuvable.');
+    }
+    return $owner;
+}
 
 function mes_cours_ini_bytes(string $value): int
 {
@@ -89,14 +127,15 @@ if (($_GET['finder'] ?? '') === '1' && $_SERVER['REQUEST_METHOD'] === 'GET') {
             }, is_array($node['files'] ?? null) ? $node['files'] : []),
         ];
     };
-    $courses = array_map($slimFolder, course_tree_for_teacher($teacherId));
-    $subjects = array_map(static function (array $subject): array {
-        return [
-            'id' => (int) $subject['id_mat'],
-            'label' => trim((string) $subject['semestre'] . ' · ' . (string) $subject['code_ecue'] . ' — ' . (string) $subject['description_ecue']),
-        ];
-    }, course_teacher_subjects($teacherId));
-    echo json_encode(['courses' => $courses, 'subjects' => $subjects], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+    $courses = array_map($slimFolder, $courseAdmin ? course_tree_all() : course_tree_for_teacher($teacherId));
+    $payload = [
+        'courses' => $courses,
+        'subjects' => mes_cours_subject_rows($courseAdmin, $teacherId),
+    ];
+    if ($courseAdmin) {
+        $payload['teachers'] = course_teachers_with_subjects();
+    }
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
     exit;
 }
 
@@ -119,50 +158,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['finder'] ?? '') === '1') {
                 }, is_array($node['files'] ?? null) ? $node['files'] : []),
             ];
         };
-        $subjects = array_map(static function (array $subject): array {
-            return [
-                'id' => (int) $subject['id_mat'],
-                'label' => trim((string) $subject['semestre'] . ' · ' . (string) $subject['code_ecue'] . ' — ' . (string) $subject['description_ecue']),
-            ];
-        }, course_teacher_subjects($teacherId));
-        echo json_encode([
+        $payload = [
             'ok' => $ok,
             'message' => $message,
-            'courses' => array_map($slimFolder, course_tree_for_teacher($teacherId)),
-            'subjects' => $subjects,
-        ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+            'courses' => array_map($slimFolder, $courseAdmin ? course_tree_all() : course_tree_for_teacher($teacherId)),
+            'subjects' => mes_cours_subject_rows($courseAdmin, $teacherId),
+        ];
+        if ($courseAdmin) {
+            $payload['teachers'] = course_teachers_with_subjects();
+        }
+        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
         exit;
     };
     try {
         verify_csrf();
         $action = mes_cours_post_text('action');
+        $actorId = mes_cours_actor($courseAdmin, $teacherId, $action);
         switch ($action) {
             case 'create_course':
-                course_create_root($teacherId, mes_cours_post_int('id_mat'), mes_cours_post_text('nom'));
+                course_create_root($actorId, mes_cours_post_int('id_mat'), mes_cours_post_text('nom'));
                 $reply(true, 'Cours créé.');
             case 'create_folder':
-                course_create_folder($teacherId, mes_cours_post_int('id_parent'), mes_cours_post_text('nom'));
+                course_create_folder($actorId, mes_cours_post_int('id_parent'), mes_cours_post_text('nom'));
                 $reply(true, 'Dossier créé.');
             case 'upload':
-                $count = course_upload_files($teacherId, mes_cours_post_int('id_dossier'), (array) ($_FILES['pdfs'] ?? []));
+                $count = course_upload_files($actorId, mes_cours_post_int('id_dossier'), (array) ($_FILES['pdfs'] ?? []));
                 $reply(true, $count === 1 ? '1 PDF ajouté.' : $count . ' PDF ajoutés.');
             case 'rename_folder':
-                course_rename_folder($teacherId, mes_cours_post_int('id_dossier'), mes_cours_post_text('nom'));
+                course_rename_folder($actorId, mes_cours_post_int('id_dossier'), mes_cours_post_text('nom'));
                 $reply(true, 'Nom modifié.');
             case 'rename_file':
-                course_rename_file($teacherId, mes_cours_post_int('id_fichier'), mes_cours_post_text('nom'));
+                course_rename_file($actorId, mes_cours_post_int('id_fichier'), mes_cours_post_text('nom'));
                 $reply(true, 'Nom modifié.');
             case 'delete_folder':
-                course_delete_folder($teacherId, mes_cours_post_int('id_dossier'));
+                course_delete_folder($actorId, mes_cours_post_int('id_dossier'));
                 $reply(true, 'Dossier supprimé.');
             case 'delete_file':
-                course_delete_file($teacherId, mes_cours_post_int('id_fichier'));
+                course_delete_file($actorId, mes_cours_post_int('id_fichier'));
                 $reply(true, 'Fichier supprimé.');
             case 'move_file':
-                course_move_file($teacherId, mes_cours_post_int('id_fichier'), mes_cours_post_int('id_dossier'));
+                course_move_file($actorId, mes_cours_post_int('id_fichier'), mes_cours_post_int('id_dossier'));
                 $reply(true, 'Fichier déplacé.');
             case 'move_folder':
-                course_move_folder($teacherId, mes_cours_post_int('id_dossier'), mes_cours_post_int('id_parent'));
+                course_move_folder($actorId, mes_cours_post_int('id_dossier'), mes_cours_post_int('id_parent'));
                 $reply(true, 'Dossier déplacé.');
             default:
                 $reply(false, 'Action inconnue.');

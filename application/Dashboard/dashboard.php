@@ -336,9 +336,11 @@ if (!empty($explorerFragment)) {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=13" rel="stylesheet">
-  <link href="assets/student-portal-shell.css?v=7" rel="stylesheet">
-  <link href="assets/student-theme.css?v=11" rel="stylesheet">
+  <link href="assets/student-space.css?v=16" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=9" rel="stylesheet">
+  <link href="assets/student-theme.css?v=14" rel="stylesheet">
+  <link href="assets/skeleton.css?v=1" rel="stylesheet">
+  <link href="assets/success-lottie.css?v=3" rel="stylesheet">
   <link href="assets/course-explorer.css?v=2" rel="stylesheet">
   <script src="assets/course-explorer.js?v=2" defer></script>
 </head>
@@ -384,8 +386,13 @@ if (!empty($explorerFragment)) {
   <div class="portal-edge" data-portal-edge aria-hidden="true"></div>
   <div class="portal-backdrop" data-portal-close></div>
   <nav class="portal-drawer" id="portalDrawer" aria-label="Navigation étudiante" aria-hidden="true" inert>
-    <p class="portal-drawer-kicker">Espace étudiant</p>
-    <strong class="portal-drawer-name"><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
+    <div class="portal-drawer-head">
+      <img src="<?= e(institution_logo_src()) ?>" alt="" width="44" height="44">
+      <div>
+        <p class="portal-drawer-kicker">Espace étudiant</p>
+        <strong class="portal-drawer-name"><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
+      </div>
+    </div>
     <button type="button" data-panel="profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 19c1-3 3-4.5 6-4.5s5 1.5 6 4.5"/></svg><span>Profil</span></button>
     <button type="button" data-panel="emploi"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3.5V7M16 3.5V7M4 10h16"/></svg><span>Emploi du temps</span></button>
     <button type="button" data-panel="cours"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h8l3 3v13H7z"/><path d="M15 4v3h3"/></svg><span>Cours</span></button>
@@ -469,20 +476,41 @@ if (!empty($explorerFragment)) {
     <section class="student-space-sheet<?= $openPanel === 'profil' ? ' is-entering' : '' ?>" data-sheet="profil"<?= $openPanel === 'profil' ? '' : ' hidden' ?>>
       <h1>Profil</h1>
       <?php if ($profile !== null): ?>
-        <dl>
-          <div><dt>Nom</dt><dd><?= e((string) $profile['nom']) ?></dd></div>
-          <div><dt>Prénom</dt><dd><?= e((string) $profile['prenom']) ?></dd></div>
-          <div><dt>Niveau</dt><dd><?= e(level_label((string) $profile['niveau'])) ?> année</dd></div>
-          <div><dt>E-mail</dt><dd><?= e((string) $profile['email']) ?></dd></div>
-          <div><dt>Téléphone</dt><dd><?= e((string) ($profile['num_tel'] ?? '')) ?></dd></div>
-          <div><dt>Adresse</dt><dd><?= e((string) ($profile['adresse'] ?? '')) ?></dd></div>
-          <div><dt>Spécialité</dt><dd><?= e((string) ($profile['nom_spec'] ?? '')) ?></dd></div>
-          <div><dt>Date de naissance</dt><dd><?= e((string) ($profile['date_naissance'] ?? '')) ?></dd></div>
-          <div><dt>Nationalité</dt><dd><?= e((string) ($profile['nationalite'] ?? '')) ?></dd></div>
-          <div><dt>Lieu de naissance</dt><dd><?= e((string) ($profile['lieu_naissance'] ?? '')) ?></dd></div>
-          <?php $publishedStages = stage_student_published((int) $studentId); ?>
-          <div><dt>Stage publié</dt><dd><?php if (!$publishedStages): ?>Aucun stage publié.<?php else: foreach ($publishedStages as $stage): ?><?= e($stage['organisme']) ?><?= $stage['service'] ? ' · ' . e((string) $stage['service']) : '' ?> · <?= e($stage['date_debut'] . ' → ' . $stage['date_fin']) ?> · <?= e(stage_statuses()[(string) $stage['statut']] ?? (string) $stage['statut']) ?> · <a href="stage_dossier.php?id=<?= (int) $stage['id_placement'] ?>&amp;espace=etudiant">Dossier documentaire du stage</a><br><?php endforeach; endif; ?> <a href="stage_demande.php?espace=etudiant">Demande de stage d’été</a></dd></div>
-        </dl>
+        <?php
+          $publishedStages = stage_student_published((int) $studentId);
+          $profileSlides = [
+            ['Nom', (string) $profile['nom']],
+            ['Prénom', (string) $profile['prenom']],
+            ['Niveau', level_label((string) $profile['niveau']) . ' année'],
+            ['E-mail', (string) $profile['email']],
+            ['Téléphone', (string) ($profile['num_tel'] ?? '')],
+            ['Adresse', (string) ($profile['adresse'] ?? '')],
+            ['Spécialité', (string) ($profile['nom_spec'] ?? '')],
+            ['Date de naissance', (string) ($profile['date_naissance'] ?? '')],
+            ['Nationalité', (string) ($profile['nationalite'] ?? '')],
+            ['Lieu de naissance', (string) ($profile['lieu_naissance'] ?? '')],
+          ];
+        ?>
+        <p class="student-space-lead student-profile-hint">Glissez horizontalement pour parcourir les infos.</p>
+        <div class="student-profile-rail" role="list" aria-label="Informations du profil">
+          <?php foreach ($profileSlides as $slide): ?>
+            <article class="student-profile-slide" role="listitem">
+              <p class="student-profile-label"><?= e($slide[0]) ?></p>
+              <p class="student-profile-value"><?= e($slide[1] !== '' ? $slide[1] : '—') ?></p>
+            </article>
+          <?php endforeach; ?>
+          <article class="student-profile-slide student-profile-slide-wide" role="listitem">
+            <p class="student-profile-label">Stage publié</p>
+            <div class="student-profile-value">
+              <?php if (!$publishedStages): ?>
+                <p>Aucun stage publié.</p>
+              <?php else: foreach ($publishedStages as $stage): ?>
+                <p><?= e($stage['organisme']) ?><?= $stage['service'] ? ' · ' . e((string) $stage['service']) : '' ?> · <?= e($stage['date_debut'] . ' → ' . $stage['date_fin']) ?> · <?= e(stage_statuses()[(string) $stage['statut']] ?? (string) $stage['statut']) ?> · <a href="stage_dossier.php?id=<?= (int) $stage['id_placement'] ?>&amp;espace=etudiant">Dossier documentaire du stage</a></p>
+              <?php endforeach; endif; ?>
+              <p><a href="stage_demande.php?espace=etudiant">Demande de stage d’été</a></p>
+            </div>
+          </article>
+        </div>
         <form method="post" class="student-space-form">
           <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="action" value="portal_profile">
@@ -526,7 +554,7 @@ if (!empty($explorerFragment)) {
                   <?php foreach ($sessions as $session): ?>
                     <tr>
                       <td><?= dashboard_heure((string) $session['heure_debut']) ?> – <?= dashboard_heure((string) $session['heure_fin']) ?></td>
-                      <td><?= e((string) $session['code_ecue']) ?> — <?= e((string) $session['description_ecue']) ?> <span>(<?= e((string) $session['type_seance']) ?>)</span></td>
+                      <td><?= e((string) $session['code_ecue']) ?> <span class="student-unite-name">— <?= e((string) $session['description_ecue']) ?></span> <span>(<?= e((string) $session['type_seance']) ?>)</span></td>
                       <td><?= e(trim((string) $session['prof_prenom'] . ' ' . (string) $session['prof_nom'])) ?></td>
                     </tr>
                   <?php endforeach; ?>
@@ -587,7 +615,14 @@ if (!empty($explorerFragment)) {
         <label>Commentaire<textarea name="commentaire" maxlength="1000"></textarea></label>
         <button type="submit">Soumettre la demande</button>
       </form>
-      <?php foreach ($portalMine['groups'] as $request): ?><p><?= e((string) $request['request_type']) ?> · <?= e(student_portal_status_label((string) $request['statut'])) ?> · <?= e((string) $request['created_at']) ?><?= $request['admin_comment'] ? ' · ' . e((string) $request['admin_comment']) : '' ?></p><?php endforeach; ?>
+      <button type="button" class="student-demand-toggle" data-demand-toggle aria-expanded="false" aria-controls="groupDemandList">Voir mes demandes</button>
+      <ul class="student-contact-list student-demand-list" id="groupDemandList" hidden>
+        <?php if ($portalMine['groups'] === []): ?>
+          <li class="student-contact-card"><div><strong>Aucune demande</strong><span>Vos demandes de groupe apparaîtront ici.</span></div></li>
+        <?php else: foreach ($portalMine['groups'] as $request): ?>
+          <li class="student-contact-card"><div><strong><?= e((string) $request['request_type']) ?></strong><span><?= e(student_portal_status_label((string) $request['statut'])) ?> · <?= e((string) $request['created_at']) ?><?= $request['admin_comment'] ? ' · ' . e((string) $request['admin_comment']) : '' ?></span></div></li>
+        <?php endforeach; endif; ?>
+      </ul>
     </section>
     <section class="student-space-sheet" data-sheet="psy"<?= $openPanel === 'psy' ? '' : ' hidden' ?>>
       <h1>Consultation psychologique</h1>
@@ -602,7 +637,18 @@ if (!empty($explorerFragment)) {
         <label>Motif<textarea name="motif" required minlength="5" maxlength="2000"></textarea></label>
         <button type="submit">Soumettre la demande de rendez-vous</button>
       </form>
-      <?php foreach ($portalMine['appointments'] as $appointment): ?><p><?= e((string) $appointment['requested_date']) ?> <?= e(substr((string) $appointment['requested_time'], 0, 5)) ?> · <?= e(student_portal_status_label((string) $appointment['statut'])) ?><?= $appointment['admin_comment'] ? ' · ' . e((string) $appointment['admin_comment']) : '' ?></p><?php endforeach; ?>
+      <button type="button" class="student-demand-toggle" data-demand-toggle aria-expanded="false" aria-controls="psyDemandList">Voir mes demandes</button>
+      <ul class="student-contact-list student-demand-list" id="psyDemandList" hidden>
+        <?php if ($portalMine['appointments'] === []): ?>
+          <li class="student-contact-card"><div><strong>Aucune demande</strong><span>Vos rendez-vous apparaîtront ici.</span></div></li>
+        <?php else: foreach ($portalMine['appointments'] as $appointment): ?>
+          <?php
+            $slotDate = (string) ($appointment['response_date'] ?: $appointment['requested_date']);
+            $slotTime = substr((string) ($appointment['response_time'] ?: $appointment['requested_time']), 0, 5);
+          ?>
+          <li class="student-contact-card"><div><strong><?= e($slotDate) ?> <?= e($slotTime) ?></strong><span><?= e(student_portal_status_label((string) $appointment['statut'])) ?><?= $appointment['admin_comment'] ? ' · ' . e((string) $appointment['admin_comment']) : '' ?></span></div></li>
+        <?php endforeach; endif; ?>
+      </ul>
     </section>
     <section class="student-space-sheet" data-sheet="reclamation"<?= $openPanel === 'reclamation' ? '' : ' hidden' ?>>
       <h1>Réclamation</h1>
@@ -613,14 +659,38 @@ if (!empty($explorerFragment)) {
         <label>Description<textarea name="description" required minlength="5"></textarea></label>
         <button type="submit">Envoyer la réclamation</button>
       </form>
-      <?php foreach ($portalMine['complaints'] as $complaint): ?><p><?= e((string) $complaint['categorie']) ?> · <?= e(student_portal_status_label((string) $complaint['statut'])) ?> · <?= e((string) $complaint['created_at']) ?><?= $complaint['admin_response'] ? ' · ' . e((string) $complaint['admin_response']) : '' ?></p><?php endforeach; ?>
+      <button type="button" class="student-demand-toggle" data-demand-toggle aria-expanded="false" aria-controls="claimDemandList">Voir mes demandes</button>
+      <ul class="student-contact-list student-demand-list" id="claimDemandList" hidden>
+        <?php if ($portalMine['complaints'] === []): ?>
+          <li class="student-contact-card"><div><strong>Aucune demande</strong><span>Vos réclamations apparaîtront ici.</span></div></li>
+        <?php else: foreach ($portalMine['complaints'] as $complaint): ?>
+          <li class="student-contact-card"><div><strong><?= e((string) $complaint['categorie']) ?></strong><span><?= e(student_portal_status_label((string) $complaint['statut'])) ?> · <?= e((string) $complaint['created_at']) ?><?= $complaint['admin_response'] ? ' · ' . e((string) $complaint['admin_response']) : '' ?></span></div></li>
+        <?php endforeach; endif; ?>
+      </ul>
     </section>
     <section class="student-space-sheet" data-sheet="contacts"<?= $openPanel === 'contacts' ? '' : ' hidden' ?>>
       <h1>Contacts</h1>
       <p class="student-space-lead">Enseignants affectés à vos groupes seulement.</p>
-      <?php if ($portalContacts === []): ?><p class="student-space-lead">Aucun enseignant affecté.</p><?php else: foreach ($portalContacts as $contact): ?>
-        <p><?= e(trim($contact['prenom'] . ' ' . $contact['nom'])) ?> · <?= e((string) $contact['description_ecue']) ?> · <a href="mailto:<?= e((string) $contact['email']) ?>"><?= e((string) $contact['email']) ?></a></p>
-      <?php endforeach; endif; ?>
+      <?php if ($portalContacts === []): ?>
+        <p class="student-space-lead">Aucun enseignant affecté.</p>
+      <?php else: ?>
+        <ul class="student-contact-list">
+          <?php foreach ($portalContacts as $contact): ?>
+            <?php
+              $contactName = trim((string) $contact['prenom'] . ' ' . (string) $contact['nom']);
+              $contactInitial = mb_strtoupper(mb_substr($contactName !== '' ? $contactName : '?', 0, 1));
+            ?>
+            <li class="student-contact-card">
+              <span class="student-contact-avatar" aria-hidden="true"><?= e($contactInitial) ?></span>
+              <div>
+                <strong><?= e($contactName !== '' ? $contactName : 'Enseignant') ?></strong>
+                <span><?= e((string) $contact['description_ecue']) ?></span>
+                <a href="mailto:<?= e((string) $contact['email']) ?>"><?= e((string) $contact['email']) ?></a>
+              </div>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
     </section>
     <section class="student-space-sheet<?= $openPanel === 'cours' ? ' is-entering' : '' ?>" data-sheet="cours"<?= $openPanel === 'cours' ? '' : ' hidden' ?>>
       <h1>Mes cours</h1>
@@ -753,6 +823,17 @@ if (!empty($explorerFragment)) {
   <script>
   (function () {
     var COURSE_LINK = /^dashboard\.php\?panel=cours(?:&cours=\d{1,10}(?:&dossier=\d{1,10})?)?$/;
+    document.querySelectorAll('[data-demand-toggle]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var list = document.getElementById(button.getAttribute('aria-controls') || '');
+        if (!list) return;
+        var open = list.hasAttribute('hidden');
+        if (open) list.removeAttribute('hidden');
+        else list.setAttribute('hidden', '');
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        button.textContent = open ? 'Masquer mes demandes' : 'Voir mes demandes';
+      });
+    });
     var buttons = document.querySelectorAll('.portal-drawer [data-panel], .student-space-cards > [data-panel]');
     var portal = document.getElementById('portalDrawer');
     var backdrop = document.querySelector('[data-portal-close]');
@@ -1367,5 +1448,6 @@ if (!empty($explorerFragment)) {
     setInterval(tick, 2000);
   })();
   </script>
+<script type="module" src="assets/success-lottie.js?v=6"></script>
 </body>
 </html>

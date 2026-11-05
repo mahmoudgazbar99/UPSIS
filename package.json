@@ -4,6 +4,7 @@
     "start": "docker exec myapp_web php /var/www/html/tests/neon_connect_cli.php"
   },
   "dependencies": {
+    "@lottiefiles/dotlottie-web": "^0.82.1",
     "@neon/config": "^1.11.3",
     "@neon/env": "^1.6.15"
   }
