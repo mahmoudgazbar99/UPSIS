@@ -168,15 +168,17 @@ function institution_logo_custom(): bool
 
 function institution_logo_src(): string
 {
+    // Root-relative, extensionless: .php image URLs get 308-canonicalized on Render
+    // and browsers often show a broken <img> instead of following that redirect.
     if (!institution_logo_custom()) {
-        return 'images/no_bg_logo.png?v=2';
+        return '/images/no_bg_logo.png?v=2';
     }
     try {
         $stamp = (int) db()->query("SELECT UNIX_TIMESTAMP(updated_at) FROM institution_logo WHERE asset_key = 'logo'")->fetchColumn();
     } catch (Throwable $exception) {
         $stamp = time();
     }
-    return 'brand_logo.php?v=' . max(1, $stamp);
+    return '/brand_logo?v=' . max(1, $stamp);
 }
 
 function institution_logo_file(): array
