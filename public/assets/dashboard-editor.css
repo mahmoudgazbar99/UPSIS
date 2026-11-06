@@ -962,6 +962,54 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   font-size: .84rem;
 }
 
+.dashboard-student-list {
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1), transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dashboard-student-list.is-updating {
+  opacity: 0.45;
+  transform: translateY(4px);
+  pointer-events: none;
+}
+
+.dashboard-student-list.is-settling .dashboard-student-row {
+  animation: dashboard-student-row-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(1) { animation-delay: 0.02s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(2) { animation-delay: 0.05s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(3) { animation-delay: 0.08s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(4) { animation-delay: 0.11s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(5) { animation-delay: 0.14s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(6) { animation-delay: 0.17s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(7) { animation-delay: 0.2s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(8) { animation-delay: 0.23s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(9) { animation-delay: 0.26s; }
+.dashboard-student-list.is-settling .dashboard-student-row:nth-child(10) { animation-delay: 0.29s; }
+
+@keyframes dashboard-student-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-student-list,
+  .dashboard-student-list.is-settling .dashboard-student-row {
+    transition: none;
+    animation: none;
+  }
+
+  .dashboard-student-list.is-updating {
+    transform: none;
+  }
+}
+
 .dashboard-student-list .table-responsive {
   border: 1px solid var(--app-border);
   border-radius: .9rem;

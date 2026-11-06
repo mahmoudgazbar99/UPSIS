@@ -129,6 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/institut.css?v=3" rel="stylesheet">
   <link href="assets/macos.css?v=52" rel="stylesheet">
   <link href="assets/clarity.css?v=24" rel="stylesheet">
+  <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
+  <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
+  <link href="assets/original-theme.css?v=15" rel="stylesheet">
   <script>
   (function () {
     try {
@@ -139,6 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       var style = localStorage.getItem(styleKey) || 'original';
       if (style === 'alternate' || style === 'atlas') { style = 'original'; localStorage.setItem(styleKey, 'original'); }
       if (style !== 'glass' && style !== 'macos' && style !== 'institut' && style !== 'clarity') style = 'original';
+      if (window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches) {
+        style = 'original';
+        document.documentElement.classList.add('phone-style-lock');
+      }
       document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
       document.documentElement.dataset.appStyle = style;
       document.documentElement.dataset.themeOwner = owner;
@@ -153,6 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     var body = document.body;
     var theme = document.documentElement.dataset.appTheme || 'dark';
     var style = document.documentElement.dataset.appStyle || 'original';
+    if (window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches) {
+      style = 'original';
+      document.documentElement.classList.add('phone-style-lock');
+    }
     body.classList.toggle('theme-light', theme === 'light');
     body.classList.toggle('theme-dark', theme !== 'light');
     body.classList.remove('theme-alternate', 'theme-atlas');
@@ -160,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     body.classList.toggle('theme-macos', style === 'macos');
     body.classList.toggle('theme-clarity', style === 'clarity');
     body.classList.toggle('theme-institut', style === 'institut');
+    body.classList.toggle('theme-original', style === 'original');
     document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
   })();
   </script>
@@ -175,11 +187,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </select>
     </label>
     <time class="clarity-menu-clock" data-clarity-clock datetime=""></time>
-    <button type="button" class="theme-toggle" data-theme-toggle aria-label="Activer le mode clair" title="Activer le mode clair">
-      <span class="theme-toggle-track" aria-hidden="true">
-        <svg class="theme-toggle-icon theme-toggle-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16.6 13.2A6.6 6.6 0 1 1 10.8 5.4 5.2 5.2 0 0 0 16.6 13.2z"/></svg>
-        <svg class="theme-toggle-icon theme-toggle-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/></svg>
-        <span class="theme-toggle-knob"></span>
+    <button type="button" class="theme-toggle lw-theme-toggle" data-theme-toggle aria-label="Activer le mode clair" title="Activer le mode clair">
+      <span class="lw-theme-sky" aria-hidden="true">
+        <span class="lw-theme-cloud"></span>
+        <span class="lw-theme-stars"><span></span><span></span><span></span></span>
+      </span>
+      <span class="lw-theme-thumb" aria-hidden="true">
+        <svg class="lw-theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/></svg>
+        <svg class="lw-theme-moon" viewBox="0 0 24 24"><path d="M16.6 13.2A6.6 6.6 0 1 1 10.8 5.4 5.2 5.2 0 0 0 16.6 13.2z"/></svg>
       </span>
       <span data-theme-icon class="visually-hidden">☀</span>
       <span data-theme-label class="visually-hidden">Clair</span>
@@ -287,19 +302,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const themeOwner = document.documentElement.dataset.themeOwner || 'invite';
     const themeKey = 'app-theme:' + themeOwner;
     const styleKey = 'app-style:' + themeOwner;
+    function isPhoneViewport() {
+      return window.matchMedia('(max-width: 991.98px)').matches;
+    }
     function applyStyle(value) {
-      const style = normalizeStyle(value);
-      if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas') localStorage.setItem(styleKey, 'original');
+      var style = isPhoneViewport() ? 'original' : normalizeStyle(value);
+      if (isPhoneViewport()) document.documentElement.classList.add('phone-style-lock');
+      else document.documentElement.classList.remove('phone-style-lock');
+      if (!isPhoneViewport() && (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas')) {
+        localStorage.setItem(styleKey, 'original');
+      }
       body.classList.remove('theme-alternate', 'theme-atlas');
       body.classList.toggle('theme-glass', style === 'glass');
       body.classList.toggle('theme-macos', style === 'macos');
       body.classList.toggle('theme-clarity', style === 'clarity');
       body.classList.toggle('theme-institut', style === 'institut');
+      body.classList.toggle('theme-original', style === 'original');
       document.documentElement.dataset.appStyle = style;
-      if (styleSelect && styleSelect.value !== style) styleSelect.value = style;
+      if (styleSelect) {
+        if (styleSelect.value !== style) styleSelect.value = style;
+        styleSelect.disabled = isPhoneViewport();
+      }
     }
     applyTheme(localStorage.getItem(themeKey) || 'dark');
     applyStyle(localStorage.getItem(styleKey) || 'original');
+    window.addEventListener('resize', function () {
+      applyStyle(isPhoneViewport() ? 'original' : (localStorage.getItem(styleKey) || 'original'));
+    });
     updateRole();
     role.addEventListener('change', updateRole);
     const password = document.querySelector('#password');
@@ -316,12 +345,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         password.focus();
       });
     }
-    toggle.addEventListener('click', function () { const next = body.classList.contains('theme-light') ? 'dark' : 'light'; localStorage.setItem(themeKey, next); applyTheme(next); });
-    styleSelect.addEventListener('change', function () {
-      const next = normalizeStyle(styleSelect.value);
-      localStorage.setItem(styleKey, next);
-      applyStyle(next);
+    toggle.addEventListener('click', function () {
+      if (window.appThemeWipe && window.appThemeWipe.busy()) return;
+      const previous = body.classList.contains('theme-light') ? 'light' : 'dark';
+      const next = previous === 'light' ? 'dark' : 'light';
+      const applyNext = function () { localStorage.setItem(themeKey, next); applyTheme(next); };
+      if (!window.appThemeWipe || !window.appThemeWipe.run(toggle, previous, applyNext)) applyNext();
     });
+    if (styleSelect) {
+      styleSelect.addEventListener('change', function () {
+        if (isPhoneViewport()) {
+          styleSelect.value = 'original';
+          applyStyle('original');
+          return;
+        }
+        const next = normalizeStyle(styleSelect.value);
+        localStorage.setItem(styleKey, next);
+        applyStyle(next);
+      });
+    }
     const win = document.querySelector('[data-macos-window]');
     const restoreBtn = document.querySelector('[data-macos-restore]');
     function restoreWindow() {
@@ -359,6 +401,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   </script>
   <?php endif; ?>
+<script src="assets/app-theme-wipe.js?v=7"></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>

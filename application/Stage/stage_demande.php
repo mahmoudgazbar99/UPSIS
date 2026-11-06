@@ -107,9 +107,11 @@ if (!$studentSpace) {
   <title>Stage d’été</title>
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=15" rel="stylesheet">
-  <link href="assets/student-portal-shell.css?v=8" rel="stylesheet">
-  <link href="assets/student-theme.css?v=13" rel="stylesheet">
+  <link href="assets/student-space.css?v=17" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=10" rel="stylesheet">
+  <link href="assets/student-theme.css?v=15" rel="stylesheet">
+  <link href="assets/student-lightswind.css?v=1" rel="stylesheet">
+  <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
   <link href="assets/success-lottie.css?v=3" rel="stylesheet">
 </head>
 <body class="student-space">

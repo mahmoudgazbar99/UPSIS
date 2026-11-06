@@ -86,8 +86,10 @@ if ($studentView) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=6" rel="stylesheet">
-  <link href="assets/student-theme.css?v=11" rel="stylesheet">
+  <link href="assets/student-space.css?v=17" rel="stylesheet">
+  <link href="assets/student-theme.css?v=15" rel="stylesheet">
+  <link href="assets/student-lightswind.css?v=1" rel="stylesheet">
+  <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
   <?php stage_doc_styles(); ?>
 </head>
 <body class="student-space">

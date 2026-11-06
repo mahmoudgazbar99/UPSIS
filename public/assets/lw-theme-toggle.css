@@ -1,0 +1,207 @@
+/**
+ * Lightswind cool-theme-toggle + toggle-theme circle-spread look.
+ */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+.theme-toggle.lw-theme-toggle {
+  --lw-toggle-w: 3.75rem;
+  --lw-toggle-h: 2rem;
+  --lw-thumb: 1.55rem;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: var(--lw-toggle-w);
+  min-width: var(--lw-toggle-w);
+  height: var(--lw-toggle-h);
+  min-height: var(--lw-toggle-h);
+  padding: 0.2rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: #0f172a;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 20px rgba(2, 8, 23, 0.28);
+  cursor: pointer;
+  transition: background-color 0.5s ease, box-shadow 0.35s ease, transform 0.2s ease;
+}
+
+.theme-toggle.lw-theme-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(2, 8, 23, 0.34);
+}
+
+.theme-toggle.lw-theme-toggle:active {
+  transform: scale(0.97);
+}
+
+.theme-toggle.lw-theme-toggle:focus-visible {
+  outline: 2px solid #34d399;
+  outline-offset: 3px;
+}
+
+body.theme-light .theme-toggle.lw-theme-toggle,
+html[data-theme="light"] .theme-toggle.lw-theme-toggle {
+  background: #7dd3fc;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 8px 20px rgba(14, 165, 233, 0.28);
+}
+
+.lw-theme-sky {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.lw-theme-cloud,
+.lw-theme-stars {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.lw-theme-cloud {
+  opacity: 0;
+  transform: translateY(8px);
+  background:
+    radial-gradient(circle at 72% 48%, rgba(255, 255, 255, 0.95) 0 0.28rem, transparent 0.3rem),
+    radial-gradient(circle at 78% 52%, rgba(255, 255, 255, 0.9) 0 0.34rem, transparent 0.36rem),
+    radial-gradient(circle at 84% 48%, rgba(255, 255, 255, 0.85) 0 0.24rem, transparent 0.26rem);
+}
+
+.lw-theme-stars {
+  opacity: 1;
+  transform: none;
+}
+
+.lw-theme-stars span {
+  position: absolute;
+  width: 0.18rem;
+  height: 0.18rem;
+  border-radius: 50%;
+  background: #fef9c3;
+  box-shadow: 0 0 0.35rem rgba(254, 249, 195, 0.85);
+}
+
+.lw-theme-stars span:nth-child(1) { top: 22%; left: 18%; opacity: 0.75; }
+.lw-theme-stars span:nth-child(2) { top: 58%; left: 28%; width: 0.26rem; height: 0.26rem; opacity: 0.55; }
+.lw-theme-stars span:nth-child(3) { top: 34%; left: 40%; width: 0.14rem; height: 0.14rem; opacity: 0.9; }
+
+body.theme-light .lw-theme-cloud,
+html[data-theme="light"] .lw-theme-cloud {
+  opacity: 1;
+  transform: none;
+}
+
+body.theme-light .lw-theme-stars,
+html[data-theme="light"] .lw-theme-stars {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.lw-theme-thumb {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--lw-thumb);
+  height: var(--lw-thumb);
+  border-radius: 50%;
+  background: #1e293b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transform: translateX(calc(var(--lw-toggle-w) - var(--lw-thumb) - 0.4rem));
+  transition:
+    transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1),
+    background-color 0.4s ease;
+}
+
+body.theme-light .lw-theme-thumb,
+html[data-theme="light"] .lw-theme-thumb {
+  background: #facc15;
+  transform: translateX(0);
+  box-shadow: 0 2px 8px rgba(202, 138, 4, 0.35);
+}
+
+.lw-theme-sun,
+.lw-theme-moon {
+  position: absolute;
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: opacity 0.35s ease, transform 0.45s ease;
+}
+
+.lw-theme-sun {
+  color: #fff;
+  opacity: 0;
+  transform: rotate(180deg) scale(0.4);
+}
+
+.lw-theme-moon {
+  color: #fde68a;
+  fill: #fde68a;
+  opacity: 1;
+  transform: none;
+}
+
+body.theme-light .lw-theme-sun,
+html[data-theme="light"] .lw-theme-sun {
+  opacity: 1;
+  transform: none;
+  color: #fff;
+}
+
+body.theme-light .lw-theme-moon,
+html[data-theme="light"] .lw-theme-moon {
+  opacity: 0;
+  transform: rotate(-180deg) scale(0.4);
+}
+
+/* Hide legacy track pieces when using Lightswind toggle */
+.theme-toggle.lw-theme-toggle .theme-toggle-track,
+.theme-toggle.lw-theme-toggle .theme-toggle-icon,
+.theme-toggle.lw-theme-toggle .theme-toggle-knob {
+  display: none;
+}
+
+/* Student portal: force Lightswind pill over legacy circle button */
+.portal-theme-toggle.theme-toggle.lw-theme-toggle {
+  display: inline-flex;
+  place-items: unset;
+  width: var(--lw-toggle-w) !important;
+  min-width: var(--lw-toggle-w);
+  height: var(--lw-toggle-h) !important;
+  min-height: var(--lw-toggle-h);
+  padding: 0.2rem;
+  border: 0;
+  border-radius: 999px !important;
+  background: #0f172a;
+}
+
+html[data-theme="light"] .portal-theme-toggle.theme-toggle.lw-theme-toggle {
+  background: #7dd3fc;
+}
+
+.portal-theme-toggle.lw-theme-toggle svg[data-theme-icon] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-toggle.lw-theme-toggle,
+  .lw-theme-thumb,
+  .lw-theme-sun,
+  .lw-theme-moon,
+  .lw-theme-cloud,
+  .lw-theme-stars {
+    transition: none !important;
+  }
+}

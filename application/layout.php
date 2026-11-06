@@ -707,6 +707,9 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="assets/macos.css?v=52" rel="stylesheet">
         <link href="assets/clarity.css?v=24" rel="stylesheet">
         <link href="assets/skeleton.css?v=1" rel="stylesheet">
+        <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
+        <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
+        <link href="assets/original-theme.css?v=15" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {
@@ -727,6 +730,11 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                 }
                 if (style === 'alternate' || style === 'atlas') style = 'original';
                 if (style !== 'glass' && style !== 'macos' && style !== 'institut' && style !== 'clarity') style = 'original';
+                /* Phone: lock to Original only (desktop keeps saved style). */
+                if (window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches) {
+                    style = 'original';
+                    document.documentElement.classList.add('phone-style-lock');
+                }
                 document.documentElement.classList.add('theme-boot');
                 document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
                 document.documentElement.dataset.appStyle = style;
@@ -743,6 +751,10 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
             var body = document.body;
             var theme = document.documentElement.dataset.appTheme || 'dark';
             var style = document.documentElement.dataset.appStyle || 'original';
+            if (window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches) {
+                style = 'original';
+                document.documentElement.classList.add('phone-style-lock');
+            }
             body.classList.toggle('theme-light', theme === 'light');
             body.classList.toggle('theme-dark', theme !== 'light');
             body.classList.remove('theme-alternate');
@@ -751,6 +763,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
             body.classList.toggle('theme-macos', style === 'macos');
             body.classList.toggle('theme-clarity', style === 'clarity');
             body.classList.toggle('theme-institut', style === 'institut');
+            body.classList.toggle('theme-original', style === 'original');
             document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
         })();
         </script>
@@ -774,14 +787,14 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                         <button type="button" class="macos-dot macos-dot-min" data-macos-action="minimize" aria-label="Réduire la fenêtre" title="Réduire"></button>
                         <button type="button" class="macos-dot macos-dot-max" data-macos-action="maximize" aria-label="Agrandir la fenêtre" title="Agrandir"></button>
                     </div>
+                    <button type="button" class="staff-phone-menu-btn" data-staff-nav-open aria-controls="dashboard-nav" aria-expanded="false" aria-label="Ouvrir le menu">
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+                    </button>
                     <a class="navbar-brand navbar-institution" href="index.php" title="Tableau de bord">
                         <img src="<?= e(institution_logo_src()) ?>" alt="Logo" class="navbar-logo">
                         <span class="navbar-institution-name"><?php foreach (institution_name_lines() as $institutionLine): ?><span><?= e($institutionLine) ?></span><?php endforeach; ?></span>
                     </a>
                 </div>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Ouvrir le menu">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
                 <div class="collapse navbar-collapse" id="nav">
                     <div class="macos-toolbar-search macos-only-control">
                         <button type="button" class="macos-search-hit" data-macos-search>
@@ -829,41 +842,6 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                         <li class="nav-item">
                             <time class="clarity-menu-clock" data-clarity-clock datetime=""></time>
                         </li>
-                        <li class="nav-item">
-                            <button type="button" class="theme-toggle" data-theme-toggle aria-label="Activer le mode clair" title="Activer le mode clair">
-                                <span class="theme-toggle-track" aria-hidden="true">
-                                    <svg class="theme-toggle-icon theme-toggle-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16.6 13.2A6.6 6.6 0 1 1 10.8 5.4 5.2 5.2 0 0 0 16.6 13.2z"/></svg>
-                                    <svg class="theme-toggle-icon theme-toggle-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/></svg>
-                                    <span class="theme-toggle-knob"></span>
-                                </span>
-                                <span data-theme-icon class="visually-hidden">☀</span>
-                                <span data-theme-label class="visually-hidden">Clair</span>
-                            </button>
-                        </li>
-                        <li class="nav-item">
-                            <div class="dropdown" data-settings-dropdown>
-                                <button class="btn btn-outline-light btn-sm settings-button" type="button" data-bs-toggle="dropdown" data-bs-popper="static" aria-expanded="false" aria-label="Ouvrir les réglages" title="Réglages">
-                                    <span aria-hidden="true">⚙</span>
-                                    <svg class="macos-tool-icon macos-icon-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7V20a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    <span class="visually-hidden">Réglages</span>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li class="macos-only-control px-3 py-2">
-                                        <label class="small mb-1 d-block" for="macos-style-select">Apparence</label>
-                                        <select class="theme-style-select" id="macos-style-select" data-style-select aria-label="Choisir le thème">
-                                            <option value="original">Original</option>
-                                            <option value="glass">Glass</option>
-                                            <option value="macos">Mac OS</option>
-                                            <option value="clarity">Mac bureau</option>
-                                            <option value="institut">Institut</option>
-                                        </select>
-                                    </li>
-                                    <li class="macos-only-control"><hr class="dropdown-divider"></li>
-                                    <?php if (is_admin()): ?><li><a class="dropdown-item" href="etablissement.php?embed=1" target="dashboard-content">Nom de l’établissement</a></li><li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li><li><hr class="dropdown-divider"></li><?php endif; ?>
-                                    <li><a class="dropdown-item text-danger" href="logout.php?desk=<?= e(strtok(app_theme_owner(), ':') ?: 'admin') ?>">Déconnexion</a></li>
-                                </ul>
-                            </div>
-                        </li>
                         <?php if ($identity['name'] !== ''): ?>
                         <li class="nav-item macos-only-control">
                             <div class="dropdown">
@@ -883,6 +861,47 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                         </li>
                         <?php endif; ?>
                     </ul>
+                </div>
+                <div class="staff-chrome-tray" data-staff-chrome-tray>
+                    <button type="button" class="theme-toggle lw-theme-toggle" data-theme-toggle aria-label="Activer le mode clair" title="Activer le mode clair">
+                        <span class="lw-theme-sky" aria-hidden="true">
+                            <span class="lw-theme-cloud"></span>
+                            <span class="lw-theme-stars"><span></span><span></span><span></span></span>
+                        </span>
+                        <span class="lw-theme-thumb" aria-hidden="true">
+                            <svg class="lw-theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4 6.2 17.8"/></svg>
+                            <svg class="lw-theme-moon" viewBox="0 0 24 24"><path d="M16.6 13.2A6.6 6.6 0 1 1 10.8 5.4 5.2 5.2 0 0 0 16.6 13.2z"/></svg>
+                        </span>
+                        <span data-theme-icon class="visually-hidden">☀</span>
+                        <span data-theme-label class="visually-hidden">Clair</span>
+                    </button>
+                    <div class="dropdown" data-settings-dropdown>
+                        <button class="btn btn-outline-light btn-sm settings-button" type="button" data-bs-toggle="dropdown" data-bs-popper="static" aria-expanded="false" aria-label="Ouvrir les réglages" title="Réglages">
+                            <span aria-hidden="true">⚙</span>
+                            <svg class="macos-tool-icon macos-icon-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.3a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.3a2 2 0 0 1 1 1.7V20a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.3a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.3a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <span class="visually-hidden">Réglages</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="macos-only-control px-3 py-2">
+                                <label class="small mb-1 d-block" for="macos-style-select">Apparence</label>
+                                <select class="theme-style-select" id="macos-style-select" data-style-select aria-label="Choisir le thème">
+                                    <option value="original">Original</option>
+                                    <option value="glass">Glass</option>
+                                    <option value="macos">Mac OS</option>
+                                    <option value="clarity">Mac bureau</option>
+                                    <option value="institut">Institut</option>
+                                </select>
+                            </li>
+                            <li class="macos-only-control"><hr class="dropdown-divider"></li>
+                            <?php if (is_admin()): ?>
+                            <li><h6 class="dropdown-header">Configuration</h6></li>
+                            <li><a class="dropdown-item" href="etablissement.php?embed=1" target="dashboard-content">Nom de l’établissement</a></li>
+                            <li><a class="dropdown-item" href="changer_mot_de_passe.php?embed=1" target="dashboard-content">Changer le mot de passe</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <?php endif; ?>
+                            <li><a class="dropdown-item text-danger" href="logout.php?desk=<?= e(strtok(app_theme_owner(), ':') ?: 'admin') ?>">Déconnexion</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </nav>
@@ -909,6 +928,30 @@ function page_foot(): void {
         </div>
         <?php macos_dock(); ?>
         <script>
+        (function () {
+            function paintCardTones() {
+                if (!document.body.classList.contains('theme-original')) {
+                    document.querySelectorAll('[data-card-tone]').forEach(function (el) {
+                        el.removeAttribute('data-card-tone');
+                    });
+                    return;
+                }
+                var index = 0;
+                var nodes = document.querySelectorAll('.app-card, .card, main .table-responsive');
+                nodes.forEach(function (el) {
+                    if (el.classList.contains('dashboard-menu')) return;
+                    if (el.classList.contains('login-card')) return;
+                    if (el.classList.contains('dashboard-content-panel')) return;
+                    if (el.closest('.dashboard-menu')) return;
+                    if (el.classList.contains('table-responsive') && el.closest('.app-card, .card')) return;
+                    index += 1;
+                    el.setAttribute('data-card-tone', String(((index - 1) % 5) + 1));
+                });
+            }
+            paintCardTones();
+            new MutationObserver(paintCardTones).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+            document.addEventListener('DOMContentLoaded', paintCardTones);
+        })();
         (function () {
             var clock = document.querySelector('[data-clarity-clock]');
             if (!clock) return;
@@ -944,6 +987,7 @@ function page_foot(): void {
         </script>
         <link href="assets/success-lottie.css?v=3" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="assets/app-theme-wipe.js?v=7"></script>
         <script type="module" src="assets/success-lottie.js?v=6"></script>
         <script src="assets/motion.js?v=3" defer></script>
         <?php if (logged_in() && !is_admin() && !is_student()): ?>
@@ -992,29 +1036,54 @@ function page_foot(): void {
                 settingsDrop.classList.remove('dropup');
             }
 
-            function applyStyle(style) {
-                const normalized = normalizeStyle(style);
-                if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas') {
-                    localStorage.setItem(styleKey, 'original');
+            function isPhoneViewport() {
+                return window.matchMedia('(max-width: 991.98px)').matches;
+            }
+
+            function applyStyle(style, options) {
+                options = options || {};
+                var normalized = normalizeStyle(style);
+                if (isPhoneViewport()) {
+                    normalized = 'original';
+                    document.documentElement.classList.add('phone-style-lock');
+                } else {
+                    document.documentElement.classList.remove('phone-style-lock');
+                }
+                if (!options.skipStore && !isPhoneViewport()) {
+                    if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas') {
+                        localStorage.setItem(styleKey, 'original');
+                    }
                 }
                 body.classList.remove('theme-alternate', 'theme-atlas');
                 body.classList.toggle('theme-glass', normalized === 'glass');
                 body.classList.toggle('theme-macos', normalized === 'macos');
                 body.classList.toggle('theme-clarity', normalized === 'clarity');
                 body.classList.toggle('theme-institut', normalized === 'institut');
+                body.classList.toggle('theme-original', normalized === 'original');
                 document.documentElement.dataset.appStyle = normalized;
                 styleSelects.forEach(function (el) {
                     if (el.value !== normalized) el.value = normalized;
+                    el.disabled = isPhoneViewport();
                 });
                 syncSettingsDropdownDirection();
             }
 
             function currentStyle() {
+                if (isPhoneViewport()) return 'original';
                 if (body.classList.contains('theme-macos')) return 'macos';
                 if (body.classList.contains('theme-clarity')) return 'clarity';
                 if (body.classList.contains('theme-glass')) return 'glass';
                 if (body.classList.contains('theme-institut')) return 'institut';
                 return 'original';
+            }
+
+            function syncPhoneStyleLock() {
+                if (isPhoneViewport()) {
+                    applyStyle('original', { skipStore: true });
+                } else {
+                    applyStyle(localStorage.getItem(styleKey) || 'original', { skipStore: true });
+                }
+                broadcastAppearance();
             }
 
             function syncThemeToFrames(theme, style) {
@@ -1039,7 +1108,7 @@ function page_foot(): void {
                 syncThemeToFrames(theme, style);
             }
 
-            applyStyle(savedStyle);
+            applyStyle(savedStyle, { skipStore: true });
             function syncBrowserFullscreen() {
                 const fullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement)
                     || (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches);
@@ -1049,6 +1118,7 @@ function page_foot(): void {
             document.addEventListener('fullscreenchange', syncBrowserFullscreen);
             document.addEventListener('webkitfullscreenchange', syncBrowserFullscreen);
             window.addEventListener('resize', syncBrowserFullscreen);
+            window.addEventListener('resize', syncPhoneStyleLock);
             if (navToggle && navCollapse) {
                 navCollapse.addEventListener('shown.bs.collapse', function () {
                     navToggle.setAttribute('aria-label', 'Fermer le menu');
@@ -1062,22 +1132,34 @@ function page_foot(): void {
                 if (event.origin !== window.location.origin || !event.data || event.data.type !== 'app-theme-sync') return;
                 if (event.data.scope && event.data.scope !== themeScope) return;
                 if (event.data.theme) applyTheme(event.data.theme);
-                if (event.data.style) applyStyle(event.data.style);
+                if (event.data.style) applyStyle(event.data.style, { skipStore: true });
             });
             window.addEventListener('storage', function (event) {
                 if (event.key === themeKey && event.newValue) applyTheme(event.newValue);
-                if (event.key === styleKey && event.newValue) applyStyle(event.newValue);
+                if (event.key === styleKey && event.newValue) applyStyle(event.newValue, { skipStore: true });
             });
             if (toggle) {
                 toggle.addEventListener('click', function () {
-                    const nextTheme = body.classList.contains('theme-light') ? 'dark' : 'light';
-                    localStorage.setItem(themeKey, nextTheme);
-                    applyTheme(nextTheme);
-                    broadcastAppearance();
+                    if (window.appThemeWipe && window.appThemeWipe.busy()) return;
+                    const previous = body.classList.contains('theme-light') ? 'light' : 'dark';
+                    const nextTheme = previous === 'light' ? 'dark' : 'light';
+                    const applyNext = function () {
+                        localStorage.setItem(themeKey, nextTheme);
+                        applyTheme(nextTheme);
+                        broadcastAppearance();
+                    };
+                    if (!window.appThemeWipe || !window.appThemeWipe.run(toggle, previous, applyNext)) {
+                        applyNext();
+                    }
                 });
             }
             styleSelects.forEach(function (el) {
                 el.addEventListener('change', function () {
+                    if (isPhoneViewport()) {
+                        el.value = 'original';
+                        applyStyle('original', { skipStore: true });
+                        return;
+                    }
                     const nextStyle = normalizeStyle(el.value);
                     localStorage.setItem(styleKey, nextStyle);
                     applyStyle(nextStyle);

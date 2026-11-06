@@ -5301,7 +5301,13 @@ body.theme-macos.embedded-view main.app-sheet {
 
 /* Phone menu: theme switcher and settings each get their own row */
 @media (max-width: 767.98px) {
-  body:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .navbar-toggler {
+  /* Original phone shell owns chrome — never force the Bootstrap toggler */
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .navbar-toggler,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .navbar-collapse {
+    display: none !important;
+  }
+
+  body:not(.theme-macos):not(.theme-original):not(.embedded-view):not(.login-page) .app-chrome .navbar-toggler {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
@@ -5309,12 +5315,23 @@ body.theme-macos.embedded-view main.app-sheet {
     margin-left: auto;
   }
 
-  body:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .app-chrome-inner {
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .app-chrome-inner {
+    flex-wrap: nowrap !important;
+    align-items: center;
+  }
+
+  body:not(.theme-macos):not(.theme-original):not(.embedded-view):not(.login-page) .app-chrome .app-chrome-inner {
     flex-wrap: wrap !important;
     align-items: center;
   }
 
-  body:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .macos-toolbar-lead {
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .macos-toolbar-lead {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: calc(100% - 7.5rem);
+  }
+
+  body:not(.theme-macos):not(.theme-original):not(.embedded-view):not(.login-page) .app-chrome .macos-toolbar-lead {
     flex: 1 1 auto;
     min-width: 0;
     max-width: calc(100% - 3.6rem);
@@ -5324,8 +5341,8 @@ body.theme-macos.embedded-view main.app-sheet {
     display: none !important;
   }
 
-  body:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .navbar-collapse.show,
-body:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .navbar-collapse.collapsing {
+  body:not(.theme-macos):not(.theme-original):not(.embedded-view):not(.login-page) .app-chrome .navbar-collapse.show,
+body:not(.theme-macos):not(.theme-original):not(.embedded-view):not(.login-page) .app-chrome .navbar-collapse.collapsing {
     display: block !important;
     height: auto !important;
     overflow: visible !important;

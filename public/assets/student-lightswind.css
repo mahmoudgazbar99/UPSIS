@@ -1,0 +1,423 @@
+/**
+ * Lightswind-inspired student shell (Emerald).
+ * Source: design/lightswind-ref after `npx lightswind@latest init` + theme 4.
+ * Applied as CSS to the PHP student portal (mobile + PC).
+ */
+
+html[data-student-skin="nursing"] {
+  --lw-primary: #10b981;
+  --lw-primary-2: #34d399;
+  --lw-primary-ink: #022c22;
+  --lw-radius: 0.75rem;
+  --lw-radius-lg: 1rem;
+  --lw-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --lw-ease-in: cubic-bezier(0.7, 0, 0.84, 0.2);
+  --accent: var(--lw-primary-2);
+  --accent-hover: #6ee7b7;
+  --accent-ink: var(--lw-primary-ink);
+  --accent-soft: color-mix(in srgb, var(--lw-primary) 14%, transparent);
+}
+
+html[data-student-skin="nursing"][data-theme="light"] {
+  --lw-primary: #059669;
+  --lw-primary-2: #10b981;
+  --lw-primary-ink: #ffffff;
+  --accent: var(--lw-primary);
+  --accent-hover: #047857;
+  --accent-ink: var(--lw-primary-ink);
+  --accent-soft: color-mix(in srgb, var(--lw-primary) 10%, transparent);
+  --bg: #f4f7f5;
+  --bg-soft: #e8efeb;
+  --surface: #ffffff;
+  --surface-2: #f0f5f2;
+  --ink: #0a0f0d;
+  --ink-soft: #3f4a44;
+  --muted: #5b6b63;
+  --line: #d7e2dc;
+  --line-strong: #c2d0c8;
+}
+
+html[data-student-skin="nursing"][data-theme="dark"] {
+  --bg: #090b0f;
+  --bg-soft: #11151c;
+  --surface: #12171f;
+  --surface-2: #1a212b;
+  --ink: #ecfdf5;
+  --ink-soft: #c6d5ce;
+  --muted: #9aada3;
+  --line: color-mix(in srgb, #2a3440 80%, transparent);
+  --line-strong: #334155;
+}
+
+/* View Transition overrides (Lightswind toggle-theme) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ——— Typography ——— */
+html[data-student-skin="nursing"] body.student-space {
+  font-feature-settings: "ss01" on, "cv01" on;
+  letter-spacing: -0.011em;
+}
+
+html[data-student-skin="nursing"] .student-space-bar strong,
+html[data-student-skin="nursing"] .student-space-sheet h1,
+html[data-student-skin="nursing"] .student-space-cards button strong {
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+
+html[data-student-skin="nursing"] .student-space-lead,
+html[data-student-skin="nursing"] .student-space-bar p,
+html[data-student-skin="nursing"] .student-space-cards button small {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+html[data-student-skin="nursing"] .student-space-sheet h1 {
+  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
+  margin-bottom: 0.65rem;
+}
+
+html[data-student-skin="nursing"] .student-space-sheet h2 {
+  color: var(--accent);
+  font-size: 1.12rem;
+  letter-spacing: -0.02em;
+}
+
+/* ——— Cards (Lightswind card / glowing-cards feel) ——— */
+html[data-student-skin="nursing"] .student-space-cards button,
+html[data-student-skin="nursing"] .student-space-sheet,
+html[data-student-skin="nursing"] .student-contact-card,
+html[data-student-skin="nursing"] .student-profile-slide {
+  border-radius: var(--lw-radius-lg);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 6%, transparent) inset,
+    0 10px 28px -18px rgba(0, 0, 0, 0.45);
+  transition:
+    transform 0.35s var(--lw-ease),
+    box-shadow 0.35s var(--lw-ease),
+    border-color 0.35s var(--lw-ease),
+    background-color 0.35s var(--lw-ease);
+}
+
+html[data-student-skin="nursing"] .student-space-cards button:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--lw-primary) 40%, var(--line));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lw-primary) 22%, transparent),
+    0 18px 40px -20px color-mix(in srgb, var(--lw-primary) 45%, transparent);
+}
+
+html[data-student-skin="nursing"] .student-space-cards button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--lw-primary) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--lw-primary) 45%, var(--line));
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-space-cards button span {
+  color: var(--lw-primary-2);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+html[data-student-skin="nursing"] .student-space-sheet {
+  padding: 1.35rem 1.25rem 1.2rem;
+}
+
+html[data-student-skin="nursing"] .student-contact-card {
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--lw-primary) 16%, var(--surface)), var(--surface) 58%);
+  border-color: color-mix(in srgb, var(--lw-primary) 35%, var(--line));
+}
+
+html[data-student-skin="nursing"] .student-contact-avatar {
+  background: var(--lw-primary);
+  color: var(--lw-primary-ink);
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--lw-primary) 70%, transparent);
+}
+
+/* ——— Tables (Lightswind table shell) ——— */
+html[data-student-skin="nursing"] .student-space-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--lw-radius-lg);
+  background: var(--surface);
+  box-shadow: 0 10px 28px -20px rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
+}
+
+html[data-student-skin="nursing"] .student-space-table-wrap table {
+  margin: 0;
+  width: max-content;
+  min-width: 100%;
+}
+
+html[data-student-skin="nursing"] .student-space-table-wrap th,
+html[data-student-skin="nursing"] .student-space-table-wrap td {
+  white-space: nowrap;
+}
+
+html[data-student-skin="nursing"] .student-space th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: color-mix(in srgb, var(--lw-primary) 88%, #022c22);
+  color: #ecfdf5;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid color-mix(in srgb, var(--lw-primary) 40%, transparent);
+}
+
+html[data-student-skin="nursing"][data-theme="light"] .student-space th {
+  background: color-mix(in srgb, var(--lw-primary) 92%, #064e3b);
+  color: #fff;
+}
+
+html[data-student-skin="nursing"] .student-space td {
+  border-bottom-color: var(--line);
+  font-size: 0.92rem;
+}
+
+html[data-student-skin="nursing"] .student-space tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+html[data-student-skin="nursing"] .student-space tbody tr:hover {
+  background: color-mix(in srgb, var(--lw-primary) 8%, transparent);
+}
+
+html[data-student-skin="nursing"] .student-space tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+}
+
+html[data-student-skin="nursing"] .student-space tbody tr:nth-child(even):hover {
+  background: color-mix(in srgb, var(--lw-primary) 10%, var(--surface-2));
+}
+
+/* ——— Theme toggle (Lightswind cool-theme / toggle-theme) ——— */
+html[data-student-skin="nursing"] .portal-theme-toggle {
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  color: var(--ink);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.2s var(--lw-ease);
+}
+
+html[data-student-skin="nursing"] .portal-theme-toggle:hover {
+  color: var(--lw-primary-2);
+  border-color: color-mix(in srgb, var(--lw-primary) 40%, var(--line));
+  background: var(--accent-soft);
+}
+
+html[data-student-skin="nursing"] .portal-theme-toggle:active {
+  transform: scale(0.96);
+}
+
+/* ——— Mobile drawer refinements ——— */
+@media (max-width: 767.98px) {
+  html[data-student-skin="nursing"] .portal-drawer {
+    background: color-mix(in srgb, var(--surface) 96%, #000);
+    border-right: 1px solid var(--line);
+    box-shadow: 18px 0 48px -20px rgba(0, 0, 0, 0.5);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer-head {
+    border-bottom-color: color-mix(in srgb, var(--lw-primary) 40%, var(--line));
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer-kicker {
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button,
+  html[data-student-skin="nursing"] .portal-drawer a {
+    position: relative;
+    border-radius: var(--lw-radius);
+    color: var(--muted);
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button:hover,
+  html[data-student-skin="nursing"] .portal-drawer a:hover {
+    background: color-mix(in srgb, var(--lw-primary) 8%, transparent);
+    color: var(--ink);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button[aria-pressed="true"] {
+    color: var(--lw-primary-2);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--lw-primary) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--lw-primary) 28%, transparent);
+  }
+
+  html[data-student-skin="nursing"] .portal-menu-btn {
+    border: 1px solid var(--line);
+    border-radius: var(--lw-radius);
+    background: var(--surface-2);
+  }
+}
+
+/* ——— Desktop Lightswind sidebar ——— */
+@media (min-width: 768px) {
+  html[data-student-skin="nursing"] .portal-stage,
+  html[data-student-skin="nursing"] .portal-phone {
+    display: block;
+    min-height: 100vh;
+    background: transparent;
+    color: inherit;
+  }
+
+  html[data-student-skin="nursing"] .portal-menu-btn,
+  html[data-student-skin="nursing"] .portal-edge,
+  html[data-student-skin="nursing"] .portal-backdrop {
+    display: none !important;
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    width: 17.5rem;
+    padding: 1.1rem 0.85rem 1.25rem;
+    overflow: hidden auto;
+    transform: none !important;
+    background: var(--surface);
+    color: var(--ink);
+    border-right: 1px solid var(--line);
+    box-shadow: 8px 0 32px -24px rgba(0, 0, 0, 0.35);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer-head {
+    margin: 0 0.35rem 1rem;
+    padding: 0.35rem 0.5rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer-head img {
+    background: color-mix(in srgb, var(--lw-primary) 18%, #fff);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer-kicker {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer-name {
+    margin: 0.2rem 0 0;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button,
+  html[data-student-skin="nursing"] .portal-drawer a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 2.65rem;
+    margin: 0 0 0.2rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--lw-radius);
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 0.22s ease,
+      color 0.22s ease,
+      border-color 0.22s ease,
+      transform 0.18s var(--lw-ease);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button:hover,
+  html[data-student-skin="nursing"] .portal-drawer a:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--lw-primary) 8%, transparent);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button[aria-pressed="true"] {
+    color: var(--lw-primary-2);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--lw-primary) 12%, transparent);
+    border-color: color-mix(in srgb, var(--lw-primary) 28%, transparent);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer button:active,
+  html[data-student-skin="nursing"] .portal-drawer a:active {
+    transform: scale(0.98);
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer svg {
+    width: 1.15rem;
+    height: 1.15rem;
+    flex: 0 0 auto;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  html[data-student-skin="nursing"] .student-space-cards {
+    display: none;
+  }
+
+  html[data-student-skin="nursing"] .student-space-bar {
+    width: min(72rem, calc(100% - 2rem - 17.5rem));
+    margin-left: calc(17.5rem + 1rem);
+    margin-right: auto;
+    border-radius: var(--lw-radius-lg);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  html[data-student-skin="nursing"] .student-space-main {
+    width: min(72rem, calc(100% - 2rem - 17.5rem));
+    margin-left: calc(17.5rem + 1rem);
+    margin-right: auto;
+  }
+
+  html[data-student-skin="nursing"] .student-space-bar-actions > a {
+    border-radius: var(--lw-radius);
+    font-weight: 650;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-student-skin="nursing"] .student-space-cards button,
+  html[data-student-skin="nursing"] .portal-drawer button,
+  html[data-student-skin="nursing"] .portal-drawer a {
+    transition: none;
+  }
+}

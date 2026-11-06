@@ -370,13 +370,19 @@
 }
 
 .student-space-table-wrap {
+  display: block;
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 
 .student-space table {
-  width: 100%;
+  width: max-content;
+  min-width: max(100%, 36rem);
   border-collapse: collapse;
-  min-width: 36rem;
 }
 
 .student-space th,

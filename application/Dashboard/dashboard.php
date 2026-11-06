@@ -336,9 +336,11 @@ if (!empty($explorerFragment)) {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=16" rel="stylesheet">
-  <link href="assets/student-portal-shell.css?v=9" rel="stylesheet">
-  <link href="assets/student-theme.css?v=14" rel="stylesheet">
+  <link href="assets/student-space.css?v=18" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=10" rel="stylesheet">
+  <link href="assets/student-theme.css?v=15" rel="stylesheet">
+  <link href="assets/student-lightswind.css?v=2" rel="stylesheet">
+  <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
   <link href="assets/skeleton.css?v=1" rel="stylesheet">
   <link href="assets/success-lottie.css?v=3" rel="stylesheet">
   <link href="assets/course-explorer.css?v=2" rel="stylesheet">
@@ -846,9 +848,20 @@ if (!empty($explorerFragment)) {
     function isPhoneShell() {
       return window.matchMedia('(max-width: 767.98px)').matches;
     }
+    function syncDesktopSidebar() {
+      if (!portal || !phone || isPhoneShell()) return;
+      phone.classList.remove('is-drawer-open');
+      portal.removeAttribute('inert');
+      portal.setAttribute('aria-hidden', 'false');
+      if (portalOpen) portalOpen.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('portal-lock');
+    }
     function setPortal(open) {
       if (!portal || !phone) return;
-      if (!isPhoneShell()) open = false;
+      if (!isPhoneShell()) {
+        syncDesktopSidebar();
+        return;
+      }
       phone.classList.toggle('is-drawer-open', open);
       portal.setAttribute('aria-hidden', open ? 'false' : 'true');
       if (open) portal.removeAttribute('inert');
@@ -860,8 +873,10 @@ if (!empty($explorerFragment)) {
       if (!isPhoneShell()) return;
       setPortal(!drawerOpen());
     });
+    syncDesktopSidebar();
     window.addEventListener('resize', function () {
-      if (!isPhoneShell()) setPortal(false);
+      if (!isPhoneShell()) syncDesktopSidebar();
+      else if (!drawerOpen()) setPortal(false);
     });
     if (backdrop) backdrop.addEventListener('click', function () { setPortal(false); });
     var drag = null;

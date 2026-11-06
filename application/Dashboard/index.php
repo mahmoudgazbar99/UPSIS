@@ -6,6 +6,71 @@ if (!logged_in()) {
 }
 require_login();
 
+function dashboard_url(int $page, string $search): string {
+    $query = ['page' => $page];
+    if ($search !== '') $query['search'] = $search;
+    return 'index.php?' . http_build_query($query);
+}
+
+function dashboard_student_row_html(array $student): string {
+    $cin = (string) ($student['cin_passeport'] ?? '');
+    $id = (int) ($student['id_etudiant'] ?? 0);
+    $arabic = trim(($student['nom_ar'] ?? '') . ' ' . ($student['prenom_ar'] ?? ''));
+    $groupLabel = trim((string) ($student['groupe_actuel'] ?? ''));
+    return '<tr class="dashboard-student-row">'
+        . '<td>' . e((string) ($student['num_inscription'] ?? '')) . '</td>'
+        . '<td><strong>' . e(($student['nom'] ?? '') . ' ' . ($student['prenom'] ?? '')) . '</strong>'
+        . '<span class="d-block text-secondary text-start" dir="rtl" lang="ar">' . e($arabic) . '</span>'
+        . '<small class="text-secondary">' . e((string) ($student['email'] ?? '')) . '</small></td>'
+        . '<td>' . e((string) ($student['nom_spec'] ?? '—')) . '</td>'
+        . '<td>' . e(level_label((string) ($student['niveau'] ?? ''))) . '</td>'
+        . '<td>' . e($groupLabel !== '' ? $groupLabel : '—') . '</td>'
+        . '<td>' . e($cin) . '</td>'
+        . '<td class="text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-1">'
+        . '<a class="btn btn-sm btn-outline-info" target="dashboard-content" href="attestation_inscription.php?embed=1&amp;cin=' . rawurlencode($cin) . '">Inscription</a>'
+        . '<a class="btn btn-sm btn-outline-warning" target="dashboard-content" href="attestation_presence.php?embed=1&amp;cin=' . rawurlencode($cin) . '">Présence</a>'
+        . '<a class="btn btn-sm btn-outline-success" target="dashboard-content" href="attestation_reussite.php?embed=1&amp;cin=' . rawurlencode($cin) . '">Réussite</a>'
+        . '<a class="btn btn-sm btn-outline-primary" target="dashboard-content" href="releve_notes.php?embed=1&amp;cin=' . rawurlencode($cin) . '">Relevé</a>'
+        . '<a class="btn btn-sm btn-outline-light" target="dashboard-content" href="inscription.php?embed=1&amp;id=' . $id . '">Modifier</a>'
+        . '</div></td></tr>';
+}
+
+function dashboard_student_results_html(array $students, string $search, int $totalStudents, int $page, int $totalPages): array {
+    if ($students) {
+        $rows = '';
+        foreach ($students as $student) {
+            $rows .= dashboard_student_row_html($student);
+        }
+    } else {
+        $empty = $search !== ''
+            ? 'Aucun étudiant ne correspond à cette recherche.'
+            : 'Aucun étudiant enregistré.';
+        $rows = '<tr class="dashboard-student-row"><td colspan="7" class="text-center text-secondary py-5">' . e($empty) . '</td></tr>';
+    }
+
+    $meta = '';
+    if ($search !== '') {
+        $meta .= '<p class="dashboard-search-feedback" aria-live="polite">'
+            . $totalStudents . ' résultat' . ($totalStudents > 1 ? 's' : '')
+            . ' pour « ' . e($search) . ' »</p>';
+    }
+    if ($totalStudents > 0) {
+        $meta .= '<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mt-3">'
+            . '<p class="text-secondary mb-0">' . $totalStudents . ' étudiant' . ($totalStudents > 1 ? 's' : '')
+            . ($search !== '' ? ' trouvé' . ($totalStudents > 1 ? 's' : '') : '')
+            . ' — page ' . $page . ' sur ' . $totalPages . '</p>'
+            . '<nav aria-label="Pagination"><ul class="pagination mb-0">'
+            . '<li class="page-item' . ($page <= 1 ? ' disabled' : '') . '">'
+            . '<a class="page-link" href="' . e(dashboard_url($page - 1, $search)) . '" data-student-page="' . max(1, $page - 1) . '">← Précédent</a></li>'
+            . '<li class="page-item disabled"><span class="page-link">' . $page . ' / ' . $totalPages . '</span></li>'
+            . '<li class="page-item' . ($page >= $totalPages ? ' disabled' : '') . '">'
+            . '<a class="page-link" href="' . e(dashboard_url($page + 1, $search)) . '" data-student-page="' . min($totalPages, $page + 1) . '">Suivant →</a></li>'
+            . '</ul></nav></div>';
+    }
+
+    return ['rows' => $rows, 'meta' => $meta];
+}
+
 $search = trim((string) ($_GET['search'] ?? ''));
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = 10;
@@ -37,6 +102,62 @@ $studentsQuery->bindValue(':limit', $perPage, PDO::PARAM_INT);
 $studentsQuery->bindValue(':offset', $offset, PDO::PARAM_INT);
 $studentsQuery->execute();
 $students = $studentsQuery->fetchAll();
+
+if ($students) {
+    $studentIds = array_values(array_unique(array_map(static fn(array $row): int => (int) ($row['id_etudiant'] ?? 0), $students)));
+    $studentIds = array_values(array_filter($studentIds, static fn(int $id): bool => $id > 0));
+    $groupByStudent = [];
+    if ($studentIds) {
+        $placeholders = implode(',', array_fill(0, count($studentIds), '?'));
+        $groupsQuery = db()->prepare(
+            'SELECT ge.id_etudiant, g.semestre, g.type_groupe, g.numero
+             FROM groupe_etudiant ge
+             INNER JOIN groupe g ON g.id_groupe = ge.id_groupe
+             WHERE ge.id_etudiant IN (' . $placeholders . ')
+             ORDER BY FIELD(g.type_groupe, "Cours", "TD", "TP"), g.semestre, g.numero'
+        );
+        $groupsQuery->execute($studentIds);
+        foreach ($groupsQuery->fetchAll() as $groupRow) {
+            $studentId = (int) ($groupRow['id_etudiant'] ?? 0);
+            if ($studentId <= 0 || isset($groupByStudent[$studentId])) {
+                continue;
+            }
+            $groupByStudent[$studentId] = trim(
+                (string) ($groupRow['semestre'] ?? '') . ' · ' . (string) ($groupRow['type_groupe'] ?? '') . ' ' . (string) ($groupRow['numero'] ?? '')
+            );
+        }
+    }
+    foreach ($students as &$studentRow) {
+        $studentRow['groupe_actuel'] = $groupByStudent[(int) ($studentRow['id_etudiant'] ?? 0)] ?? '';
+    }
+    unset($studentRow);
+}
+
+if (((string) ($_GET['ajax'] ?? '')) === 'students') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    if (!(is_admin() || is_scolarite())) {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'forbidden'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    $payload = dashboard_student_results_html($students, $search, $totalStudents, $page, $totalPages);
+    echo json_encode([
+        'ok' => true,
+        'search' => $search,
+        'page' => $page,
+        'total' => $totalStudents,
+        'totalPages' => $totalPages,
+        'url' => dashboard_url($page, $search),
+        'rows' => $payload['rows'],
+        'meta' => $payload['meta'],
+        'clearHtml' => $search !== ''
+            ? '<a class="btn btn-outline-light" href="index.php" data-student-search-clear>Effacer</a>'
+            : '',
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $macosIdentity = app_user_identity();
 $macosTeacherCount = 0;
 $macosGroupCount = 0;
@@ -145,12 +266,6 @@ if (is_finance()) {
     )->fetchColumn();
 }
 
-function dashboard_url(int $page, string $search): string {
-    $query = ['page' => $page];
-    if ($search !== '') $query['search'] = $search;
-    return 'index.php?' . http_build_query($query);
-}
-
 function dashboard_menu_item(
     string $href,
     string $title,
@@ -251,8 +366,8 @@ function dashboard_menu(): void {
         </button>
         <div class="dashboard-menu-sub" hidden>
           <?php
-          dashboard_menu_item('structure_academique.php?embed=1', 'Structure académique', 'Programmes, niveaux, périodes', 'groups', '');
           dashboard_menu_item('etablissement.php?embed=1', 'Nom de l’établissement', 'Modifier les noms français et arabe des attestations', 'accounts', '');
+          dashboard_menu_item('structure_academique.php?embed=1', 'Structure académique', 'Programmes, niveaux, périodes', 'groups', '');
           dashboard_menu_item('specialites.php?embed=1', 'Spécialités', 'Créer ou désactiver', 'enroll', '');
           dashboard_menu_item('frais_scolarite.php?embed=1', 'Frais de scolarité', 'Montant et devise', 'finance', '');
           dashboard_menu_item('politique_promotion.php?embed=1', 'Seuil de promotion', 'Admission et niveau final', 'promo', '');
@@ -340,6 +455,8 @@ function dashboard_menu(): void {
   </div>
   <span class="clarity-nav-edge" data-clarity-nav-edge aria-hidden="true"></span>
 </section>
+<div class="staff-nav-backdrop" data-staff-nav-close aria-hidden="true"></div>
+<span class="staff-nav-edge" data-staff-nav-edge aria-hidden="true"></span>
 <?php }
 
 $dashboardLayoutRole = (string) ($_SESSION['user_role'] ?? '');
@@ -357,12 +474,12 @@ $dashboardIntro = is_finance()
     : (is_teacher()
         ? 'Vos cours du jour, feuilles de présence et notes à compléter.'
         : 'Effectifs, demandes en attente et activité récente de l’établissement.');
-page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=6');
+page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=7');
 ?>
 <div class="dashboard-page-intro d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 page-title-block">
   <div><p class="eyebrow"><?= e($dashboardRoleLabel) ?></p><h1 class="display-6 fw-bold mb-1">Tableau de bord</h1><p class="text-secondary mb-0"><?= e($dashboardIntro) ?></p></div>
 </div>
-<div class="dashboard-workspace is-nav-collapsed">
+<div class="dashboard-workspace" data-dashboard-workspace>
 <?php dashboard_menu(); ?>
 <section id="dashboard-content" class="dashboard-content-panel" aria-label="Contenu de la page sélectionnée" data-dashboard-user="<?= $dashboardLayoutUserId ?>" data-dashboard-role="<?= e($dashboardLayoutRole) ?>">
   <div class="dashboard-layout-toolbar no-print" data-dashboard-layout-toolbar role="region" aria-label="Réorganisation du tableau de bord" hidden>
@@ -546,32 +663,20 @@ page_head('Tableau de bord', 'home', 'assets/dashboard-editor.css?v=6');
             <?php if (!$macosActivity): ?><li class="text-secondary">Aucune activité récente.</li><?php endif; ?>
           </ul>
         </article>
+      <?php $studentResults = dashboard_student_results_html($students, $search, $totalStudents, $page, $totalPages); ?>
       <article class="card app-card dashboard-student-search" data-dashboard-widget="student-search" aria-label="Recherche d’un étudiant"><div class="card-body">
-      <form class="row g-2 align-items-end" method="get">
-        <div class="col-md-9"><label class="form-label mb-1" for="search">Rechercher un étudiant</label><input class="form-control" id="search" name="search" value="<?= e($search) ?>" placeholder="Nom, prénom, CIN, passeport ou inscription"></div>
-        <div class="col-md-3 d-flex gap-2"><button class="btn btn-primary flex-grow-1">Rechercher</button><?php if ($search !== ''): ?><a class="btn btn-outline-light" href="index.php">Effacer</a><?php endif; ?></div>
+      <form class="row g-2 align-items-end" method="get" data-student-search-form action="index.php" autocomplete="off">
+        <div class="col-md-9"><label class="form-label mb-1" for="search">Rechercher un étudiant</label><input class="form-control" id="search" name="search" value="<?= e($search) ?>" placeholder="Nom, prénom, CIN, passeport ou inscription" data-student-search-input inputmode="search" enterkeyhint="search"></div>
+        <div class="col-md-3 d-flex gap-2" data-student-search-actions><button class="btn btn-primary flex-grow-1" type="submit">Rechercher</button><?php if ($search !== ''): ?><a class="btn btn-outline-light" href="index.php" data-student-search-clear>Effacer</a><?php endif; ?></div>
       </form>
     </div></article>
-    <article class="card app-card dashboard-student-list" data-dashboard-widget="student-list" aria-label="Liste des étudiants"><div class="card-body p-0 table-responsive"><table class="table table-dark table-hover align-middle mb-0">
-      <thead><tr><th scope="col">Inscription</th><th scope="col">Étudiant</th><th scope="col">Spécialité</th><th scope="col">Niveau</th><th scope="col">CIN / Passeport</th><th scope="col" class="text-end">Documents</th></tr></thead>
-      <tbody>
-      <?php foreach ($students as $student): ?><tr>
-        <td><?= e($student['num_inscription']) ?></td>
-        <td>
-          <strong><?= e($student['nom'] . ' ' . $student['prenom']) ?></strong>
-          <span class="d-block text-secondary text-start" dir="rtl" lang="ar"><?= e(trim(($student['nom_ar'] ?? '') . ' ' . ($student['prenom_ar'] ?? ''))) ?></span>
-          <small class="text-secondary"><?= e($student['email']) ?></small>
-        </td>
-        <td><?= e($student['nom_spec'] ?? '—') ?></td><td><?= e(level_label($student['niveau'])) ?></td><td><?= e($student['cin_passeport']) ?></td>
-        <td class="text-end"><div class="d-inline-flex flex-wrap justify-content-end gap-1"><a class="btn btn-sm btn-outline-info" target="dashboard-content" href="attestation_inscription.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Inscription</a><a class="btn btn-sm btn-outline-warning" target="dashboard-content" href="attestation_presence.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Présence</a><a class="btn btn-sm btn-outline-success" target="dashboard-content" href="attestation_reussite.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Réussite</a><a class="btn btn-sm btn-outline-primary" target="dashboard-content" href="releve_notes.php?embed=1&amp;cin=<?= urlencode($student['cin_passeport']) ?>">Relevé</a><a class="btn btn-sm btn-outline-light" target="dashboard-content" href="inscription.php?embed=1&amp;id=<?= (int) $student['id_etudiant'] ?>">Modifier</a></div></td>
-      </tr><?php endforeach; ?>
-      <?php if (!$students): ?><tr><td colspan="6" class="text-center text-secondary py-5"><?= $search !== '' ? 'Aucun étudiant ne correspond à cette recherche.' : 'Aucun étudiant enregistré.' ?></td></tr><?php endif; ?>
-      </tbody>
+    <article class="card app-card dashboard-student-list" data-dashboard-widget="student-list" data-student-results aria-label="Liste des étudiants" aria-busy="false">
+      <div class="card-body p-0 table-responsive"><table class="table table-dark table-hover align-middle mb-0">
+      <thead><tr><th scope="col">Inscription</th><th scope="col">Étudiant</th><th scope="col">Spécialité</th><th scope="col">Niveau</th><th scope="col">Groupe actuel</th><th scope="col">CIN / Passeport</th><th scope="col" class="text-end">Documents</th></tr></thead>
+      <tbody data-student-results-body><?= $studentResults['rows'] ?></tbody>
     </table></div>
-    <div class="card-body pt-3">
-    <?php if ($search !== ''): ?><p class="dashboard-search-feedback" aria-live="polite"><?= $totalStudents ?> résultat<?= $totalStudents > 1 ? 's' : '' ?> pour « <?= e($search) ?> »</p><?php endif; ?>
-    <?php if ($totalStudents > 0): ?><div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mt-3"><p class="text-secondary mb-0"><?= $totalStudents ?> étudiant<?= $totalStudents > 1 ? 's' : '' ?><?= $search !== '' ? ' trouvé' . ($totalStudents > 1 ? 's' : '') : '' ?> — page <?= $page ?> sur <?= $totalPages ?></p><nav aria-label="Pagination"><ul class="pagination mb-0"><li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>"><a class="page-link" href="<?= e(dashboard_url($page - 1, $search)) ?>">← Précédent</a></li><li class="page-item disabled"><span class="page-link"><?= $page ?> / <?= $totalPages ?></span></li><li class="page-item <?= $page >= $totalPages ? 'disabled' : '' ?>"><a class="page-link" href="<?= e(dashboard_url($page + 1, $search)) ?>">Suivant →</a></li></ul></nav></div><?php endif; ?>
-    </div></article>
+    <div class="card-body pt-3" data-student-results-meta><?= $studentResults['meta'] ?></div>
+    </article>
   </div>
   <?php elseif (is_teacher()): ?>
   <div class="dashboard-home-panel teacher-home">
@@ -880,28 +985,250 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
 <?php endif; ?>
 <script>
 (function () {
-  var workspace = document.querySelector('.dashboard-workspace');
+  var workspace = document.querySelector('[data-dashboard-workspace]') || document.querySelector('.dashboard-workspace');
   var toggle = document.querySelector('[data-clarity-nav-toggle]');
   var edge = document.querySelector('[data-clarity-nav-edge]');
-  if (!workspace || !toggle) return;
-  var key = 'clarity-nav-collapsed';
-  function collapsed() { return workspace.classList.contains('is-nav-collapsed'); }
-  function setCollapsed(on) {
-    workspace.classList.toggle('is-nav-collapsed', on);
-    toggle.setAttribute('aria-expanded', on ? 'false' : 'true');
-    var label = on ? 'Ouvrir la navigation' : 'Réduire la navigation';
-    toggle.title = label;
-    var hidden = toggle.querySelector('.visually-hidden');
-    if (hidden) hidden.textContent = label;
-    try { localStorage.setItem(key, on ? '1' : '0'); } catch (error) {}
+  var menu = document.querySelector('.dashboard-menu') || (workspace ? workspace.querySelector('.dashboard-menu') : null);
+  var list = menu ? menu.querySelector('.dashboard-menu-list') : null;
+  var phoneOpen = document.querySelector('[data-staff-nav-open]');
+  var phoneClose = document.querySelector('[data-staff-nav-close]');
+  var phoneEdge = document.querySelector('[data-staff-nav-edge]');
+  if (!workspace || !menu) return;
+
+  function sidebarTheme() {
+    var body = document.body;
+    return body.classList.contains('theme-clarity') || body.classList.contains('theme-original');
   }
-  try { setCollapsed(localStorage.getItem(key) !== '0'); } catch (error) { setCollapsed(true); }
-  toggle.addEventListener('click', function () { setCollapsed(!collapsed()); });
+  function isOriginal() {
+    return document.body.classList.contains('theme-original');
+  }
+  function storageKey() {
+    return document.body.classList.contains('theme-clarity') ? 'clarity-nav-collapsed' : 'original-nav-collapsed';
+  }
+  function scrollKey() {
+    return document.body.classList.contains('theme-clarity') ? 'clarity-sidebar-scroll' : 'original-sidebar-scroll';
+  }
+  /* Original: whole sidebar scrolls (header + items). Clarity: list scrolls. */
+  function scrollPort() {
+    if (isOriginal()) return menu;
+    return list || menu;
+  }
+  function collapsed() {
+    return workspace.classList.contains('is-nav-collapsed');
+  }
+  function setCollapsed(on, animate) {
+    var next = !!on;
+    if (collapsed() === next) {
+      if (toggle) toggle.setAttribute('aria-expanded', next ? 'false' : 'true');
+      return;
+    }
+    if (animate) {
+      workspace.classList.add('is-nav-toggling');
+      window.setTimeout(function () {
+        workspace.classList.remove('is-nav-toggling');
+      }, 520);
+    }
+    workspace.classList.toggle('is-nav-collapsed', next);
+    if (toggle) {
+      toggle.setAttribute('aria-expanded', next ? 'false' : 'true');
+      var label = next ? 'Ouvrir la navigation' : 'Réduire la navigation';
+      toggle.title = label;
+      var hidden = toggle.querySelector('.visually-hidden');
+      if (hidden) hidden.textContent = label;
+    }
+    try { localStorage.setItem(storageKey(), next ? '1' : '0'); } catch (error) {}
+  }
+
+  function isPhoneShell() {
+    return window.matchMedia('(max-width: 991.98px)').matches;
+  }
+  function drawerOpen() {
+    return document.body.classList.contains('is-staff-drawer-open');
+  }
+  function setDrawer(open) {
+    if (!isOriginal() || !isPhoneShell()) {
+      document.body.classList.remove('is-staff-drawer-open');
+      if (phoneOpen) phoneOpen.setAttribute('aria-expanded', 'false');
+      menu.style.transform = '';
+      menu.style.transition = '';
+      if (phoneClose) {
+        phoneClose.style.opacity = '';
+        phoneClose.style.transition = '';
+        phoneClose.setAttribute('aria-hidden', 'true');
+      }
+      return;
+    }
+    document.body.classList.toggle('is-staff-drawer-open', !!open);
+    if (phoneClose) phoneClose.setAttribute('aria-hidden', open ? 'false' : 'true');
+    if (phoneOpen) phoneOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  function syncFromStorage() {
+    if (!sidebarTheme()) {
+      workspace.classList.remove('is-nav-collapsed', 'is-nav-toggling');
+      return;
+    }
+    try {
+      if (document.body.classList.contains('theme-clarity')) {
+        setCollapsed(localStorage.getItem(storageKey()) !== '0', false);
+      } else {
+        setCollapsed(localStorage.getItem(storageKey()) === '1', false);
+      }
+    } catch (error) {
+      setCollapsed(document.body.classList.contains('theme-clarity'), false);
+    }
+  }
+  function restoreScroll() {
+    var port = scrollPort();
+    if (!port || !sidebarTheme()) return;
+    try {
+      var y = parseInt(localStorage.getItem(scrollKey()) || '0', 10);
+      if (!isNaN(y) && y > 0) port.scrollTop = y;
+    } catch (error) {}
+  }
+  function persistScroll() {
+    var port = scrollPort();
+    if (!port || !sidebarTheme()) return;
+    try { localStorage.setItem(scrollKey(), String(port.scrollTop || 0)); } catch (error) {}
+  }
+
+  function syncTopbarHeight() {
+    if (!isOriginal()) return;
+    var chrome = document.querySelector('body > .app-chrome.navbar');
+    if (!chrome) return;
+    var h = Math.ceil(chrome.getBoundingClientRect().height);
+    if (h > 0) document.body.style.setProperty('--lw-topbar-h', h + 'px');
+  }
+  syncTopbarHeight();
+  window.addEventListener('resize', syncTopbarHeight);
+
+  syncFromStorage();
+  restoreScroll();
+  requestAnimationFrame(function () {
+    syncTopbarHeight();
+    restoreScroll();
+  });
+
+  var scrollTimer = 0;
+  function onSidebarScroll() {
+    window.clearTimeout(scrollTimer);
+    scrollTimer = window.setTimeout(persistScroll, 80);
+  }
+  if (menu) menu.addEventListener('scroll', onSidebarScroll, { passive: true });
+  if (list) list.addEventListener('scroll', onSidebarScroll, { passive: true });
+
+  if (toggle) {
+    toggle.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!sidebarTheme() || isPhoneShell()) return;
+      setCollapsed(!collapsed(), true);
+    });
+  }
+
+  if (phoneOpen) {
+    phoneOpen.addEventListener('click', function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!isOriginal() || !isPhoneShell()) return;
+      setDrawer(!drawerOpen());
+    });
+  }
+  if (phoneClose) {
+    phoneClose.addEventListener('click', function () { setDrawer(false); });
+  }
+  document.addEventListener('click', function (event) {
+    if (!isOriginal() || !isPhoneShell() || !drawerOpen()) return;
+    var item = event.target.closest('.dashboard-menu-item');
+    if (!item || item.hasAttribute('data-accounts-toggle')) return;
+    window.setTimeout(function () { setDrawer(false); }, 40);
+  });
+  window.addEventListener('resize', function () {
+    syncTopbarHeight();
+    if (!isPhoneShell()) setDrawer(false);
+  });
+  setDrawer(false);
+
+  /* Phone swipe drawer (student-like) for Original */
+  var phoneDrag = null;
+  function clearPhoneDrag() {
+    menu.style.transition = '';
+    menu.style.transform = '';
+    if (phoneClose) {
+      phoneClose.style.transition = '';
+      phoneClose.style.opacity = '';
+    }
+  }
+  function beginPhoneDrag(event) {
+    if (!isOriginal() || !isPhoneShell()) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    phoneDrag = { id: event.pointerId, x: event.clientX, y: event.clientY, open: drawerOpen(), axis: '' };
+  }
+  function movePhoneDrag(event) {
+    if (!phoneDrag || event.pointerId !== phoneDrag.id) return;
+    var dx = event.clientX - phoneDrag.x;
+    var dy = event.clientY - phoneDrag.y;
+    if (!phoneDrag.axis) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      phoneDrag.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (phoneDrag.axis !== 'x') {
+        phoneDrag = null;
+        return;
+      }
+    }
+    var width = menu.getBoundingClientRect().width || 280;
+    var next = phoneDrag.open
+      ? Math.max(-width, Math.min(0, dx))
+      : Math.max(-width, Math.min(0, -width + Math.max(0, dx)));
+    menu.style.transition = 'none';
+    menu.style.transform = 'translateX(' + next + 'px)';
+    if (phoneClose) {
+      phoneClose.style.transition = 'none';
+      phoneClose.style.opacity = String(Math.max(0, Math.min(1, 1 + next / width)));
+    }
+  }
+  function endPhoneDrag(event) {
+    if (!phoneDrag || event.pointerId !== phoneDrag.id) return;
+    var dx = event.clientX - phoneDrag.x;
+    var wasOpen = phoneDrag.open;
+    var moved = phoneDrag.axis === 'x' && Math.abs(dx) > 8;
+    clearPhoneDrag();
+    phoneDrag = null;
+    if (!moved) return;
+    setDrawer(wasOpen ? dx > -72 : dx > 48);
+  }
+  if (phoneEdge) {
+    phoneEdge.addEventListener('pointerdown', beginPhoneDrag);
+  }
+  menu.addEventListener('pointerdown', function (event) {
+    if (!isOriginal() || !isPhoneShell()) return;
+    if (event.target.closest('a, button, input, select, textarea')) return;
+    beginPhoneDrag(event);
+  });
+  window.addEventListener('pointermove', movePhoneDrag);
+  window.addEventListener('pointerup', endPhoneDrag);
+  window.addEventListener('pointercancel', endPhoneDrag);
+
+  /* Only react to theme style class changes — never to module-open / random body classes. */
+  var lastStyle = ['theme-original', 'theme-clarity', 'theme-glass', 'theme-macos', 'theme-institut']
+    .filter(function (name) { return document.body.classList.contains(name); })
+    .join(' ');
+  new MutationObserver(function () {
+    var nextStyle = ['theme-original', 'theme-clarity', 'theme-glass', 'theme-macos', 'theme-institut']
+      .filter(function (name) { return document.body.classList.contains(name); })
+      .join(' ');
+    if (nextStyle === lastStyle) return;
+    lastStyle = nextStyle;
+    syncFromStorage();
+    restoreScroll();
+    setDrawer(false);
+  }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
+  /* Swipe collapse only for Mac bureau desktop */
   var startX = 0;
   var startY = 0;
   var tracking = false;
   function begin(event) {
-    if (!document.body.classList.contains('theme-clarity')) return;
+    if (!document.body.classList.contains('theme-clarity') || isPhoneShell()) return;
     if (event.button !== undefined && event.button !== 0) return;
     tracking = true;
     startX = event.clientX;
@@ -909,9 +1236,7 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   }
   if (edge) edge.addEventListener('pointerdown', begin);
   workspace.addEventListener('pointerdown', function (event) {
-    if (!document.body.classList.contains('theme-clarity') || tracking) return;
-    var menu = workspace.querySelector('.dashboard-menu');
-    if (!menu) return;
+    if (!document.body.classList.contains('theme-clarity') || tracking || isPhoneShell()) return;
     var rect = menu.getBoundingClientRect();
     var inside = event.clientX >= rect.left && event.clientX <= rect.right;
     if (!inside) return;
@@ -924,10 +1249,147 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
     var dx = event.clientX - startX;
     var dy = event.clientY - startY;
     if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
-    setCollapsed(dx < 0);
+    setCollapsed(dx < 0, true);
   });
   window.addEventListener('pointercancel', function () { tracking = false; });
+
+  window.addEventListener('beforeunload', persistScroll);
 })();
 </script>
 <script src="assets/dashboard-editor.js?v=5" defer></script>
+<?php if (is_admin() || is_scolarite()): ?>
+<script>
+(function () {
+  var form = document.querySelector('[data-student-search-form]');
+  var input = document.querySelector('[data-student-search-input]');
+  var actions = document.querySelector('[data-student-search-actions]');
+  var results = document.querySelector('[data-student-results]');
+  var body = document.querySelector('[data-student-results-body]');
+  var meta = document.querySelector('[data-student-results-meta]');
+  if (!form || !input || !results || !body || !meta) return;
+
+  var timer = 0;
+  var seq = 0;
+  var currentSearch = String(input.value || '').trim();
+  var currentPage = 1;
+
+  try {
+    var params = new URLSearchParams(window.location.search);
+    currentPage = Math.max(1, parseInt(params.get('page') || '1', 10) || 1);
+  } catch (error) {}
+
+  function scrollHost() {
+    return document.querySelector('.dashboard-content-panel') || document.scrollingElement || document.documentElement;
+  }
+
+  function paintClear(html) {
+    if (!actions) return;
+    var existing = actions.querySelector('[data-student-search-clear]');
+    if (existing) existing.remove();
+    if (!html) return;
+    actions.insertAdjacentHTML('beforeend', html);
+  }
+
+  function apply(data, preserveScroll) {
+    var host = scrollHost();
+    var y = preserveScroll ? host.scrollTop : host.scrollTop;
+    results.classList.remove('is-updating');
+    results.classList.add('is-settling');
+    body.innerHTML = data.rows || '';
+    meta.innerHTML = data.meta || '';
+    paintClear(data.clearHtml || '');
+    currentSearch = String(data.search || '');
+    currentPage = Number(data.page) || 1;
+    if (String(input.value || '').trim() !== currentSearch) {
+      /* keep typed value while debounced requests settle */
+    }
+    try {
+      if (data.url) history.replaceState({ studentSearch: true }, '', data.url);
+    } catch (error) {}
+    window.requestAnimationFrame(function () {
+      host.scrollTop = y;
+      window.setTimeout(function () {
+        results.classList.remove('is-settling');
+      }, 420);
+    });
+  }
+
+  function load(search, page, opts) {
+    opts = opts || {};
+    var requestId = ++seq;
+    var query = new URLSearchParams();
+    query.set('ajax', 'students');
+    query.set('page', String(Math.max(1, page || 1)));
+    if (search) query.set('search', search);
+    results.classList.add('is-updating');
+    results.setAttribute('aria-busy', 'true');
+    return fetch('index.php?' + query.toString(), {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+      .then(function (response) { return response.ok ? response.json() : null; })
+      .then(function (data) {
+        if (requestId !== seq) return;
+        results.setAttribute('aria-busy', 'false');
+        if (!data || !data.ok) {
+          results.classList.remove('is-updating');
+          return;
+        }
+        apply(data, opts.preserveScroll !== false);
+      })
+      .catch(function () {
+        if (requestId !== seq) return;
+        results.setAttribute('aria-busy', 'false');
+        results.classList.remove('is-updating');
+      });
+  }
+
+  function schedule(search, page) {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(function () {
+      load(search, page || 1, { preserveScroll: true });
+    }, 280);
+  }
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    window.clearTimeout(timer);
+    currentSearch = String(input.value || '').trim();
+    currentPage = 1;
+    load(currentSearch, 1, { preserveScroll: true });
+  });
+
+  input.addEventListener('input', function () {
+    var next = String(input.value || '').trim();
+    currentPage = 1;
+    schedule(next, 1);
+  });
+
+  document.addEventListener('click', function (event) {
+    var clear = event.target.closest('[data-student-search-clear]');
+    if (clear && form.contains(clear)) {
+      event.preventDefault();
+      window.clearTimeout(timer);
+      input.value = '';
+      currentSearch = '';
+      currentPage = 1;
+      load('', 1, { preserveScroll: true });
+      input.focus();
+      return;
+    }
+    var pageLink = event.target.closest('[data-student-page]');
+    if (!pageLink || !results.contains(pageLink)) return;
+    if (pageLink.closest('.disabled')) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    var page = parseInt(pageLink.getAttribute('data-student-page') || '1', 10) || 1;
+    currentPage = page;
+    load(currentSearch, page, { preserveScroll: true });
+  });
+})();
+</script>
+<?php endif; ?>
 <?php page_foot(); ?>
