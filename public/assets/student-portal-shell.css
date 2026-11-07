@@ -67,7 +67,10 @@
     position: sticky;
     top: 0;
     z-index: 40;
-    gap: 10px;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
     margin: 0;
     padding: max(10px, env(safe-area-inset-top)) 12px 10px;
     border: 0;
@@ -77,19 +80,60 @@
     box-shadow: none;
   }
 
-  .portal-phone .student-space-bar p,
+  .portal-phone .student-space-bar > div:not(.student-space-bar-actions) {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .portal-phone .student-space-bar-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+    width: auto;
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
+
+  .portal-phone .student-space-bar > div > p,
   .portal-phone .student-space-bar-actions > a {
     display: none;
   }
 
-  .portal-phone .student-space-bar img {
+  .portal-phone .student-inbox-empty,
+  .portal-phone .student-inbox-title,
+  .portal-phone .student-inbox-error {
+    display: block;
+  }
+
+  .portal-phone .student-space-bar > img {
     width: 28px;
   }
 
+  .portal-phone .student-bar-logo {
+    width: 22px;
+    height: 22px;
+  }
+
+  .portal-phone .lw-avatar {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+
+  .portal-phone .lw-avatar img {
+    width: 100%;
+    height: 100%;
+  }
+
   .portal-phone .student-space-bar strong {
+    display: block;
+    overflow: hidden;
     font-family: "Outfit", sans-serif;
     font-size: 1rem;
     font-weight: 600;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   html[data-theme="light"] .portal-stage {
@@ -283,6 +327,21 @@
     object-fit: contain;
     border-radius: 12px;
     background: rgba(45, 212, 191, 0.16);
+  }
+
+  .portal-drawer-head .student-bar-logo {
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    border-radius: 0.4rem;
+    background: #fff;
+  }
+
+  .portal-drawer-head .lw-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    background: transparent;
   }
 
   .portal-drawer-head .portal-drawer-name {

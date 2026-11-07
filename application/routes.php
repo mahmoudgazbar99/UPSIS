@@ -27,6 +27,7 @@ return [
     'identite.php' => 'Scolarite/identite.php',
     'etablissement.php' => 'Scolarite/etablissement.php',
     'etudiant_inbox.php' => 'Scolarite/etudiant_inbox.php',
+    'student_photo.php' => 'Scolarite/student_photo.php',
 
     'enseignants.php' => 'Enseignant/enseignants.php',
     'affecter_enseignant.php' => 'Enseignant/affecter_enseignant.php',

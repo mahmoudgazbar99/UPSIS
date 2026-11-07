@@ -22,6 +22,7 @@ function app_is_student_request(): bool
         'connexion_etudiant.php',
         'creer_espace_etudiant.php',
         'etudiant_inbox.php',
+        'student_photo.php',
     ];
     if (in_array($script, $studentPages, true)) {
         return true;
@@ -764,7 +765,7 @@ function enforce_student_route_isolation(): void {
     if ($script === 'account_status.php' && ($_GET['espace'] ?? '') === 'etudiant') {
         return;
     }
-    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php'], true)) {
+    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'student_photo.php', 'stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php'], true)) {
         return;
     }
     header('Location: dashboard.php');
@@ -1000,6 +1001,30 @@ function student_notification_mark_read(PDO $pdo, int $studentId, int $notificat
     );
     $query->execute([$notificationId, $studentId]);
     return $query->rowCount() > 0;
+}
+
+function student_notification_delete(PDO $pdo, int $studentId, int $notificationId): bool
+{
+    student_notifications_ensure_tables($pdo);
+    if ($studentId <= 0 || $notificationId <= 0) {
+        return false;
+    }
+    $query = $pdo->prepare(
+        'DELETE FROM etudiant_notifications WHERE id_notif = ? AND id_etudiant = ?'
+    );
+    $query->execute([$notificationId, $studentId]);
+    return $query->rowCount() > 0;
+}
+
+function student_notifications_delete_all(PDO $pdo, int $studentId): int
+{
+    student_notifications_ensure_tables($pdo);
+    if ($studentId <= 0) {
+        return 0;
+    }
+    $query = $pdo->prepare('DELETE FROM etudiant_notifications WHERE id_etudiant = ?');
+    $query->execute([$studentId]);
+    return $query->rowCount();
 }
 
 function student_attestation_board(PDO $pdo, int $studentId): array

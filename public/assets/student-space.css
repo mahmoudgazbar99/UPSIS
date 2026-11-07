@@ -33,9 +33,66 @@
   border-radius: 1.3rem;
 }
 
-.student-space-bar img {
+.student-space-bar > img,
+.student-bar-logo {
   width: 3.2rem;
   height: auto;
+}
+
+.student-bar-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.portal-drawer-head .student-bar-logo {
+  margin-left: auto;
+}
+
+.student-bar-logo {
+  width: 1.7rem;
+  height: 1.7rem;
+  object-fit: contain;
+  border-radius: 0.4rem;
+  background: #fff;
+}
+
+.lw-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, #fff 55%, transparent);
+  background: color-mix(in srgb, #059669 22%, #0f172a);
+  color: #ecfdf5;
+  box-shadow: 0 0 0 2px color-mix(in srgb, #34d399 55%, transparent);
+  font-family: "Outfit", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.lw-avatar-lg {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: 1.15rem;
+}
+
+.lw-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-photo-field {
+  display: grid;
+  gap: 0.55rem;
 }
 
 .student-space-bar p {
@@ -544,17 +601,177 @@
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
+.student-inbox-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0.35rem 0.45rem;
+}
+
 .student-inbox-title {
-  margin: 0 0.55rem 0.45rem;
+  margin: 0;
   color: #f3d7a1;
   font-size: 0.78rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
+.student-inbox-clear {
+  min-height: 44px;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  border-radius: 0.7rem;
+  background: transparent;
+  color: #fecaca;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.student-inbox-clear:hover,
+.student-inbox-clear:focus-visible {
+  background: rgba(185, 28, 28, 0.35);
+  color: #fff;
+}
+
+.student-inbox-clear[hidden] {
+  display: none !important;
+}
+
+.student-inbox-error {
+  margin: 0 0.45rem 0.45rem;
+  color: #fecaca;
+  font-size: 0.82rem;
+}
+
+.student-inbox-error[hidden] {
+  display: none !important;
+}
+
+.student-inbox-row {
+  position: relative;
+  margin-bottom: 0.4rem;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: transparent;
+  touch-action: pan-y;
+}
+
+.student-inbox-delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  width: 0;
+  margin: 0;
+  padding: 0 1rem 0 0.6rem;
+  border: 0;
+  border-radius: 0;
+  background: #b91c1c;
+  color: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  opacity: 1;
+  pointer-events: none;
+  box-sizing: border-box;
+  transition: width 0.48s cubic-bezier(0.34, 1.28, 0.4, 1), background-color 0.2s ease;
+}
+
+.student-inbox-delete svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
+.student-inbox-row.is-armed .student-inbox-delete {
+  background: #991b1b;
+}
+
+.student-inbox-row.is-armed .student-inbox-delete svg {
+  transform: scale(1.08);
+}
+
+.student-inbox-delete:focus-visible {
+  width: 8.5rem;
+  pointer-events: auto;
+  outline: 2px solid #fff;
+  outline-offset: -6px;
+}
+
+.student-inbox-row .student-inbox-item,
+.student-inbox-row .student-inbox-item.is-unread,
+.student-inbox-row .student-inbox-item.is-read,
+.student-inbox-row .student-inbox-item:hover {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0;
+  background: #2a2622;
+  border-radius: 0.85rem;
+  touch-action: pan-y;
+  transition: transform 0.48s cubic-bezier(0.34, 1.28, 0.4, 1), opacity 0.28s ease, background-color 0.2s ease;
+}
+
+.student-inbox-row .student-inbox-item.is-unread {
+  box-shadow: inset 3px 0 0 #34d399;
+}
+
+html[data-theme="light"] .student-inbox-menu {
+  background: #e7e2da;
+  color: #1c1917;
+}
+
+html[data-theme="light"] .student-inbox-empty {
+  color: rgba(28, 25, 23, 0.42);
+}
+
+html[data-theme="light"] .student-inbox-row .student-inbox-item,
+html[data-theme="light"] .student-inbox-row .student-inbox-item.is-unread,
+html[data-theme="light"] .student-inbox-row .student-inbox-item.is-read,
+html[data-theme="light"] .student-inbox-row .student-inbox-item:hover {
+  background: #d4cec4;
+  color: #1c1917;
+}
+
+.student-inbox-row.is-dragging .student-inbox-item,
+.student-inbox-row.is-dragging .student-inbox-delete {
+  transition: none !important;
+}
+
+.student-inbox-row.is-leaving {
+  overflow: visible;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.student-inbox-row.is-leaving .student-inbox-item {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 1, 1), opacity 0.3s ease, scale 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-inbox-row,
+  .student-inbox-row .student-inbox-item,
+  .student-inbox-delete {
+    transition: none !important;
+  }
+}
+
 .student-inbox-empty {
-  margin: 0.4rem 0.55rem 0.55rem;
-  color: rgba(247, 243, 234, 0.7);
+  margin: 0.85rem 0.55rem 1rem;
+  color: rgba(247, 243, 234, 0.42);
+  font-size: 0.92rem;
+  font-weight: 500;
+  text-align: center;
 }
 
 .student-inbox-item {
@@ -592,7 +809,6 @@
 
 .student-inbox-item:hover {
   background: rgba(255, 255, 255, 0.12);
-  transform: translateX(6px);
 }
 
 .student-mail-modal .modal-content {

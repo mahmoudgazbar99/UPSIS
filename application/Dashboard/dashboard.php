@@ -7,6 +7,7 @@ require_once app_path('support/emploi_pdf.php');
 require_once app_path('support/course_library.php');
 require_once app_path('support/course_explorer_view.php');
 require_once app_path('support/student_portal.php');
+require_once app_path('support/stage_service.php');
 
 /**
  * Ferme une session qui n'est pas une session étudiante valide.
@@ -89,6 +90,7 @@ $portalSwapGroups = [];
 $portalPartners = [];
 $portalContacts = [];
 $portalMine = ['groups' => [], 'appointments' => [], 'complaints' => []];
+$summerBoard = ['open' => [], 'mine' => []];
 $explorerFragment = false;
 
 try {
@@ -167,19 +169,22 @@ try {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && str_starts_with($portalAction, 'portal_')) {
         verify_csrf();
         $portalError = match ($portalAction) {
-            'portal_profile' => student_portal_update_profile($pdo, $studentId, trim((string) ($_POST['email'] ?? '')), trim((string) ($_POST['telephone'] ?? '')), trim((string) ($_POST['adresse'] ?? ''))),
+            'portal_profile' => student_portal_update_profile($pdo, $studentId, trim((string) ($_POST['email'] ?? '')), trim((string) ($_POST['telephone'] ?? '')), trim((string) ($_POST['adresse'] ?? '')), (array) ($_FILES['photo'] ?? [])),
             'portal_group' => student_portal_submit_group($pdo, $studentId, (int) $profile['id_spec'], (string) ($_POST['request_type'] ?? ''), (int) ($_POST['id_groupe'] ?? 0), (int) ($_POST['id_partenaire'] ?? 0), trim((string) ($_POST['commentaire'] ?? ''))),
             'portal_psy' => student_portal_submit_appointment($pdo, $studentId, (string) ($_POST['jour'] ?? ''), (string) ($_POST['heure'] ?? ''), trim((string) ($_POST['motif'] ?? ''))),
             'portal_complaint' => student_portal_submit_complaint($pdo, $studentId, (string) ($_POST['categorie'] ?? ''), trim((string) ($_POST['description'] ?? ''))),
+            'portal_stage' => stage_student_submit_summer($studentId),
             default => 'Action inconnue.',
         };
         $back = match ($portalAction) {
             'portal_profile' => 'profil',
             'portal_group' => 'groupe',
             'portal_psy' => 'psy',
+            'portal_stage' => 'stage',
             default => 'reclamation',
         };
-        flash($portalError === '' ? 'success' : 'danger', $portalError === '' ? 'Enregistré.' : $portalError);
+        $portalOk = $portalAction === 'portal_stage' ? 'Votre demande est envoyée.' : 'Enregistré.';
+        flash($portalError === '' ? 'success' : 'danger', $portalError === '' ? $portalOk : $portalError);
         header('Location: dashboard.php?panel=' . $back);
         exit;
     }
@@ -236,6 +241,11 @@ try {
     $portalPartners = $portalGroup ? student_portal_swap_students($pdo, array_column($portalSwapGroups, 'id_groupe'), (int) $profile['id_spec'], $studentId) : [];
     $portalContacts = student_portal_contacts($pdo, $studentId);
     $portalMine = student_portal_requests($pdo, $studentId);
+    try {
+        $summerBoard = stage_student_summer_board((int) $studentId);
+    } catch (Throwable $exception) {
+        error_log('dashboard: summer stage unavailable: ' . $exception->getMessage());
+    }
 
     // Étape 5 — Cours publiés : une panne de la bibliothèque ne doit pas bloquer l’espace.
     try {
@@ -251,6 +261,16 @@ try {
 }
 
 $studentName = trim((string) (($profile['prenom'] ?? '') . ' ' . ($profile['nom'] ?? '')));
+$studentInitials = mb_strtoupper(mb_substr((string) ($profile['prenom'] ?? ''), 0, 1) . mb_substr((string) ($profile['nom'] ?? ''), 0, 1));
+if ($studentInitials === '') {
+    $studentInitials = 'ET';
+}
+$studentPhoto = '';
+try {
+    $studentPhoto = student_photo_src(db(), (int) $studentId);
+} catch (Throwable $exception) {
+    $studentPhoto = '';
+}
 $timetableBySemester = [];
 foreach ($timetable as $session) {
     $timetableBySemester[(string) $session['semestre']][(string) $session['jour']][] = $session;
@@ -259,7 +279,7 @@ $gradesBySemester = [];
 foreach ($grades as $grade) {
     $gradesBySemester[(string) $grade['semestre']][] = $grade;
 }
-$panels = ['profil', 'emploi', 'cours', 'notes', 'plan', 'absences', 'groupe', 'psy', 'contacts', 'reclamation'];
+$panels = ['profil', 'emploi', 'cours', 'notes', 'plan', 'absences', 'groupe', 'psy', 'contacts', 'reclamation', 'stage'];
 if ($attestationOpen) {
     $panels[] = 'attestation';
 }
@@ -336,9 +356,9 @@ if (!empty($explorerFragment)) {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=18" rel="stylesheet">
-  <link href="assets/student-portal-shell.css?v=10" rel="stylesheet">
-  <link href="assets/student-theme.css?v=15" rel="stylesheet">
+  <link href="assets/student-space.css?v=29" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=15" rel="stylesheet">
+  <link href="assets/student-theme.css?v=18" rel="stylesheet">
   <link href="assets/student-lightswind.css?v=2" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
   <link href="assets/skeleton.css?v=1" rel="stylesheet">
@@ -366,17 +386,24 @@ if (!empty($explorerFragment)) {
           <span class="student-inbox-badge" id="studentInboxBadge"<?= ((int) $inbox['unread'] > 0) ? '' : ' hidden' ?>><?= (int) $inbox['unread'] > 99 ? '99+' : (int) $inbox['unread'] ?></span>
         </button>
         <div class="dropdown-menu dropdown-menu-end student-inbox-menu" aria-labelledby="studentInboxToggle">
-          <p class="student-inbox-title">Messages</p>
+          <div class="student-inbox-head">
+            <p class="student-inbox-title">Messages</p>
+            <button type="button" class="student-inbox-clear" id="studentInboxClear"<?= $inbox['messages'] ? '' : ' hidden' ?>>Effacer tout</button>
+          </div>
+          <p class="student-inbox-error" id="studentInboxError" hidden role="alert"></p>
           <div id="studentInboxList">
             <?php if (!$inbox['messages']): ?>
-              <p class="student-inbox-empty">Aucun message</p>
+              <p class="student-inbox-empty">No notifications yet</p>
             <?php else: ?>
               <?php foreach ($inbox['messages'] as $note): ?>
                 <?php $noteLink = is_string($note['link'] ?? null) ? $note['link'] : ''; ?>
-                <button type="button" class="student-inbox-item<?= ((int) $note['is_read'] === 1) ? ' is-read' : ' is-unread' ?>" data-notif-id="<?= (int) $note['id'] ?>"<?= $noteLink !== '' ? ' data-notif-link="' . e($noteLink) . '"' : '' ?>>
-                  <strong><?php if (dashboard_course_link($noteLink)): ?><i class="bi bi-folder2-open me-1" aria-hidden="true"></i><?php endif; ?><?= e($note['sujet']) ?></strong>
-                  <span><?= e($note['date']) ?></span>
-                </button>
+                <div class="student-inbox-row" data-notif-id="<?= (int) $note['id'] ?>">
+                  <button type="button" class="student-inbox-delete" data-notif-delete="<?= (int) $note['id'] ?>" aria-label="Supprimer ce message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M8 7l1 13h6l1-13"/></svg><span>Supprimer</span></button>
+                  <button type="button" class="student-inbox-item<?= ((int) $note['is_read'] === 1) ? ' is-read' : ' is-unread' ?>" data-notif-id="<?= (int) $note['id'] ?>"<?= $noteLink !== '' ? ' data-notif-link="' . e($noteLink) . '"' : '' ?>>
+                    <strong><?php if (dashboard_course_link($noteLink)): ?><i class="bi bi-folder2-open me-1" aria-hidden="true"></i><?php endif; ?><?= e($note['sujet']) ?></strong>
+                    <span><?= e($note['date']) ?></span>
+                  </button>
+                </div>
               <?php endforeach; ?>
             <?php endif; ?>
           </div>
@@ -389,10 +416,19 @@ if (!empty($explorerFragment)) {
   <div class="portal-backdrop" data-portal-close></div>
   <nav class="portal-drawer" id="portalDrawer" aria-label="Navigation étudiante" aria-hidden="true" inert>
     <div class="portal-drawer-head">
-      <img src="<?= e(institution_logo_src()) ?>" alt="" width="44" height="44">
-      <div>
-        <p class="portal-drawer-kicker">Espace étudiant</p>
-        <strong class="portal-drawer-name"><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
+      <span class="lw-avatar" aria-hidden="true">
+        <?php if ($studentPhoto !== ''): ?>
+          <img src="<?= e($studentPhoto) ?>" alt="">
+        <?php else: ?>
+          <span class="lw-avatar-fallback"><?= e($studentInitials) ?></span>
+        <?php endif; ?>
+      </span>
+      <div class="student-bar-identity">
+        <div>
+          <p class="portal-drawer-kicker">Espace étudiant</p>
+          <strong class="portal-drawer-name"><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></strong>
+        </div>
+        <img class="student-bar-logo" src="<?= e(institution_logo_src()) ?>" alt="" width="28" height="28">
       </div>
     </div>
     <button type="button" data-panel="profil"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3"/><path d="M6 19c1-3 3-4.5 6-4.5s5 1.5 6 4.5"/></svg><span>Profil</span></button>
@@ -408,7 +444,7 @@ if (!empty($explorerFragment)) {
     <?php if ($attestationOpen): ?>
     <button type="button" data-panel="attestation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-2.4L7 20z"/></svg><span>Demandes</span></button>
     <?php endif; ?>
-    <a href="stage_demande.php?espace=etudiant"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9l7-4 7 4v10"/><path d="M9 19v-5h6v5"/></svg><span>Stage d’été</span></a>
+    <button type="button" data-panel="stage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9l7-4 7 4v10"/><path d="M9 19v-5h6v5"/></svg><span>Stage d’été</span></button>
     <a href="logout.php?espace=etudiant">Déconnexion</a>
   </nav>
   <p class="visually-hidden" id="studentLive" aria-live="polite"></p>
@@ -466,9 +502,14 @@ if (!empty($explorerFragment)) {
         <strong>Contacts et e-mails</strong>
         <small><?= count($portalContacts) ?> enseignant<?= count($portalContacts) > 1 ? 's' : '' ?></small>
       </button>
+      <button type="button" data-panel="stage" aria-pressed="<?= $openPanel === 'stage' ? 'true' : 'false' ?>">
+        <span>11</span>
+        <strong>Stage d’été</strong>
+        <small><?= count($summerBoard['mine']) ?> demande<?= count($summerBoard['mine']) > 1 ? 's' : '' ?></small>
+      </button>
       <?php if ($attestationOpen): ?>
       <button type="button" data-panel="attestation" aria-pressed="<?= $openPanel === 'attestation' ? 'true' : 'false' ?>">
-        <span>11</span>
+        <span>12</span>
         <strong>Attestation</strong>
         <small>Demande de présence</small>
       </button>
@@ -509,13 +550,23 @@ if (!empty($explorerFragment)) {
               <?php else: foreach ($publishedStages as $stage): ?>
                 <p><?= e($stage['organisme']) ?><?= $stage['service'] ? ' · ' . e((string) $stage['service']) : '' ?> · <?= e($stage['date_debut'] . ' → ' . $stage['date_fin']) ?> · <?= e(stage_statuses()[(string) $stage['statut']] ?? (string) $stage['statut']) ?> · <a href="stage_dossier.php?id=<?= (int) $stage['id_placement'] ?>&amp;espace=etudiant">Dossier documentaire du stage</a></p>
               <?php endforeach; endif; ?>
-              <p><a href="stage_demande.php?espace=etudiant">Demande de stage d’été</a></p>
+              <p><a href="dashboard.php?panel=stage">Demande de stage d’été</a></p>
             </div>
           </article>
         </div>
-        <form method="post" class="student-space-form">
+        <form method="post" enctype="multipart/form-data" class="student-space-form">
           <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="action" value="portal_profile">
+          <label class="student-photo-field">Photo de profil
+            <span class="lw-avatar lw-avatar-lg">
+              <?php if ($studentPhoto !== ''): ?>
+                <img src="<?= e($studentPhoto) ?>" alt="">
+              <?php else: ?>
+                <span class="lw-avatar-fallback"><?= e($studentInitials) ?></span>
+              <?php endif; ?>
+            </span>
+            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp">
+          </label>
           <label>E-mail<input type="email" name="email" value="<?= e((string) $profile['email']) ?>" required></label>
           <label>Téléphone<input name="telephone" value="<?= e((string) $profile['num_tel']) ?>" required></label>
           <label>Adresse<textarea name="adresse" required><?= e((string) $profile['adresse']) ?></textarea></label>
@@ -694,6 +745,57 @@ if (!empty($explorerFragment)) {
         </ul>
       <?php endif; ?>
     </section>
+    <section class="student-space-sheet<?= $openPanel === 'stage' ? ' is-entering' : '' ?>" data-sheet="stage"<?= $openPanel === 'stage' ? '' : ' hidden' ?>>
+      <h1>Stage d’été</h1>
+      <?php if ($summerBoard['open']): ?>
+      <form method="post" enctype="multipart/form-data" action="dashboard.php?panel=stage" class="student-space-form">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+        <input type="hidden" name="action" value="portal_stage">
+        <label for="id_campagne">Campagne ouverte</label>
+        <select id="id_campagne" name="id_campagne" required>
+          <?php foreach ($summerBoard['open'] as $row): ?>
+            <option value="<?= (int) $row['id_campagne'] ?>"><?= e(($row['titre'] !== '' ? $row['titre'] : 'Campagne') . ' · ' . $row['annee_label']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <label for="organisme_nom">Établissement d’accueil</label>
+        <input id="organisme_nom" name="organisme_nom" required maxlength="180">
+        <label for="ville">Ville</label>
+        <input id="ville" name="ville" maxlength="80">
+        <label for="domaine">Domaine</label>
+        <input id="domaine" name="domaine" maxlength="160">
+        <label for="contact">Contact de l’organisme</label>
+        <input id="contact" name="contact" maxlength="180">
+        <label for="date_debut">Début</label>
+        <input id="date_debut" name="date_debut" type="date" required>
+        <label for="date_fin">Fin</label>
+        <input id="date_fin" name="date_fin" type="date" required>
+        <label for="missions">Missions prévues</label>
+        <textarea id="missions" name="missions" rows="4" maxlength="1000"></textarea>
+        <label for="justificatif">Lettre d’acceptation (PDF)</label>
+        <input id="justificatif" name="justificatif" type="file" accept="application/pdf,.pdf">
+        <button type="submit">Envoyer la demande</button>
+      </form>
+      <?php else: ?>
+      <p class="student-space-lead">Aucune campagne de stage d’été n’est ouverte.</p>
+      <?php endif; ?>
+      <?php if ($summerBoard['mine']): ?>
+      <h2>Mes demandes</h2>
+      <ul class="student-contact-list">
+        <?php foreach ($summerBoard['mine'] as $row): ?>
+          <li class="student-contact-card">
+            <div>
+              <strong><?= e((string) $row['organisme_nom']) ?></strong>
+              <span><?= e((string) $row['statut']) ?></span>
+              <?php if ((string) $row['stored_name'] !== ''): ?>
+                <a href="stage_demande.php?espace=etudiant&amp;piece=<?= (int) $row['id_demande'] ?>">Justificatif</a>
+              <?php endif; ?>
+            </div>
+          </li>
+        <?php endforeach; ?>
+      </ul>
+      <?php endif; ?>
+    </section>
+
     <section class="student-space-sheet<?= $openPanel === 'cours' ? ' is-entering' : '' ?>" data-sheet="cours"<?= $openPanel === 'cours' ? '' : ' hidden' ?>>
       <h1>Mes cours</h1>
       <p class="student-space-lead">Les cours publiés par vos enseignants pour vos matières.</p>
@@ -1282,6 +1384,7 @@ if (!empty($explorerFragment)) {
     var csrf = <?= json_encode(csrf_token(), JSON_UNESCAPED_UNICODE) ?>;
     var inbox = <?= json_encode($inbox, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
     var listEl = document.getElementById('studentInboxList');
+    var clearEl = document.getElementById('studentInboxClear');
     var badgeEl = document.getElementById('studentInboxBadge');
     var toggleEl = document.getElementById('studentInboxToggle');
     var modalEl = document.getElementById('studentMailModal');
@@ -1308,20 +1411,38 @@ if (!empty($explorerFragment)) {
     function noteLink(note) {
       return note && typeof note.link === 'string' ? note.link : '';
     }
+    var swiping = false;
+    function setClearVisible(hasMessages) {
+      if (!clearEl) return;
+      clearEl.hidden = !hasMessages;
+    }
     function renderList(messages) {
       if (!listEl) return;
+      if (swiping) return;
       if (!messages || !messages.length) {
-        listEl.innerHTML = '<p class="student-inbox-empty">Aucun message</p>';
+        listEl.innerHTML = '<p class="student-inbox-empty">No notifications yet</p>';
+        setClearVisible(false);
         return;
       }
+      setClearVisible(true);
       var fragment = document.createDocumentFragment();
       messages.forEach(function (note) {
         var unread = Number(note.is_read) !== 1;
         var link = noteLink(note);
+        var id = String(Number(note.id));
+        var row = document.createElement('div');
+        row.className = 'student-inbox-row';
+        row.setAttribute('data-notif-id', id);
+        var remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'student-inbox-delete';
+        remove.setAttribute('data-notif-delete', id);
+        remove.setAttribute('aria-label', 'Supprimer ce message');
+        remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M8 7l1 13h6l1-13"/></svg><span>Supprimer</span>';
         var item = document.createElement('button');
         item.type = 'button';
         item.className = 'student-inbox-item' + (unread ? ' is-unread' : ' is-read');
-        item.setAttribute('data-notif-id', String(Number(note.id)));
+        item.setAttribute('data-notif-id', id);
         if (link !== '') item.setAttribute('data-notif-link', link);
         var title = document.createElement('strong');
         if (COURSE_LINK.test(link)) {
@@ -1335,7 +1456,9 @@ if (!empty($explorerFragment)) {
         date.textContent = note.date == null ? '' : String(note.date);
         item.appendChild(title);
         item.appendChild(date);
-        fragment.appendChild(item);
+        row.appendChild(remove);
+        row.appendChild(item);
+        fragment.appendChild(row);
       });
       listEl.textContent = '';
       listEl.appendChild(fragment);
@@ -1382,10 +1505,10 @@ if (!empty($explorerFragment)) {
       }
       return null;
     }
-    function markRead(id) {
+    function inboxPost(fields) {
       var body = new URLSearchParams();
       body.set('csrf_token', csrf);
-      body.set('id_notif', String(id));
+      Object.keys(fields).forEach(function (key) { body.set(key, String(fields[key])); });
       return fetch('etudiant_inbox.php', {
         method: 'POST',
         credentials: 'same-origin',
@@ -1395,8 +1518,45 @@ if (!empty($explorerFragment)) {
         body: body.toString()
       })
         .then(function (response) { return response.ok ? response.json() : null; })
-        .then(function (data) { if (data) applyInbox(data); })
-        .catch(function () {});
+        .then(function (data) { if (data) applyInbox(data); return data; })
+        .catch(function () { return null; });
+    }
+    function markRead(id) {
+      return inboxPost({ id_notif: String(id) });
+    }
+    function dropLocal(id) {
+      var key = String(id);
+      if (inbox && inbox.messages) {
+        inbox.messages = inbox.messages.filter(function (note) { return String(note.id) !== key; });
+        inbox.unread = inbox.messages.filter(function (note) { return Number(note.is_read) !== 1; }).length;
+        inbox.stamp = String(inbox.unread) + ':local:' + inbox.messages.length;
+        stamp = inbox.stamp;
+      }
+      if (listEl) {
+        var row = listEl.querySelector('.student-inbox-row[data-notif-id="' + key + '"]');
+        if (row) row.remove();
+        if (!listEl.querySelector('.student-inbox-row')) {
+          listEl.innerHTML = '<p class="student-inbox-empty">No notifications yet</p>';
+          setClearVisible(false);
+        }
+      }
+      setBadge(inbox ? inbox.unread : 0);
+    }
+    var deletingIds = {};
+    function deleteNote(id) {
+      var key = String(id);
+      if (deletingIds[key]) return Promise.resolve(false);
+      deletingIds[key] = true;
+      return inboxPost({ action: 'delete', id_notif: key }).then(function (data) {
+        delete deletingIds[key];
+        return !!data;
+      }, function () {
+        delete deletingIds[key];
+        return false;
+      });
+    }
+    function clearNotes() {
+      return inboxPost({ action: 'clear' });
     }
     function openMessage(id) {
       var note = findMessage(id);
@@ -1426,10 +1586,252 @@ if (!empty($explorerFragment)) {
       if (!note || Number(note.is_read) === 1) return;
       markRead(id);
     }
+    if (clearEl) {
+      clearEl.addEventListener('click', function () {
+        if (!inbox || !inbox.messages || !inbox.messages.length) return;
+        if (!window.confirm('Effacer tous les messages ?')) return;
+        clearNotes();
+      });
+    }
     if (listEl) {
+      var drag = null;
+      var errorEl = document.getElementById('studentInboxError');
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      function showInboxError(message) {
+        if (!errorEl) return;
+        errorEl.hidden = !message;
+        errorEl.textContent = message || '';
+      }
+      function dragPoint(event) {
+        if (event.touches && event.touches[0]) return event.touches[0];
+        if (event.changedTouches && event.changedTouches[0]) return event.changedTouches[0];
+        return event;
+      }
+      function restoreRow(row) {
+        var face = row.querySelector('.student-inbox-item');
+        var action = row.querySelector('.student-inbox-delete');
+        row.classList.remove('is-dragging', 'is-armed', 'is-leaving');
+        row.style.height = '';
+        row.style.marginBottom = '';
+        row.style.transition = '';
+        row.style.transform = '';
+        row.style.opacity = '';
+        if (face) {
+          face.dataset.swiped = '';
+          face.style.transform = '';
+          face.style.opacity = '';
+          face.style.transition = '';
+        }
+        if (action) {
+          action.style.opacity = '';
+          action.style.width = '';
+          action.style.transform = '';
+          action.style.transition = '';
+        }
+        swiping = false;
+        if (listEl && !listEl.querySelector('.student-inbox-row.is-leaving')) {
+          listEl.style.overflow = '';
+          var menu = listEl.closest('.student-inbox-menu');
+          if (menu) menu.style.overflow = '';
+        }
+      }
+      function finishRemoval(row) {
+        var id = row.getAttribute('data-notif-id');
+        if (inbox && inbox.messages) {
+          inbox.messages = inbox.messages.filter(function (note) { return String(note.id) !== String(id); });
+          inbox.unread = inbox.messages.filter(function (note) { return Number(note.is_read) !== 1; }).length;
+          setBadge(inbox.unread);
+        }
+        row.remove();
+        if (!listEl.querySelector('.student-inbox-row')) {
+          listEl.innerHTML = '<p class="student-inbox-empty">No notifications yet</p>';
+          setClearVisible(false);
+        }
+        swiping = false;
+        if (!listEl.querySelector('.student-inbox-row.is-leaving')) {
+          listEl.style.overflow = '';
+          var menu = listEl.closest('.student-inbox-menu');
+          if (menu) menu.style.overflow = '';
+        }
+      }
+      function commitDelete(row, fromX) {
+        if (!row || row.dataset.deleting === '1') return;
+        var id = row.getAttribute('data-notif-id');
+        var face = row.querySelector('.student-inbox-item');
+        var action = row.querySelector('.student-inbox-delete');
+        var from = typeof fromX === 'number' ? fromX : 0;
+        row.dataset.deleting = '1';
+        if (face) face.dataset.swiped = '1';
+        swiping = true;
+        showInboxError('');
+        function afterMotion() {
+          return deleteNote(id).then(function (ok) {
+            row.dataset.deleting = '';
+            if (ok) {
+              finishRemoval(row);
+              return;
+            }
+            restoreRow(row);
+            showInboxError('Impossible de supprimer ce message. Réessayez.');
+          });
+        }
+        if (reduceMotion) {
+          afterMotion();
+          return;
+        }
+        var height = row.getBoundingClientRect().height;
+        var offLeft = -(row.getBoundingClientRect().right + 32);
+        row.classList.add('is-leaving', 'is-armed');
+        row.classList.remove('is-dragging');
+        row.style.overflow = 'visible';
+        row.style.zIndex = '4';
+        listEl.style.overflow = 'visible';
+        var menu = listEl.closest('.student-inbox-menu');
+        if (menu) menu.style.overflow = 'visible';
+        if (face) {
+          face.style.transition = 'none';
+          face.style.transform = 'translate3d(' + from + 'px,0,0)';
+          face.style.opacity = '1';
+        }
+        if (action) {
+          action.style.transition = 'none';
+          action.style.opacity = '1';
+        }
+        window.requestAnimationFrame(function () {
+          var travel = 'transform .52s cubic-bezier(.4,0,.15,1), opacity .52s linear';
+          if (face) {
+            face.style.transition = travel;
+            face.style.transform = 'translate3d(' + offLeft + 'px,0,0) scale(.96)';
+            face.style.opacity = '0';
+          }
+          if (action) {
+            action.style.transition = travel;
+            action.style.transform = 'translate3d(' + offLeft + 'px,0,0)';
+            action.style.opacity = '0';
+          }
+        });
+        window.setTimeout(function () {
+          if (!row.isConnected) return;
+          row.style.height = height + 'px';
+          row.style.transition = 'height .28s ease, margin-bottom .28s ease';
+          window.requestAnimationFrame(function () {
+            row.style.height = '0px';
+            row.style.marginBottom = '0px';
+          });
+          window.setTimeout(afterMotion, 280);
+        }, 520);
+      }
+      function dragStart(event) {
+        if (drag || event.target.closest('[data-notif-delete]')) return;
+        if (event.type === 'mousedown' && event.button !== 0) return;
+        var face = event.target.closest('.student-inbox-item');
+        var row = face && face.closest('.student-inbox-row');
+        if (!face || !row || row.dataset.deleting === '1') return;
+        var point = dragPoint(event);
+        drag = {
+          face: face,
+          row: row,
+          action: row.querySelector('.student-inbox-delete'),
+          id: row.getAttribute('data-notif-id'),
+          x: point.clientX,
+          y: point.clientY,
+          dx: 0,
+          axis: '',
+          lastX: point.clientX,
+          lastT: performance.now(),
+          velocity: 0
+        };
+      }
+      function dragMove(event) {
+        if (!drag) return;
+        var point = dragPoint(event);
+        var nextX = point.clientX - drag.x;
+        var nextY = point.clientY - drag.y;
+        var now = performance.now();
+        var dt = Math.max(16, now - drag.lastT);
+        drag.velocity = (point.clientX - drag.lastX) / dt;
+        drag.lastX = point.clientX;
+        drag.lastT = now;
+        if (!drag.axis) {
+          if (Math.abs(nextX) < 8 && Math.abs(nextY) < 8) return;
+          drag.axis = Math.abs(nextX) > Math.abs(nextY) + 4 ? 'x' : 'y';
+          if (drag.axis === 'y') {
+            drag = null;
+            return;
+          }
+          drag.row.classList.add('is-dragging');
+          drag.face.style.transition = 'none';
+          if (drag.action) drag.action.style.transition = 'none';
+          swiping = true;
+        }
+        if (event.cancelable) event.preventDefault();
+        var width = drag.row.clientWidth || 1;
+        drag.dx = Math.max(-width, Math.min(0, nextX));
+        drag.face.style.transform = 'translate3d(' + drag.dx + 'px,0,0)';
+        if (drag.action) drag.action.style.width = Math.abs(drag.dx) + 'px';
+        drag.row.classList.toggle('is-armed', drag.dx <= -width * 0.9);
+      }
+      function dragEnd() {
+        if (!drag) return;
+        var face = drag.face;
+        var row = drag.row;
+        var action = drag.action;
+        var dx = drag.dx;
+        var velocity = drag.velocity;
+        var width = row.clientWidth || 1;
+        var moved = drag.axis === 'x';
+        var commit = moved && dx <= -width * 0.9;
+        drag = null;
+        row.classList.remove('is-dragging');
+        if (!moved) {
+          swiping = false;
+          return;
+        }
+        face.dataset.swiped = '1';
+        if (commit) {
+          commitDelete(row, dx);
+          return;
+        }
+        face.style.transition = '';
+        face.style.transform = 'translate3d(0,0,0)';
+        if (action) {
+          action.style.transition = '';
+          action.style.width = '0px';
+        }
+        row.classList.remove('is-armed');
+        window.setTimeout(function () {
+          if (row.dataset.deleting === '1') return;
+          face.dataset.swiped = '';
+          face.style.transform = '';
+          swiping = false;
+        }, 480);
+      }
+      listEl.addEventListener('touchstart', dragStart, { passive: true });
+      listEl.addEventListener('touchmove', dragMove, { passive: false });
+      listEl.addEventListener('touchend', dragEnd);
+      listEl.addEventListener('touchcancel', dragEnd);
+      listEl.addEventListener('mousedown', function (event) {
+        dragStart(event);
+        if (!drag) return;
+        function moving(ev) { dragMove(ev); }
+        function ending() {
+          window.removeEventListener('mousemove', moving);
+          window.removeEventListener('mouseup', ending);
+          dragEnd();
+        }
+        window.addEventListener('mousemove', moving);
+        window.addEventListener('mouseup', ending);
+      });
       listEl.addEventListener('click', function (event) {
-        var item = event.target.closest('[data-notif-id]');
-        if (!item) return;
+        var remove = event.target.closest('[data-notif-delete]');
+        if (remove) {
+          event.preventDefault();
+          event.stopPropagation();
+          commitDelete(remove.closest('.student-inbox-row'));
+          return;
+        }
+        var item = event.target.closest('.student-inbox-item[data-notif-id]');
+        if (!item || item.dataset.swiped === '1') return;
         var id = item.getAttribute('data-notif-id');
         var link = item.getAttribute('data-notif-link') || '';
         if (COURSE_LINK.test(link)) {
@@ -1437,6 +1839,25 @@ if (!empty($explorerFragment)) {
           return;
         }
         openMessage(id);
+      });
+      listEl.addEventListener('focusin', function (event) {
+        var remove = event.target.closest('[data-notif-delete]');
+        if (!remove) return;
+        var row = remove.closest('.student-inbox-row');
+        var face = row && row.querySelector('.student-inbox-item');
+        if (!face || row.dataset.deleting === '1') return;
+        face.style.transform = 'translate3d(-8.5rem,0,0)';
+        remove.style.opacity = '1';
+      });
+      listEl.addEventListener('focusout', function (event) {
+        var remove = event.target.closest('[data-notif-delete]');
+        if (!remove) return;
+        var row = remove.closest('.student-inbox-row');
+        if (!row || row.classList.contains('is-dragging') || row.dataset.deleting === '1') return;
+        window.setTimeout(function () {
+          if (row.contains(document.activeElement)) return;
+          restoreRow(row);
+        }, 40);
       });
     }
     function tick() {

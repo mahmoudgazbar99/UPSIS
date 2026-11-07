@@ -97,6 +97,10 @@ if (!$studentSpace) {
     header('Location: stage_bureau.php?section=ete' . (app_is_embedded() ? '&embed=1' : ''));
     exit;
 }
+if ((int) ($_GET['piece'] ?? 0) <= 0) {
+    header('Location: dashboard.php?panel=stage');
+    exit;
+}
 ?>
 <!doctype html>
 <html lang="fr">

@@ -318,9 +318,13 @@ html[data-student-skin="nursing"] .student-inbox-toggle[aria-expanded="true"] {
 html[data-student-skin="nursing"] .student-inbox-menu,
 html[data-student-skin="nursing"] .student-mail-modal .modal-content {
   border-color: var(--line-strong);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 78%, #fff);
   color: var(--ink);
   box-shadow: var(--shadow);
+}
+
+html[data-student-skin="nursing"][data-theme="light"] .student-inbox-menu {
+  background: color-mix(in srgb, var(--surface) 86%, #1c1917);
 }
 
 html[data-student-skin="nursing"] .student-inbox-item.is-unread {
@@ -334,6 +338,30 @@ html[data-student-skin="nursing"] .student-inbox-item {
 
 html[data-student-skin="nursing"] .student-inbox-item:hover {
   background: var(--accent-soft);
+}
+
+html[data-student-skin="nursing"] .student-inbox-clear {
+  border-color: color-mix(in srgb, #b91c1c 55%, var(--line));
+  color: #b91c1c;
+}
+
+html[data-student-skin="nursing"][data-theme="dark"] .student-inbox-clear,
+html[data-student-skin="nursing"]:not([data-theme="light"]) .student-inbox-clear {
+  color: #fecaca;
+}
+
+html[data-student-skin="nursing"] .student-inbox-row .student-inbox-item,
+html[data-student-skin="nursing"] .student-inbox-row .student-inbox-item.is-unread,
+html[data-student-skin="nursing"] .student-inbox-row .student-inbox-item.is-read,
+html[data-student-skin="nursing"] .student-inbox-row .student-inbox-item:hover {
+  background: color-mix(in srgb, var(--surface) 72%, #fff);
+}
+
+html[data-student-skin="nursing"][data-theme="light"] .student-inbox-row .student-inbox-item,
+html[data-student-skin="nursing"][data-theme="light"] .student-inbox-row .student-inbox-item.is-unread,
+html[data-student-skin="nursing"][data-theme="light"] .student-inbox-row .student-inbox-item.is-read,
+html[data-student-skin="nursing"][data-theme="light"] .student-inbox-row .student-inbox-item:hover {
+  background: color-mix(in srgb, var(--surface) 84%, #1c1917);
 }
 
 html[data-student-skin="nursing"] .student-mail-ribbon {

@@ -460,6 +460,73 @@ function stage_service_store_pdf(array $file): array
     return ['stored' => $stored, 'size' => $size];
 }
 
+function stage_student_summer_board(int $studentId): array
+{
+    stage_service_ensure();
+    $open = db()->query(
+        "SELECT c.id_campagne, c.titre, c.annee_label
+         FROM stage_campagne c
+         JOIN stage_type t ON t.id_type = c.id_type
+         WHERE c.statut = 'ouverte' AND t.circuit = 'etudiant'
+         ORDER BY c.date_debut"
+    )->fetchAll();
+    $mine = [];
+    if ($studentId > 0) {
+        $query = db()->prepare('SELECT id_demande, organisme_nom, statut, stored_name, created_at FROM stage_demande WHERE id_etudiant = ? ORDER BY created_at DESC');
+        $query->execute([$studentId]);
+        $mine = $query->fetchAll();
+    }
+    return ['open' => $open, 'mine' => $mine];
+}
+
+function stage_student_submit_summer(int $studentId): string
+{
+    stage_service_ensure();
+    $campaignId = (int) ($_POST['id_campagne'] ?? 0);
+    $campaign = db()->prepare(
+        'SELECT c.id_campagne FROM stage_campagne c
+         JOIN stage_type t ON t.id_type = c.id_type
+         WHERE c.id_campagne = ? AND c.statut = ? AND t.circuit = ?'
+    );
+    $campaign->execute([$campaignId, 'ouverte', 'etudiant']);
+    if (!$campaign->fetch()) {
+        return 'Cette campagne de stage d’été n’est pas ouverte.';
+    }
+    $start = (string) ($_POST['date_debut'] ?? '');
+    $end = (string) ($_POST['date_fin'] ?? '');
+    $host = trim((string) ($_POST['organisme_nom'] ?? ''));
+    if ($host === '' || $start === '' || $end === '') {
+        return 'Indiquez l’établissement d’accueil et les dates.';
+    }
+    try {
+        $storedName = '';
+        if ((int) (($_FILES['justificatif']['error'] ?? UPLOAD_ERR_NO_FILE)) !== UPLOAD_ERR_NO_FILE) {
+            $storedName = stage_service_store_pdf((array) $_FILES['justificatif'])['stored'];
+        }
+        db()->prepare(
+            'INSERT INTO stage_demande (id_campagne, id_etudiant, organisme_nom, ville, domaine, contact, date_debut, date_fin, missions, stored_name)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        )->execute([
+            $campaignId,
+            $studentId,
+            mb_substr($host, 0, 180),
+            mb_substr(trim((string) ($_POST['ville'] ?? '')), 0, 80),
+            mb_substr(trim((string) ($_POST['domaine'] ?? '')), 0, 160),
+            mb_substr(trim((string) ($_POST['contact'] ?? '')), 0, 180),
+            $start,
+            $end,
+            mb_substr(trim((string) ($_POST['missions'] ?? '')), 0, 1000),
+            $storedName,
+        ]);
+    } catch (InvalidArgumentException $exception) {
+        return $exception->getMessage();
+    } catch (Throwable $exception) {
+        error_log('stage_student_submit_summer: ' . $exception->getMessage());
+        return 'La demande n’a pas pu être enregistrée.';
+    }
+    return '';
+}
+
 function stage_service_model_path(string $stored): string
 {
     if (!preg_match('/^[a-f0-9]{32}\.pdf$/', $stored)) {

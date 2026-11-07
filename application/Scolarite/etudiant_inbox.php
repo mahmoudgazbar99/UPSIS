@@ -32,8 +32,15 @@ try {
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         verify_csrf();
+        $action = (string) ($_POST['action'] ?? '');
         $notificationId = filter_input(INPUT_POST, 'id_notif', FILTER_VALIDATE_INT) ?: 0;
-        student_notification_mark_read($pdo, $studentId, $notificationId);
+        if ($action === 'delete') {
+            student_notification_delete($pdo, $studentId, $notificationId);
+        } elseif ($action === 'clear') {
+            student_notifications_delete_all($pdo, $studentId);
+        } else {
+            student_notification_mark_read($pdo, $studentId, $notificationId);
+        }
     }
 
     echo json_encode(student_notifications_payload($pdo, $studentId), JSON_UNESCAPED_UNICODE);

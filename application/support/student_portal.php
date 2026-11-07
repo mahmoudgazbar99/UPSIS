@@ -278,7 +278,6 @@ function student_portal_submit_group(PDO $pdo, int $studentId, int $specId, stri
     }
     $insert = $pdo->prepare('INSERT INTO student_group_request (id_etudiant, request_type, id_groupe_actuel, id_groupe_cible, id_etudiant_cible, commentaire, statut) VALUES (?, ?, ?, ?, NULLIF(?, 0), ?, "en_attente")');
     $insert->execute([$studentId, $type, (int) $current['id_groupe'], $targetGroup, $partnerId, mb_substr($comment, 0, 1000)]);
-    student_notify($pdo, $studentId, 'Demande de groupe envoyée', 'Votre demande a été soumise et attend l’administration.', 'dashboard.php?panel=groupe');
     return '';
 }
 
@@ -290,7 +289,6 @@ function student_portal_submit_appointment(PDO $pdo, int $studentId, string $dat
     }
     $insert = $pdo->prepare('INSERT INTO student_appointment (id_etudiant, requested_date, requested_time, motif, statut) VALUES (?, ?, ?, ?, "en_attente")');
     $insert->execute([$studentId, $date, $time . ':00', mb_substr(trim($motif), 0, 2000)]);
-    student_notify($pdo, $studentId, 'Demande de rendez-vous envoyée', 'Votre demande de consultation a été soumise. Le motif reste limité à l’administration.', 'dashboard.php?panel=psy');
     return '';
 }
 
@@ -302,18 +300,117 @@ function student_portal_submit_complaint(PDO $pdo, int $studentId, string $categ
     }
     $insert = $pdo->prepare('INSERT INTO student_complaint (id_etudiant, categorie, description, statut) VALUES (?, ?, ?, "en_attente")');
     $insert->execute([$studentId, $category, mb_substr(trim($description), 0, 4000)]);
-    student_notify($pdo, $studentId, 'Réclamation envoyée', 'Votre réclamation a été soumise.', 'dashboard.php?panel=reclamation');
     return '';
 }
 
-function student_portal_update_profile(PDO $pdo, int $studentId, string $email, string $phone, string $address): string
+function student_photo_ensure(PDO $pdo): void
+{
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    $ready = true;
+    if (!$pdo->query("SHOW COLUMNS FROM etudiant LIKE 'photo_stored'")->fetch()) {
+        $pdo->exec("ALTER TABLE etudiant ADD COLUMN photo_stored VARCHAR(80) NOT NULL DEFAULT ''");
+    }
+}
+
+function student_photo_dir(): string
+{
+    $dir = storage_path('student-photos');
+    if (!is_dir($dir) && !mkdir($dir, 0770, true) && !is_dir($dir)) {
+        throw new RuntimeException('Le stockage des photos est inaccessible.');
+    }
+    return $dir;
+}
+
+function student_photo_path(string $stored): ?string
+{
+    if (!preg_match('/^[a-f0-9]{32}\.(jpg|png|webp)$/', $stored)) {
+        return null;
+    }
+    $root = realpath(student_photo_dir());
+    $path = realpath(student_photo_dir() . DIRECTORY_SEPARATOR . $stored);
+    if ($root === false || $path === false || !str_starts_with($path, $root . DIRECTORY_SEPARATOR) || !is_file($path)) {
+        return null;
+    }
+    return $path;
+}
+
+function student_photo_store(array $file): string
+{
+    $error = (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($error === UPLOAD_ERR_NO_FILE) {
+        return '';
+    }
+    if ($error !== UPLOAD_ERR_OK) {
+        throw new InvalidArgumentException('La photo n’a pas pu être envoyée.');
+    }
+    $tmp = (string) ($file['tmp_name'] ?? '');
+    $size = (int) ($file['size'] ?? 0);
+    if ($tmp === '' || !is_uploaded_file($tmp) || $size < 1 || $size > 2_500_000) {
+        throw new InvalidArgumentException('Choisissez une image de 2,5 Mo maximum.');
+    }
+    $info = @getimagesize($tmp);
+    $type = (int) ($info[2] ?? 0);
+    $ext = match ($type) {
+        IMAGETYPE_JPEG => 'jpg',
+        IMAGETYPE_PNG => 'png',
+        IMAGETYPE_WEBP => 'webp',
+        default => '',
+    };
+    if ($ext === '') {
+        throw new InvalidArgumentException('Utilisez une photo JPG, PNG ou WebP.');
+    }
+    $stored = bin2hex(random_bytes(16)) . '.' . $ext;
+    $target = student_photo_dir() . DIRECTORY_SEPARATOR . $stored;
+    if (!move_uploaded_file($tmp, $target)) {
+        throw new RuntimeException('La photo n’a pas pu être enregistrée.');
+    }
+    @chmod($target, 0640);
+    return $stored;
+}
+
+function student_photo_src(PDO $pdo, int $studentId): string
+{
+    student_photo_ensure($pdo);
+    $query = $pdo->prepare('SELECT photo_stored FROM etudiant WHERE id_etudiant = ? LIMIT 1');
+    $query->execute([$studentId]);
+    $stored = (string) $query->fetchColumn();
+    if ($stored === '' || student_photo_path($stored) === null) {
+        return '';
+    }
+    return 'student_photo.php?v=' . rawurlencode($stored);
+}
+
+function student_portal_update_profile(PDO $pdo, int $studentId, string $email, string $phone, string $address, array $photo = []): string
 {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL) || mb_strlen($phone) < 6 || mb_strlen(trim($address)) < 3) {
         return 'Vérifiez l’e-mail, le téléphone et l’adresse.';
     }
+    student_photo_ensure($pdo);
+    try {
+        $stored = student_photo_store($photo);
+    } catch (InvalidArgumentException $exception) {
+        return $exception->getMessage();
+    } catch (Throwable $exception) {
+        error_log('student photo: ' . $exception->getMessage());
+        return 'La photo n’a pas pu être enregistrée.';
+    }
+    if ($stored !== '') {
+        $previous = $pdo->prepare('SELECT photo_stored FROM etudiant WHERE id_etudiant = ?');
+        $previous->execute([$studentId]);
+        $old = (string) $previous->fetchColumn();
+        $oldPath = student_photo_path($old);
+        $update = $pdo->prepare('UPDATE etudiant SET email = ?, num_tel = ?, adresse = ?, photo_stored = ? WHERE id_etudiant = ?');
+        $update->execute([mb_substr($email, 0, 150), mb_substr($phone, 0, 30), mb_substr(trim($address), 0, 255), $stored, $studentId]);
+        if ($oldPath !== null && $old !== $stored) {
+            @unlink($oldPath);
+        }
+        return '';
+    }
     $update = $pdo->prepare('UPDATE etudiant SET email = ?, num_tel = ?, adresse = ? WHERE id_etudiant = ?');
     $update->execute([mb_substr($email, 0, 150), mb_substr($phone, 0, 30), mb_substr(trim($address), 0, 255), $studentId]);
-    student_notify($pdo, $studentId, 'Profil mis à jour', 'Vos coordonnées ont été enregistrées. La spécialité et le groupe ne changent pas ici.', 'dashboard.php?panel=profil');
     return '';
 }
 
