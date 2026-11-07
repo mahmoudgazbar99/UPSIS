@@ -44,6 +44,13 @@ html {
   background: var(--app-bg);
 }
 
+html[data-app-theme="light"] {
+  --app-bg: var(--ux-base, #f2f2f7);
+  --app-bg-soft: var(--ux-base-soft, #e8e8ed);
+  background: var(--app-bg);
+  color-scheme: light;
+}
+
 body.app-body {
   --bs-body-color: var(--app-text);
   --bs-body-color-rgb: 230, 225, 229;
@@ -1042,7 +1049,7 @@ body.app-body .account-type-option small {
 
 .table thead th {
   color: var(--app-muted);
-  background: rgba(5, 10, 24, .25);
+  background: color-mix(in srgb, var(--app-text) 7%, var(--app-surface-strong));
   font-size: .76rem;
   letter-spacing: .08em;
   text-transform: uppercase;

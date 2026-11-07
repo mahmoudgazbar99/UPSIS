@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/style.css?v=91" rel="stylesheet">
+  <link href="assets/style.css?v=92" rel="stylesheet">
   <link href="assets/institut.css?v=3" rel="stylesheet">
   <link href="assets/macos.css?v=51" rel="stylesheet">
   <link href="assets/clarity.css?v=19" rel="stylesheet">
@@ -258,6 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     function applyTheme(value) {
       const light = value === 'light';
       body.classList.toggle('theme-light', light); body.classList.toggle('theme-dark', !light);
+      document.documentElement.dataset.appTheme = light ? 'light' : 'dark';
       document.documentElement.setAttribute('data-bs-theme', light ? 'light' : 'dark');
       toggle.setAttribute('aria-label', light ? 'Activer le mode sombre' : 'Activer le mode clair');
       toggle.querySelector('[data-theme-icon]').textContent = light ? '☾' : '☀';
