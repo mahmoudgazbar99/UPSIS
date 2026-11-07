@@ -73,20 +73,135 @@ body.theme-institut .navbar-institution-name {
   letter-spacing: -0.02em;
 }
 
-body.theme-institut .navbar {
-  background: rgba(7, 17, 31, 0.82);
+body.theme-institut .app-chrome.navbar,
+body.theme-institut.theme-dark .app-chrome.navbar,
+body.theme-institut.theme-light .app-chrome.navbar {
+  min-height: 0;
+  padding-block: 0.35rem;
+  background: color-mix(in srgb, var(--app-surface-strong) 90%, transparent) !important;
   border-bottom: 1px solid var(--app-border) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: none;
 }
 
-body.theme-institut.theme-light .navbar {
-  background: rgba(255, 255, 255, 0.94);
+body.theme-institut.theme-light .app-chrome.navbar {
+  background: rgba(255, 255, 255, 0.94) !important;
   box-shadow: var(--ux-elev-4, 0 4px 5px 0 rgba(0, 0, 0, 0.14));
+}
+
+body.theme-institut .app-chrome .app-chrome-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+body.theme-institut .app-chrome .macos-toolbar-lead {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+}
+
+body.theme-institut .app-chrome .navbar-brand.navbar-institution {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+body.theme-institut .app-chrome #nav {
+  flex: 0 1 auto;
+  justify-content: flex-end;
 }
 
 body.theme-institut .navbar-logo {
   background: #fff;
   border-radius: 0.7rem;
   padding: 0.15rem;
+}
+
+body.theme-institut .clarity-menu-clock {
+  display: none;
+}
+
+body.theme-institut .staff-chrome-tray {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: auto;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 5;
+}
+
+body.theme-institut .staff-chrome-tray .theme-toggle,
+body.theme-institut .staff-chrome-tray .settings-button {
+  flex: 0 0 auto;
+}
+
+body.theme-institut .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+  width: var(--lw-toggle-w, 3.75rem) !important;
+  min-width: var(--lw-toggle-w, 3.75rem) !important;
+  height: var(--lw-toggle-h, 2rem) !important;
+  min-height: var(--lw-toggle-h, 2rem) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #0f172a !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 20px rgba(2, 8, 23, 0.28) !important;
+  color: inherit;
+}
+
+body.theme-institut.theme-light .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+  background: #7dd3fc !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 8px 20px rgba(14, 165, 233, 0.28) !important;
+}
+
+body.theme-institut .staff-chrome-tray .settings-button {
+  display: grid !important;
+  place-items: center;
+  width: 2.5rem !important;
+  min-width: 2.5rem !important;
+  height: 2.5rem !important;
+  min-height: 2.5rem !important;
+  padding: 0 !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: 0.65rem !important;
+  background: color-mix(in srgb, var(--app-surface-strong) 88%, transparent) !important;
+  color: var(--app-text) !important;
+  box-shadow: none !important;
+}
+
+body.theme-institut .staff-chrome-tray .settings-button:hover,
+body.theme-institut .staff-chrome-tray .settings-button:focus-visible {
+  background: color-mix(in srgb, var(--app-accent) 14%, var(--app-surface-strong)) !important;
+  border-color: color-mix(in srgb, var(--app-accent) 40%, var(--app-border)) !important;
+  color: var(--app-accent-2) !important;
+}
+
+body.theme-institut .staff-chrome-tray .settings-button > span[aria-hidden="true"] {
+  display: none !important;
+}
+
+body.theme-institut .staff-chrome-tray .settings-button .macos-icon-gear {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+}
+
+body.theme-institut .staff-chrome-tray [data-settings-dropdown] {
+  position: relative;
+}
+
+body.theme-institut .staff-chrome-tray [data-settings-dropdown] .dropdown-menu {
+  right: 0;
+  left: auto;
 }
 
 body.theme-institut .teacher-welcome {
@@ -266,11 +381,53 @@ body.theme-institut.theme-light select.form-select:disabled {
   color-scheme: light;
 }
 
-body.theme-institut .theme-style-select,
-body.theme-institut .theme-toggle {
+body.theme-institut .theme-style-select {
   color: var(--app-text);
   background: var(--app-surface);
   border-color: var(--app-border);
+}
+
+@media (max-width: 991.98px) {
+  body.theme-institut .staff-chrome-tray {
+    gap: 0.4rem;
+    margin-left: 0.25rem;
+    z-index: 6;
+  }
+
+  body.theme-institut .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+    width: var(--lw-toggle-w, 3.75rem) !important;
+    min-width: var(--lw-toggle-w, 3.75rem) !important;
+    height: var(--lw-toggle-h, 2rem) !important;
+    min-height: var(--lw-toggle-h, 2rem) !important;
+    border-radius: 999px !important;
+  }
+
+  body.theme-institut .staff-chrome-tray .settings-button {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  body.theme-institut .staff-chrome-tray [data-settings-dropdown] .dropdown-menu {
+    left: auto !important;
+    right: 0 !important;
+    inset: calc(100% + 0.45rem) 0 auto auto !important;
+    display: none !important;
+    min-width: 14rem;
+    max-width: min(18rem, calc(100vw - 1.25rem));
+    background: var(--app-surface-strong) !important;
+    border: 1px solid var(--app-border) !important;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
+    z-index: 1085;
+  }
+
+  body.theme-institut .staff-chrome-tray [data-settings-dropdown] .dropdown-menu.show {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.45rem !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

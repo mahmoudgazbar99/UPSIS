@@ -356,12 +356,12 @@ if (!empty($explorerFragment)) {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=29" rel="stylesheet">
-  <link href="assets/student-portal-shell.css?v=15" rel="stylesheet">
+  <link href="assets/student-space.css?v=30" rel="stylesheet">
+  <link href="assets/student-portal-shell.css?v=16" rel="stylesheet">
   <link href="assets/student-theme.css?v=18" rel="stylesheet">
-  <link href="assets/student-lightswind.css?v=2" rel="stylesheet">
+  <link href="assets/student-lightswind.css?v=3" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-  <link href="assets/skeleton.css?v=1" rel="stylesheet">
+  <link href="assets/skeleton.css?v=3" rel="stylesheet">
   <link href="assets/success-lottie.css?v=3" rel="stylesheet">
   <link href="assets/course-explorer.css?v=2" rel="stylesheet">
   <script src="assets/course-explorer.js?v=2" defer></script>
@@ -409,7 +409,6 @@ if (!empty($explorerFragment)) {
           </div>
         </div>
       </div>
-      <a href="logout.php?espace=etudiant">Déconnexion</a>
     </div>
   </header>
   <div class="portal-edge" data-portal-edge aria-hidden="true"></div>
@@ -445,7 +444,7 @@ if (!empty($explorerFragment)) {
     <button type="button" data-panel="attestation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-2.4L7 20z"/></svg><span>Demandes</span></button>
     <?php endif; ?>
     <button type="button" data-panel="stage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9l7-4 7 4v10"/><path d="M9 19v-5h6v5"/></svg><span>Stage d’été</span></button>
-    <a href="logout.php?espace=etudiant">Déconnexion</a>
+    <a class="portal-logout" href="logout.php?espace=etudiant">Déconnexion</a>
   </nav>
   <p class="visually-hidden" id="studentLive" aria-live="polite"></p>
   <main class="student-space-main">
@@ -554,19 +553,30 @@ if (!empty($explorerFragment)) {
             </div>
           </article>
         </div>
-        <form method="post" enctype="multipart/form-data" class="student-space-form">
+        <form method="post" enctype="multipart/form-data" class="student-space-form" data-profile-form>
           <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <input type="hidden" name="action" value="portal_profile">
           <label class="student-photo-field">Photo de profil
-            <span class="lw-avatar lw-avatar-lg">
+            <span class="lw-avatar lw-avatar-lg" data-photo-preview>
               <?php if ($studentPhoto !== ''): ?>
                 <img src="<?= e($studentPhoto) ?>" alt="">
               <?php else: ?>
                 <span class="lw-avatar-fallback"><?= e($studentInitials) ?></span>
               <?php endif; ?>
             </span>
-            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp">
+            <input type="file" name="photo" accept="image/jpeg,image/png,image/webp" data-photo-input>
           </label>
+          <div class="student-photo-crop" data-photo-crop hidden>
+            <p class="student-space-lead">Glissez et redimensionnez. Seul l’intérieur du cercle est enregistré.</p>
+            <div class="student-photo-stage" data-photo-stage>
+              <img alt="" data-photo-image draggable="false">
+              <span class="student-photo-ring" aria-hidden="true"></span>
+            </div>
+            <label>Taille
+              <input type="range" min="1" max="3" step="0.01" value="1" data-photo-zoom>
+            </label>
+            <button type="button" data-photo-apply>Appliquer le cadre</button>
+          </div>
           <label>E-mail<input type="email" name="email" value="<?= e((string) $profile['email']) ?>" required></label>
           <label>Téléphone<input name="telephone" value="<?= e((string) $profile['num_tel']) ?>" required></label>
           <label>Adresse<textarea name="adresse" required><?= e((string) $profile['adresse']) ?></textarea></label>
@@ -922,6 +932,131 @@ if (!empty($explorerFragment)) {
     </div>
   </div>
 
+  <script>
+  (function () {
+    var form = document.querySelector('[data-profile-form]');
+    var input = document.querySelector('[data-photo-input]');
+    var crop = document.querySelector('[data-photo-crop]');
+    var stage = document.querySelector('[data-photo-stage]');
+    var image = document.querySelector('[data-photo-image]');
+    var zoom = document.querySelector('[data-photo-zoom]');
+    var apply = document.querySelector('[data-photo-apply]');
+    var preview = document.querySelector('[data-photo-preview]');
+    if (!form || !input || !crop || !stage || !image || !zoom || !apply) return;
+    var tx = 0;
+    var ty = 0;
+    var scale = 1;
+    var ready = false;
+    function place() {
+      var box = stage.clientWidth || 256;
+      var cover = Math.max(box / image.naturalWidth, box / image.naturalHeight);
+      var width = image.naturalWidth * cover * scale;
+      var height = image.naturalHeight * cover * scale;
+      var maxX = 0;
+      var maxY = 0;
+      var minX = box - width;
+      var minY = box - height;
+      tx = Math.min(maxX, Math.max(minX, tx));
+      ty = Math.min(maxY, Math.max(minY, ty));
+      image.style.width = width + 'px';
+      image.style.height = height + 'px';
+      image.style.left = tx + 'px';
+      image.style.top = ty + 'px';
+    }
+    function exportFrame() {
+      return new Promise(function (resolve, reject) {
+        if (!ready) {
+          resolve(null);
+          return;
+        }
+        var box = stage.clientWidth || 256;
+        var inset = 8;
+        var side = box - inset * 2;
+        var cover = Math.max(box / image.naturalWidth, box / image.naturalHeight);
+        var drawn = cover * scale;
+        var canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        var context = canvas.getContext('2d');
+        context.drawImage(
+          image,
+          (inset - tx) / drawn,
+          (inset - ty) / drawn,
+          side / drawn,
+          side / drawn,
+          0,
+          0,
+          512,
+          512
+        );
+        canvas.toBlob(function (blob) {
+          if (!blob) {
+            reject(new Error('crop'));
+            return;
+          }
+          var file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+          var transfer = new DataTransfer();
+          transfer.items.add(file);
+          input.files = transfer.files;
+          if (preview) {
+            var url = URL.createObjectURL(blob);
+            preview.innerHTML = '<img alt="" src="' + url + '">';
+          }
+          crop.hidden = true;
+          ready = false;
+          resolve(file);
+        }, 'image/jpeg', 0.92);
+      });
+    }
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        image.onload = function () {
+          scale = 1;
+          zoom.value = '1';
+          var box = stage.clientWidth || 256;
+          var cover = Math.max(box / image.naturalWidth, box / image.naturalHeight);
+          tx = (box - image.naturalWidth * cover) / 2;
+          ty = (box - image.naturalHeight * cover) / 2;
+          ready = true;
+          crop.hidden = false;
+          place();
+        };
+        image.src = String(reader.result || '');
+      };
+      reader.readAsDataURL(file);
+    });
+    zoom.addEventListener('input', function () {
+      scale = Number(zoom.value) || 1;
+      place();
+    });
+    var drag = null;
+    stage.addEventListener('pointerdown', function (event) {
+      if (!ready) return;
+      drag = { x: event.clientX, y: event.clientY, tx: tx, ty: ty };
+      stage.setPointerCapture(event.pointerId);
+    });
+    stage.addEventListener('pointermove', function (event) {
+      if (!drag) return;
+      tx = drag.tx + (event.clientX - drag.x);
+      ty = drag.ty + (event.clientY - drag.y);
+      place();
+    });
+    function stopDrag() { drag = null; }
+    stage.addEventListener('pointerup', stopDrag);
+    stage.addEventListener('pointercancel', stopDrag);
+    apply.addEventListener('click', function () {
+      exportFrame().catch(function () {});
+    });
+    form.addEventListener('submit', function (event) {
+      if (!ready) return;
+      event.preventDefault();
+      exportFrame().then(function () { form.submit(); }).catch(function () { form.submit(); });
+    });
+  })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="assets/motion.js?v=3" defer></script>
   <script>

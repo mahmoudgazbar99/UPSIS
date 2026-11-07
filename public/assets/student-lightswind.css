@@ -376,6 +376,24 @@ html[data-student-skin="nursing"] .portal-theme-toggle:active {
     transform: scale(0.98);
   }
 
+  html[data-student-skin="nursing"] .portal-drawer a.portal-logout {
+    border-color: rgba(248, 113, 113, 0.45);
+    background: rgba(220, 38, 38, 0.12);
+    color: #fecaca;
+  }
+
+  html[data-student-skin="nursing"] .portal-drawer a.portal-logout:hover {
+    border-color: rgba(248, 113, 113, 0.7);
+    background: rgba(220, 38, 38, 0.2);
+    color: #fff;
+  }
+
+  html[data-student-skin="nursing"][data-theme="light"] .portal-drawer a.portal-logout {
+    border-color: rgba(185, 28, 28, 0.35);
+    background: rgba(185, 28, 28, 0.08);
+    color: #b91c1c;
+  }
+
   html[data-student-skin="nursing"] .portal-drawer svg {
     width: 1.15rem;
     height: 1.15rem;

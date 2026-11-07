@@ -1209,11 +1209,11 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   window.addEventListener('pointercancel', endPhoneDrag);
 
   /* Only react to theme style class changes — never to module-open / random body classes. */
-  var lastStyle = ['theme-original', 'theme-clarity', 'theme-glass', 'theme-macos', 'theme-institut']
+  var lastStyle = ['theme-original', 'theme-clarity', 'theme-institut']
     .filter(function (name) { return document.body.classList.contains(name); })
     .join(' ');
   new MutationObserver(function () {
-    var nextStyle = ['theme-original', 'theme-clarity', 'theme-glass', 'theme-macos', 'theme-institut']
+    var nextStyle = ['theme-original', 'theme-clarity', 'theme-institut']
       .filter(function (name) { return document.body.classList.contains(name); })
       .join(' ');
     if (nextStyle === lastStyle) return;

@@ -124,7 +124,22 @@ body.theme-clarity .table {
   display: none;
 }
 
-/* The shared stylesheet hides Mac chrome unless theme-macos. Bring it back here only. */
+/* Desktop shell chrome — Mac bureau only (Mac OS theme removed). */
+body:not(.theme-clarity) .macos-titlebar,
+body:not(.theme-clarity) .macos-dock,
+body:not(.theme-clarity) .macos-command-overlay,
+body:not(.theme-clarity) .macos-restore-hint,
+body:not(.theme-clarity) .macos-only-control,
+body:not(.theme-clarity) .macos-inner-titlebar,
+body:not(.theme-clarity) .dashboard-menu-title-macos {
+  display: none !important;
+}
+
+body:not(.theme-clarity) .macos-window,
+body:not(.theme-clarity) .macos-window-body {
+  display: contents;
+}
+
 body.theme-clarity:not(.embedded-view) .macos-titlebar,
 body.theme-clarity:not(.embedded-view) .macos-dock,
 body.theme-clarity .macos-only-control {
@@ -282,11 +297,79 @@ body.theme-clarity .teacher-welcome {
   white-space: nowrap;
 }
 
+body.theme-clarity .staff-chrome-tray {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.25rem;
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 6;
+  height: 32px;
+}
+
+body.theme-clarity .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+  --lw-toggle-w: 3.25rem;
+  --lw-toggle-h: 1.55rem;
+  --lw-thumb: 1.2rem;
+  width: var(--lw-toggle-w) !important;
+  min-width: var(--lw-toggle-w) !important;
+  height: var(--lw-toggle-h) !important;
+  min-height: var(--lw-toggle-h) !important;
+  border-radius: 999px !important;
+  background: #0f172a !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 4px 12px rgba(2, 8, 23, 0.28) !important;
+  color: inherit;
+  flex: 0 0 auto;
+}
+
+body.theme-clarity.theme-light .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+  background: #7dd3fc !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 4px 12px rgba(14, 165, 233, 0.28) !important;
+}
+
 body.theme-clarity .settings-button {
-  display: grid;
+  display: grid !important;
   place-items: center;
-  width: 24px;
-  padding: 0;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 7px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--desk-bar-ink) !important;
+  box-shadow: none !important;
+  flex: 0 0 auto;
+}
+
+body.theme-clarity.theme-light .settings-button {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.theme-clarity .settings-button:hover,
+body.theme-clarity .settings-button:focus-visible {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.theme-clarity.theme-light .settings-button:hover,
+body.theme-clarity.theme-light .settings-button:focus-visible {
+  background: rgba(0, 0, 0, 0.08) !important;
+}
+
+body.theme-clarity .staff-chrome-tray [data-settings-dropdown] {
+  position: relative;
+}
+
+body.theme-clarity .staff-chrome-tray [data-settings-dropdown] .dropdown-menu {
+  right: 0;
+  left: auto;
 }
 
 body.theme-clarity .app-chrome .dropdown-menu {
@@ -322,8 +405,6 @@ body.theme-clarity .clarity-menu-clock {
   white-space: nowrap;
 }
 
-body.theme-clarity .theme-toggle,
-body.theme-clarity .settings-button,
 body.theme-clarity .theme-style-select,
 body.theme-clarity .macos-toolbar-btn,
 body.theme-clarity .macos-profile,
@@ -356,9 +437,7 @@ body.theme-clarity .settings-button > span[aria-hidden="true"] {
   display: none !important;
 }
 
-body.theme-clarity .settings-button .macos-icon-gear,
-body.theme-clarity:not(.theme-light) .theme-toggle .theme-toggle-sun,
-body.theme-clarity.theme-light .theme-toggle .theme-toggle-moon {
+body.theme-clarity .settings-button .macos-icon-gear {
   display: block;
   width: 15px;
   height: 15px;
@@ -1384,8 +1463,28 @@ body.theme-clarity.login-page .macos-window.is-maximized {
     display: none !important;
   }
 
-  body.theme-clarity .theme-toggle,
-  body.theme-clarity .settings-button,
+  body.theme-clarity .staff-chrome-tray {
+    height: 44px;
+    gap: 0.4rem;
+  }
+
+  body.theme-clarity .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+    --lw-toggle-w: 3.75rem;
+    --lw-toggle-h: 2rem;
+    --lw-thumb: 1.55rem;
+    width: var(--lw-toggle-w) !important;
+    min-width: var(--lw-toggle-w) !important;
+    height: var(--lw-toggle-h) !important;
+    min-height: var(--lw-toggle-h) !important;
+  }
+
+  body.theme-clarity .settings-button {
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+
   body.theme-clarity .macos-toolbar-btn,
   body.theme-clarity .macos-profile {
     width: 40px !important;

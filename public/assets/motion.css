@@ -26,11 +26,6 @@
   100% { transform: scale(1); }
 }
 
-html.motion-on body.theme-macos .macos-window,
-html.motion-on body.theme-macos.login-page .macos-window {
-  animation: none;
-}
-
 html.motion-on .motion-stage {
   animation: motion-reveal var(--motion-slow) var(--motion-ease) both;
 }
@@ -40,8 +35,7 @@ html.motion-on .motion-press {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.motion-on .motion-stage,
-  html.motion-on .motion-press {
+  html.motion-on .motion-stage, html.motion-on .motion-press {
     animation: none;
   }
 }

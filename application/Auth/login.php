@@ -125,13 +125,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/style.css?v=94" rel="stylesheet">
-  <link href="assets/institut.css?v=3" rel="stylesheet">
-  <link href="assets/macos.css?v=52" rel="stylesheet">
-  <link href="assets/clarity.css?v=24" rel="stylesheet">
+  <link href="assets/style.css?v=96" rel="stylesheet">
+  <link href="assets/institut.css?v=4" rel="stylesheet">
+  <link href="assets/clarity.css?v=25" rel="stylesheet">
   <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-  <link href="assets/original-theme.css?v=15" rel="stylesheet">
+  <link href="assets/original-theme.css?v=17" rel="stylesheet">
   <script>
   (function () {
     try {
@@ -140,8 +139,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       var styleKey = 'app-style:' + owner;
       var theme = localStorage.getItem(themeKey) || 'dark';
       var style = localStorage.getItem(styleKey) || 'original';
-      if (style === 'alternate' || style === 'atlas') { style = 'original'; localStorage.setItem(styleKey, 'original'); }
-      if (style !== 'glass' && style !== 'macos' && style !== 'institut' && style !== 'clarity') style = 'original';
+      if (style === 'alternate' || style === 'atlas' || style === 'glass') { style = 'original'; localStorage.setItem(styleKey, 'original'); }
+      if (style === 'macos' || style === 'mac' || style === 'mac-os') { style = 'clarity'; localStorage.setItem(styleKey, 'clarity'); }
+      if (style !== 'institut' && style !== 'clarity') style = 'original';
       if (window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches) {
         style = 'original';
         document.documentElement.classList.add('phone-style-lock');
@@ -166,9 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     body.classList.toggle('theme-light', theme === 'light');
     body.classList.toggle('theme-dark', theme !== 'light');
-    body.classList.remove('theme-alternate', 'theme-atlas');
-    body.classList.toggle('theme-glass', style === 'glass');
-    body.classList.toggle('theme-macos', style === 'macos');
+    body.classList.remove('theme-alternate', 'theme-atlas', 'theme-glass', 'theme-macos');
     body.classList.toggle('theme-clarity', style === 'clarity');
     body.classList.toggle('theme-institut', style === 'institut');
     body.classList.toggle('theme-original', style === 'original');
@@ -180,8 +178,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <span class="visually-hidden">Thème visuel</span>
       <select class="theme-style-select" data-style-select aria-label="Choisir le thème" title="Choisir le thème">
         <option value="original">Original</option>
-        <option value="glass">Glass</option>
-        <option value="macos">Mac OS</option>
         <option value="clarity">Mac bureau</option>
         <option value="institut">Institut</option>
       </select>
@@ -292,10 +288,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (!named) username.value = '';
     }
     function normalizeStyle(value) {
-      if (value === 'atlas' || value === 'alternate') return 'original';
-      if (value === 'glass') return 'glass';
-      if (value === 'macos' || value === 'mac' || value === 'mac-os') return 'macos';
-      if (value === 'clarity' || value === 'mac-clair') return 'clarity';
+      if (value === 'atlas' || value === 'alternate' || value === 'glass') return 'original';
+      if (value === 'macos' || value === 'mac' || value === 'mac-os' || value === 'clarity' || value === 'mac-clair') return 'clarity';
       if (value === 'institut' || value === 'accueil') return 'institut';
       return 'original';
     }
@@ -312,13 +306,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (!isPhoneViewport() && (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas')) {
         localStorage.setItem(styleKey, 'original');
       }
-      body.classList.remove('theme-alternate', 'theme-atlas');
-      body.classList.toggle('theme-glass', style === 'glass');
-      body.classList.toggle('theme-macos', style === 'macos');
+      body.classList.remove('theme-alternate', 'theme-atlas', 'theme-glass', 'theme-macos');
       body.classList.toggle('theme-clarity', style === 'clarity');
       body.classList.toggle('theme-institut', style === 'institut');
       body.classList.toggle('theme-original', style === 'original');
       document.documentElement.dataset.appStyle = style;
+      if (!isPhoneViewport() && (value === 'glass' || value === 'macos' || value === 'mac' || value === 'mac-os')) {
+        localStorage.setItem(styleKey, style);
+      }
       if (styleSelect) {
         if (styleSelect.value !== style) styleSelect.value = style;
         styleSelect.disabled = isPhoneViewport();
@@ -374,7 +369,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     document.querySelectorAll('[data-macos-action]').forEach(function (btn) {
       btn.addEventListener('click', function (event) {
         event.preventDefault();
-        if (!(body.classList.contains('theme-macos') || body.classList.contains('theme-clarity')) || !win) return;
+        if (!body.classList.contains('theme-clarity') || !win) return;
         const action = btn.getAttribute('data-macos-action');
         if (action === 'close' || action === 'minimize') {
           win.classList.remove('is-maximized');
@@ -388,7 +383,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     const titlebar = document.querySelector('[data-macos-titlebar]');
     if (titlebar && win) {
       titlebar.addEventListener('dblclick', function () {
-        if (!(body.classList.contains('theme-macos') || body.classList.contains('theme-clarity'))) return;
+        if (!body.classList.contains('theme-clarity')) return;
         win.classList.toggle('is-maximized');
       });
     }

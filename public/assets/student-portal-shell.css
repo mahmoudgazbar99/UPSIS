@@ -396,6 +396,18 @@
   .portal-drawer a:active {
     transform: scale(0.98);
   }
+
+  .portal-drawer a.portal-logout {
+    border: 1px solid rgba(248, 113, 113, 0.42);
+    background: rgba(220, 38, 38, 0.1);
+    color: #fecaca;
+  }
+
+  html[data-theme="light"] .portal-drawer a.portal-logout {
+    border-color: rgba(185, 28, 28, 0.35);
+    background: rgba(185, 28, 28, 0.08);
+    color: #b91c1c;
+  }
 }
 
 @keyframes portal-rise {

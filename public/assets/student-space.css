@@ -95,6 +95,42 @@
   gap: 0.55rem;
 }
 
+.student-photo-crop {
+  display: grid;
+  gap: 0.7rem;
+  max-width: 18rem;
+}
+
+.student-photo-crop[hidden] {
+  display: none !important;
+}
+
+.student-photo-stage {
+  position: relative;
+  width: min(16rem, 100%);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: #111;
+  touch-action: none;
+  cursor: grab;
+}
+
+.student-photo-stage img {
+  position: absolute;
+  max-width: none;
+  user-select: none;
+}
+
+.student-photo-ring {
+  position: absolute;
+  inset: 8px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
 .student-space-bar p {
   margin: 0;
   color: rgba(247, 243, 234, 0.78);

@@ -1,7 +1,38 @@
+/* Near-surface placeholders: soft white on light, soft dark on dark — every theme */
+
+body {
+  --sk-base: color-mix(in srgb, var(--app-text, #e6e1e5) 8%, var(--app-surface-strong, var(--app-bg, #1e1e1e)));
+  --sk-shine: color-mix(in srgb, var(--app-text, #e6e1e5) 18%, var(--app-surface-strong, var(--app-bg, #1e1e1e)));
+  --sk-card: color-mix(in srgb, var(--app-text, #e6e1e5) 5%, var(--app-surface-strong, var(--app-bg, #1e1e1e)));
+}
+
+body.theme-light {
+  --sk-base: color-mix(in srgb, var(--app-text, #1d1b20) 7%, var(--app-surface-strong, #ffffff));
+  --sk-shine: color-mix(in srgb, #ffffff 70%, var(--app-surface-strong, #ffffff));
+  --sk-card: color-mix(in srgb, var(--app-text, #1d1b20) 4%, var(--app-surface-strong, #ffffff));
+}
+
+body.theme-dark {
+  --sk-base: color-mix(in srgb, #ffffff 7%, var(--app-surface-strong, var(--app-bg, #1e1e1e)));
+  --sk-shine: color-mix(in srgb, #ffffff 14%, var(--app-surface-strong, var(--app-bg, #1e1e1e)));
+  --sk-card: color-mix(in srgb, #ffffff 5%, var(--app-surface-strong, var(--app-bg, #16181d)));
+}
+
+/* Student portal tokens */
+html[data-student-skin="nursing"] {
+  --sk-base: color-mix(in srgb, var(--ink, #ecfdf5) 8%, var(--surface, #12171f));
+  --sk-shine: color-mix(in srgb, var(--ink, #ecfdf5) 16%, var(--surface, #12171f));
+  --sk-card: color-mix(in srgb, var(--ink, #ecfdf5) 5%, var(--surface-2, var(--surface, #1a212b)));
+}
+
+html[data-student-skin="nursing"][data-theme="light"] {
+  --sk-base: color-mix(in srgb, var(--ink, #0a0f0d) 7%, var(--surface, #ffffff));
+  --sk-shine: color-mix(in srgb, #ffffff 65%, var(--surface, #ffffff));
+  --sk-card: color-mix(in srgb, var(--ink, #0a0f0d) 4%, var(--surface-2, var(--surface, #f0f5f2)));
+}
+
 .app-skeleton,
 .sk {
-  --sk-base: #1e232a;
-  --sk-shine: #2c333d;
   position: relative;
   overflow: hidden;
   border-radius: 1rem;
@@ -45,7 +76,7 @@
   gap: 0.7rem;
   padding: 1rem;
   border-radius: 1.25rem;
-  background: #242930;
+  background: var(--sk-card);
 }
 
 .sk-row {

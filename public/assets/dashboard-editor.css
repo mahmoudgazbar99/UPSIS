@@ -37,8 +37,7 @@
   min-height: 2.75rem;
 }
 
-[data-dashboard-layout-toolbar][hidden],
-[data-dashboard-layout-toolbar] [hidden] {
+[data-dashboard-layout-toolbar][hidden], [data-dashboard-layout-toolbar] [hidden] {
   display: none !important;
 }
 
@@ -53,8 +52,7 @@
 [data-dashboard-widget]:nth-child(3) { --dashboard-widget-index: 2; }
 [data-dashboard-widget]:nth-child(4) { --dashboard-widget-index: 3; }
 
-[data-dashboard-widget]:hover,
-[data-dashboard-widget]:focus-within {
+[data-dashboard-widget]:hover, [data-dashboard-widget]:focus-within {
   transform: translateY(-2px);
 }
 
@@ -140,9 +138,7 @@
   cursor: grabbing;
 }
 
-.dashboard-widget-handle:focus-visible,
-.dashboard-widget-move:focus-visible,
-.dashboard-layout-toolbar .btn:focus-visible {
+.dashboard-widget-handle:focus-visible, .dashboard-widget-move:focus-visible, .dashboard-layout-toolbar .btn:focus-visible {
   outline: 3px solid var(--app-accent);
   outline-offset: 2px;
 }
@@ -182,23 +178,6 @@
   .dashboard-layout-actions .btn {
     flex: 1 1 auto;
   }
-}
-
-
-
-
-
-body.theme-glass .dashboard-layout-toolbar,
-body.theme-glass .dashboard-widget-controls {
-  background: color-mix(in srgb, var(--app-surface) 78%, transparent);
-  backdrop-filter: blur(18px) saturate(145%);
-  -webkit-backdrop-filter: blur(18px) saturate(145%);
-}
-
-body.theme-macos .dashboard-layout-toolbar,
-body.theme-macos .dashboard-widget-controls {
-  border-radius: 1rem;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .16);
 }
 
 body.theme-institut .dashboard-layout-toolbar-copy strong {
@@ -242,10 +221,7 @@ body.theme-institut .dashboard-layout-toolbar-copy strong {
   min-width: 0;
 }
 
-#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="hero"],
-#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="requests"],
-#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="student-search"],
-#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="student-list"] {
+#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="hero"], #dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="requests"], #dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="student-search"], #dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="student-list"] {
   grid-column: 1 / -1;
 }
 
@@ -253,13 +229,8 @@ body.theme-institut .dashboard-layout-toolbar-copy strong {
   grid-column: span 3;
 }
 
-#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="distribution"],
-#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="activity"] {
+#dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="distribution"], #dashboard-content [data-dashboard-layout="admin-home"] > [data-dashboard-widget="activity"] {
   grid-column: span 6;
-}
-
-body.theme-macos #dashboard-content [data-dashboard-layout="admin-home"] {
-  padding: .95rem 1rem .35rem;
 }
 
 @media (max-width: 1199.98px) and (min-width: 768px) {
@@ -312,18 +283,11 @@ body.theme-macos #dashboard-content [data-dashboard-layout="admin-home"] {
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-text) 10%, transparent), var(--app-shadow);
 }
 
-.dashboard-home-panel .macos-hero-photo,
-.dashboard-home-panel .macos-hero-shade {
+.dashboard-home-panel .macos-hero-photo, .dashboard-home-panel .macos-hero-shade {
   display: none;
 }
 
-body.theme-macos .dashboard-home-panel .macos-hero-photo,
-body.theme-macos .dashboard-home-panel .macos-hero-shade {
-  display: block;
-}
-
-.dashboard-home-panel .macos-hero-copy,
-.dashboard-home-panel .macos-hero-date {
+.dashboard-home-panel .macos-hero-copy, .dashboard-home-panel .macos-hero-date {
   position: relative;
   z-index: 2;
 }
@@ -494,8 +458,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   margin-bottom: .75rem;
 }
 
-.dashboard-home-panel .macos-panel-head p,
-.dashboard-home-panel .macos-panel-head a {
+.dashboard-home-panel .macos-panel-head p, .dashboard-home-panel .macos-panel-head a {
   margin: .2rem 0 0;
   color: var(--app-muted);
   font-size: .82rem;
@@ -572,8 +535,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   transform: rotate(-90deg);
 }
 
-.dashboard-donut-track,
-.dashboard-donut-segment {
+.dashboard-donut-track, .dashboard-donut-segment {
   fill: none;
   stroke-width: 15;
   vector-effect: non-scaling-stroke;
@@ -593,8 +555,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   pointer-events: stroke;
 }
 
-.dashboard-donut-segment:hover,
-.dashboard-donut-segment.is-active {
+.dashboard-donut-segment:hover, .dashboard-donut-segment.is-active {
   stroke-width: 19;
   filter: drop-shadow(0 0 .35rem color-mix(in srgb, var(--chart-color) 70%, transparent));
 }
@@ -663,9 +624,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
 }
 
-.dashboard-distribution-item:hover,
-.dashboard-distribution-item.is-active,
-.dashboard-distribution-item[aria-pressed="true"] {
+.dashboard-distribution-item:hover, .dashboard-distribution-item.is-active, .dashboard-distribution-item[aria-pressed="true"] {
   background: color-mix(in srgb, var(--chart-color) 10%, var(--app-surface-strong));
   border-color: color-mix(in srgb, var(--chart-color) 42%, var(--app-border));
 }
@@ -843,15 +802,13 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   letter-spacing: -.02em;
 }
 
-.teacher-home-list li,
-.teacher-home-list a {
+.teacher-home-list li, .teacher-home-list a {
   border-radius: .8rem;
   background: color-mix(in srgb, var(--app-surface) 72%, transparent);
   transition: border-color 150ms ease, background-color 150ms ease;
 }
 
-.teacher-home-list a:hover,
-.teacher-home-list a:focus-visible {
+.teacher-home-list a:hover, .teacher-home-list a:focus-visible {
   border-color: var(--app-accent);
   background: color-mix(in srgb, var(--app-accent) 7%, var(--app-surface-strong));
 }
@@ -914,8 +871,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
-.finance-dashboard .finance-ring:hover,
-.finance-dashboard .finance-ring:focus-within {
+.finance-dashboard .finance-ring:hover, .finance-dashboard .finance-ring:focus-within {
   transform: translateY(-2px);
   box-shadow: 0 14px 28px color-mix(in srgb, var(--ring) 15%, transparent), inset 0 1px 0 color-mix(in srgb, var(--app-text) 10%, transparent);
 }
@@ -999,8 +955,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-student-list,
-  .dashboard-student-list.is-settling .dashboard-student-row {
+  .dashboard-student-list, .dashboard-student-list.is-settling .dashboard-student-row {
     transition: none;
     animation: none;
   }
@@ -1052,34 +1007,7 @@ body.theme-macos .dashboard-home-panel .macos-hero-shade {
   align-items: center;
 }
 
-
-
-body.theme-glass .dashboard-page-intro,
-body.theme-glass .dashboard-home-panel .macos-stat,
-body.theme-glass .dashboard-home-panel .macos-panel,
-body.theme-glass .teacher-home-card {
-  backdrop-filter: blur(22px) saturate(145%);
-  -webkit-backdrop-filter: blur(22px) saturate(145%);
-}
-
-body.theme-macos .dashboard-page-intro,
-body.theme-macos .dashboard-home-panel .macos-hero,
-body.theme-macos .dashboard-home-panel .macos-panel {
-  border-radius: 1.15rem;
-}
-
-body.theme-macos .dashboard-home-panel .macos-hero,
-body.theme-macos .dashboard-home-panel .macos-hero-date {
-  color: #fff;
-}
-
-body.theme-macos .dashboard-home-panel .macos-hero p {
-  color: rgba(255, 255, 255, .82);
-}
-
-body.theme-institut .dashboard-page-intro h1,
-body.theme-institut .dashboard-home-panel .macos-hero h2,
-body.theme-institut .dashboard-finance-heading h2 {
+body.theme-institut .dashboard-page-intro h1, body.theme-institut .dashboard-home-panel .macos-hero h2, body.theme-institut .dashboard-finance-heading h2 {
   font-family: Newsreader, Georgia, serif;
   letter-spacing: -.025em;
 }
@@ -1213,38 +1141,15 @@ body.theme-light .dashboard-home-panel .macos-status-pill.is-off { color: #b91c1
   }
 }
 
-body.theme-macos #dashboard-content > .macos-inner-titlebar,
-body.theme-macos #dashboard-content > .macos-crumb {
-  display: none;
-}
-
-body.theme-macos .dashboard-home-panel .macos-hero {
-  border-radius: 12px;
-  box-shadow: none;
-}
-
-body.theme-macos .dashboard-home-panel .macos-hero-shade,
-body.theme-macos .dashboard-home-panel .macos-stat,
-body.theme-macos .dashboard-home-panel .macos-panel,
-body.theme-macos .dashboard-home-panel .macos-hero-date {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
 .dashboard-home-panel .macos-stat.is-attention {
   border-color: color-mix(in srgb, #f59e0b 70%, var(--app-border));
 }
 
-.dashboard-home-panel .macos-stat strong,
-.dashboard-student-list td:first-child {
+.dashboard-home-panel .macos-stat strong, .dashboard-student-list td:first-child {
   font-variant-numeric: tabular-nums;
 }
 
-.dashboard-home-panel .macos-chip:focus-visible,
-.dashboard-home-panel .macos-status-pill:focus-visible,
-.dashboard-home-panel .macos-panel-head a:focus-visible,
-.dashboard-student-list a:focus-visible,
-.dashboard-home-panel .macos-stat:focus-within {
+.dashboard-home-panel .macos-chip:focus-visible, .dashboard-home-panel .macos-status-pill:focus-visible, .dashboard-home-panel .macos-panel-head a:focus-visible, .dashboard-student-list a:focus-visible, .dashboard-home-panel .macos-stat:focus-within {
   outline: 2px solid var(--app-accent);
   outline-offset: 2px;
 }
@@ -1253,25 +1158,18 @@ body.theme-macos .dashboard-home-panel .macos-hero-date {
   min-width: 46rem;
 }
 
-.dashboard-student-list td:nth-child(4),
-.dashboard-student-list th:nth-child(4) {
+.dashboard-student-list td:nth-child(4), .dashboard-student-list th:nth-child(4) {
   text-align: end;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-dashboard-widget],
-.dashboard-layout-toolbar,
-.dashboard-widget-move,
-.dashboard-donut-segment,
-.dashboard-home-panel .macos-stat,
-.finance-dashboard .finance-ring {
+  [data-dashboard-widget], .dashboard-layout-toolbar, .dashboard-widget-move, .dashboard-donut-segment, .dashboard-home-panel .macos-stat, .finance-dashboard .finance-ring {
     animation: none !important;
     scroll-behavior: auto !important;
     transition: none !important;
   }
 
-  [data-dashboard-widget]:hover,
-[data-dashboard-widget]:focus-within {
+  [data-dashboard-widget]:hover, [data-dashboard-widget]:focus-within {
     transform: none;
   }
 }

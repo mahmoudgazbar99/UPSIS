@@ -5,9 +5,7 @@
  * match the classic student glass skin.
  */
 
-.course-explorer,
-.course-modal,
-.course-pdf-layer {
+.course-explorer, .course-modal, .course-pdf-layer {
   --ce-text: var(--ink, var(--app-text, #f7f3ea));
   --ce-muted: var(--muted, var(--app-muted, rgba(247, 243, 234, 0.8)));
   --ce-line: var(--line, var(--app-border, rgba(255, 255, 255, 0.24)));
@@ -33,11 +31,7 @@
   --ce-duration-fast: 0.36s;
 }
 
-body.theme-light .course-explorer,
-body.theme-light .course-modal,
-body.theme-light .course-pdf-layer,
-html[data-student-skin="nursing"][data-theme="light"] .course-explorer,
-html[data-student-skin="nursing"][data-theme="light"] .course-pdf-layer {
+body.theme-light .course-explorer, body.theme-light .course-modal, body.theme-light .course-pdf-layer, html[data-student-skin="nursing"][data-theme="light"] .course-explorer, html[data-student-skin="nursing"][data-theme="light"] .course-pdf-layer {
   --ce-tile: var(--ux-card, #ffffff);
   --ce-tile-hover: var(--ux-card, #ffffff);
   --ce-elev: var(--ux-elev-1, 0 1px 3px 1px rgba(0, 0, 0, 0.12));
@@ -49,52 +43,11 @@ html[data-student-skin="nursing"][data-theme="light"] .course-pdf-layer {
   --ce-danger-soft: var(--ux-error-soft, rgba(176, 0, 32, 0.1));
 }
 
-body.theme-macos .course-explorer,
-body.theme-macos .course-modal {
-  --ce-radius: 14px;
-  --ce-radius-sm: 9px;
-  --ce-tile: var(--glass-bg-soft, rgba(255, 255, 255, 0.06));
-  --ce-accent-soft: var(--macos-accent-soft, rgba(98, 0, 238, 0.22));
-}
-
-body.theme-macos:not(.theme-light) .course-explorer,
-body.theme-macos:not(.theme-light) .course-modal {
-  --ce-accent-strong: var(--app-accent-2, #bb86fc);
-  --ce-tile-hover: rgba(187, 134, 252, 0.14);
-}
-
-body.theme-macos.theme-light .course-explorer {
-  --ce-tile: var(--glass-bg-strong, #ffffff);
-}
-
-body.theme-glass .course-explorer {
-  --ce-tile: rgba(255, 255, 255, 0.07);
-  --ce-tile-hover: rgba(243, 215, 161, 0.16);
-}
-
-body.theme-glass.theme-light .course-explorer {
-  --ce-tile: rgba(255, 255, 255, 0.62);
-  --ce-tile-hover: rgba(255, 255, 255, 0.86);
-}
-
-body.theme-institut .course-explorer,
-body.theme-institut .course-modal {
+body.theme-institut .course-explorer, body.theme-institut .course-modal {
   --ce-radius: 1rem;
 }
 
 /* Glass recolours every link with !important; keep explorer links on the text palette. */
-body.theme-glass .course-explorer a.course-item-link:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand),
-body.theme-glass .course-explorer a.course-tree-link:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand),
-body.theme-glass .course-explorer a.course-tree-root:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand),
-body.theme-glass .course-explorer a.course-icon-btn:hover:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand),
-body.theme-glass .course-explorer a.course-crumb-link:hover:not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand) {
-  color: var(--ce-text) !important;
-}
-
-body.theme-glass .course-explorer a.course-icon-btn:not(:hover):not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand),
-body.theme-glass .course-explorer a.course-crumb-link:not(:hover):not(.btn):not(.dropdown-item):not(.nav-link):not(.page-link):not(.navbar-brand) {
-  color: var(--ce-muted) !important;
-}
 
 /* ------------------------------------------------------------------ */
 /* Shared primitives                                                   */
@@ -105,38 +58,28 @@ body.theme-glass .course-explorer a.course-crumb-link:not(:hover):not(.btn):not(
   min-width: 0;
 }
 
-.course-explorer *,
-.course-modal *,
-.course-pdf-layer * {
+.course-explorer *, .course-modal *, .course-pdf-layer * {
   box-sizing: border-box;
 }
 
-.course-explorer ul,
-.course-explorer ol {
+.course-explorer ul, .course-explorer ol {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.course-explorer a,
-.course-explorer button,
-.course-explorer summary,
-.course-explorer label,
-.course-modal button {
+.course-explorer a, .course-explorer button, .course-explorer summary, .course-explorer label, .course-modal button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-.course-explorer .ce-icon,
-.course-modal .ce-icon {
+.course-explorer .ce-icon, .course-modal .ce-icon {
   flex: 0 0 auto;
   width: 1.25rem;
   height: 1.25rem;
 }
 
-.course-explorer :focus-visible,
-.course-modal :focus-visible,
-.course-pdf-layer :focus-visible {
+.course-explorer :focus-visible, .course-modal :focus-visible, .course-pdf-layer :focus-visible {
   outline: 2px solid var(--ce-accent-strong);
   outline-offset: 2px;
 }
@@ -153,17 +96,11 @@ body.theme-glass .course-explorer a.course-crumb-link:not(:hover):not(.btn):not(
   border: 0 !important;
 }
 
-.course-explorer .btn-primary,
-.course-modal .btn-primary {
+.course-explorer .btn-primary, .course-modal .btn-primary {
   --bs-btn-disabled-bg: var(--ce-accent);
   --bs-btn-disabled-border-color: transparent;
   --bs-btn-disabled-color: var(--app-accent-ink, #ffffff);
   --bs-btn-disabled-opacity: 0.55;
-}
-
-body.theme-glass:not(.theme-light) .course-explorer .btn-primary,
-body.theme-glass:not(.theme-light) .course-modal .btn-primary {
-  --bs-btn-disabled-color: var(--glass-ink, #1c1408);
 }
 
 .course-btn {
@@ -223,8 +160,7 @@ body.theme-glass:not(.theme-light) .course-modal .btn-primary {
 }
 
 @media (pointer: fine) {
-  .course-explorer,
-  .course-modal {
+  .course-explorer, .course-modal {
     --ce-target: 2.35rem;
   }
 }
@@ -261,10 +197,6 @@ body.theme-glass:not(.theme-light) .course-modal .btn-primary {
   background: var(--ce-pane);
   border: 1px solid var(--ce-line);
   border-radius: var(--ce-radius);
-}
-
-body.theme-macos .course-pane.app-card:hover {
-  transform: none;
 }
 
 .course-explorer-pane-body {
@@ -335,8 +267,7 @@ body.theme-macos .course-pane.app-card:hover {
   }
 }
 
-.course-tree-root,
-.course-tree-link {
+.course-tree-root, .course-tree-link {
   display: flex;
   align-items: center;
   gap: 0.55rem;
@@ -355,28 +286,22 @@ body.theme-macos .course-pane.app-card:hover {
   font-weight: 600;
 }
 
-.course-tree-root:hover,
-.course-tree-link:hover {
+.course-tree-root:hover, .course-tree-link:hover {
   color: var(--ce-text);
   background: var(--ce-tile-hover);
 }
 
-body.theme-light .course-tree-root:hover,
-body.theme-light .course-tree-link:hover,
-html[data-student-skin="nursing"][data-theme="light"] .course-tree-root:hover,
-html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
+body.theme-light .course-tree-root:hover, body.theme-light .course-tree-link:hover, html[data-student-skin="nursing"][data-theme="light"] .course-tree-root:hover, html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   background: var(--ce-accent-soft);
 }
 
-.course-tree-root[aria-current="page"],
-.course-tree-link[aria-current="page"] {
+.course-tree-root[aria-current="page"], .course-tree-link[aria-current="page"] {
   color: var(--ce-text);
   background: var(--ce-accent-soft);
   font-weight: 650;
 }
 
-.course-tree-root[aria-current="page"]::before,
-.course-tree-link[aria-current="page"]::before {
+.course-tree-root[aria-current="page"]::before, .course-tree-link[aria-current="page"]::before {
   content: "";
   position: absolute;
   inset-block: 0.5rem;
@@ -386,8 +311,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   background: var(--ce-accent-strong);
 }
 
-.course-tree-root .ce-icon,
-.course-tree-icon {
+.course-tree-root .ce-icon, .course-tree-icon {
   color: var(--ce-accent-strong);
 }
 
@@ -405,8 +329,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   min-width: 0;
 }
 
-.course-tree-toggle,
-.course-tree-spacer {
+.course-tree-toggle, .course-tree-spacer {
   flex: 0 0 auto;
   width: 1.75rem;
   height: var(--ce-target);
@@ -475,8 +398,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   max-width: 100%;
 }
 
-.course-crumb-link,
-.course-crumb-current {
+.course-crumb-link, .course-crumb-current {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -507,8 +429,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   font-weight: 600;
 }
 
-.course-crumb-current .ce-icon,
-.course-crumb-link .ce-icon {
+.course-crumb-current .ce-icon, .course-crumb-link .ce-icon {
   width: 1rem;
   height: 1rem;
   vertical-align: -0.15em;
@@ -794,8 +715,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   font-size: 0.85rem;
 }
 
-.course-item-meta,
-.course-item-date {
+.course-item-meta, .course-item-date {
   color: var(--ce-muted);
   font-size: 0.82rem;
   font-variant-numeric: tabular-nums;
@@ -885,8 +805,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   white-space: nowrap;
 }
 
-.course-grid[data-view="list"] .course-item-date,
-.course-grid[data-view="list"] .course-item-file .course-item-date {
+.course-grid[data-view="list"] .course-item-date, .course-grid[data-view="list"] .course-item-file .course-item-date {
   display: block;
   grid-column: auto;
   margin: 0;
@@ -898,8 +817,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   padding: 0 0.5rem 0 0;
 }
 
-.course-grid[data-view="list"] .course-item-folder .course-item-link,
-.course-grid[data-view="list"] .course-item-folder:has(.course-item-actions) .course-item-link {
+.course-grid[data-view="list"] .course-item-folder .course-item-link, .course-grid[data-view="list"] .course-item-folder:has(.course-item-actions) .course-item-link {
   padding-bottom: 0.5rem;
 }
 
@@ -1002,8 +920,7 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
     border-color var(--ce-duration-fast) var(--ce-ease);
 }
 
-.course-dropzone:hover,
-.course-dropzone.is-dragover {
+.course-dropzone:hover, .course-dropzone.is-dragover {
   border-color: var(--ce-accent-strong);
   background: var(--ce-accent-soft);
 }
@@ -1075,17 +992,14 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.course-upload-list,
-.course-upload-errors {
+.course-upload-list, .course-upload-errors {
   display: grid;
   gap: 0.25rem;
   margin-top: 0.4rem !important;
   font-size: 0.88rem;
 }
 
-.course-upload-list[hidden],
-.course-upload-errors[hidden],
-.course-upload-summary[hidden] {
+.course-upload-list[hidden], .course-upload-errors[hidden], .course-upload-summary[hidden] {
   display: none;
 }
 
@@ -1188,10 +1102,6 @@ html[data-student-skin="nursing"][data-theme="light"] .course-tree-link:hover {
   margin: 0;
 }
 
-body.theme-macos .course-modal .course-modal-close {
-  display: none;
-}
-
 body:not(.theme-light) .course-modal .btn-close {
   filter: invert(1) grayscale(100%) brightness(200%);
 }
@@ -1227,10 +1137,7 @@ body:not(.theme-light) .course-modal .btn-close {
   color: var(--ce-danger);
 }
 
-.course-modal .btn.course-btn-danger,
-body.theme-macos .course-modal .btn.course-btn-danger,
-body.theme-institut .course-modal .btn.course-btn-danger,
-body.theme-glass .course-modal .btn.course-btn-danger {
+.course-modal .btn.course-btn-danger, body.theme-institut .course-modal .btn.course-btn-danger {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -1240,15 +1147,13 @@ body.theme-glass .course-modal .btn.course-btn-danger {
   box-shadow: none;
 }
 
-.course-modal .btn.course-btn-danger:hover,
-.course-modal .btn.course-btn-danger:focus-visible {
+.course-modal .btn.course-btn-danger:hover, .course-modal .btn.course-btn-danger:focus-visible {
   border-color: color-mix(in srgb, var(--ce-danger) 82%, #000000);
   background: color-mix(in srgb, var(--ce-danger) 82%, #000000);
   color: var(--ce-danger-ink);
 }
 
-body:not(.theme-light) .course-modal .btn.course-btn-danger:hover,
-body:not(.theme-light) .course-modal .btn.course-btn-danger:focus-visible {
+body:not(.theme-light) .course-modal .btn.course-btn-danger:hover, body:not(.theme-light) .course-modal .btn.course-btn-danger:focus-visible {
   border-color: color-mix(in srgb, var(--ce-danger) 82%, #ffffff);
   background: color-mix(in srgb, var(--ce-danger) 82%, #ffffff);
 }
@@ -1280,8 +1185,7 @@ body:not(.theme-light) .course-modal .btn.course-btn-danger:focus-visible {
 /* Student space adjustments                                           */
 /* ------------------------------------------------------------------ */
 
-.student-space .course-explorer .course-explorer-title,
-.student-space .course-explorer .course-group-title {
+.student-space .course-explorer .course-explorer-title, .student-space .course-explorer .course-group-title {
   color: var(--ce-text);
 }
 
@@ -1400,8 +1304,7 @@ html[data-student-skin="nursing"] .student-space .course-explorer .course-group-
   font-weight: 650;
 }
 
-.course-pdf-toolbar .course-icon-btn,
-.course-pdf-toolbar .course-btn {
+.course-pdf-toolbar .course-icon-btn, .course-pdf-toolbar .course-btn {
   position: relative;
   z-index: 1;
 }
@@ -1429,25 +1332,18 @@ body.course-pdf-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .course-explorer *,
-  .course-modal *,
-  .course-pdf-layer * {
+  .course-explorer *, .course-modal *, .course-pdf-layer * {
     transition: none !important;
     animation: none !important;
   }
 
-  .course-item:hover,
-  .course-dropzone.is-dragover,
-  .course-icon-btn:active {
+  .course-item:hover, .course-dropzone.is-dragover, .course-icon-btn:active {
     transform: none;
   }
 }
 
 @media print {
-  .course-tree-pane,
-  .course-toolbar,
-  .course-upload,
-  .course-item-actions {
+  .course-tree-pane, .course-toolbar, .course-upload, .course-item-actions {
     display: none !important;
   }
 }

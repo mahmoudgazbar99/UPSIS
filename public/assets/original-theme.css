@@ -53,9 +53,7 @@ body.theme-original.theme-light {
 }
 
 /* ——— Chrome / top bar ——— */
-body.theme-original .app-chrome.navbar,
-body.theme-original.theme-dark .app-chrome.navbar,
-body.theme-original.theme-light .app-chrome.navbar {
+body.theme-original .app-chrome.navbar, body.theme-original.theme-dark .app-chrome.navbar, body.theme-original.theme-light .app-chrome.navbar {
   min-height: 0;
   padding-block: 0.2rem;
   background: color-mix(in srgb, var(--app-surface-strong) 92%, transparent) !important;
@@ -102,8 +100,7 @@ body.theme-original .staff-chrome-tray {
   z-index: 5;
 }
 
-body.theme-original .staff-chrome-tray .theme-toggle,
-body.theme-original .staff-chrome-tray .settings-button {
+body.theme-original .staff-chrome-tray .theme-toggle, body.theme-original .staff-chrome-tray .settings-button {
   flex: 0 0 auto;
 }
 
@@ -183,16 +180,12 @@ body.theme-original .dashboard-menu-item[data-menu-icon="finance-users"] { --nav
     line-height: 1.1;
   }
 
-  body.theme-original .app-chrome .theme-toggle,
-  body.theme-original .app-chrome .settings-button,
-  body.theme-original .app-chrome .theme-style-select {
+  body.theme-original .app-chrome .theme-toggle, body.theme-original .app-chrome .settings-button, body.theme-original .app-chrome .theme-style-select {
     margin-block: 0;
   }
 }
 
-body.theme-original .navbar-institution-name,
-body.theme-original .teacher-welcome,
-body.theme-original .navbar-text {
+body.theme-original .navbar-institution-name, body.theme-original .teacher-welcome, body.theme-original .navbar-text {
   color: var(--app-muted);
   letter-spacing: -0.01em;
 }
@@ -208,8 +201,7 @@ body.theme-original .theme-style-select {
   color: var(--app-text);
 }
 
-body.theme-original .settings-button,
-body.theme-original .btn-outline-light {
+body.theme-original .settings-button, body.theme-original .btn-outline-light {
   border-color: var(--app-border);
   color: var(--app-text);
   border-radius: var(--lw-radius);
@@ -222,19 +214,13 @@ body.theme-original .btn-outline-light:hover {
 }
 
 /* ——— Typography ——— */
-body.theme-original h1,
-body.theme-original h2,
-body.theme-original h3,
-body.theme-original .display-6,
-body.theme-original .page-title-block h1 {
+body.theme-original h1, body.theme-original h2, body.theme-original h3, body.theme-original .display-6, body.theme-original .page-title-block h1 {
   letter-spacing: -0.03em;
   font-weight: 650;
   color: var(--app-text);
 }
 
-body.theme-original .eyebrow,
-body.theme-original .text-secondary,
-body.theme-original .text-muted {
+body.theme-original .eyebrow, body.theme-original .text-secondary, body.theme-original .text-muted {
   color: var(--app-muted) !important;
   letter-spacing: 0.02em;
 }
@@ -266,10 +252,7 @@ body.theme-original.theme-light {
   --lw-tone-5-line: color-mix(in srgb, #e11d48 24%, var(--app-border));
 }
 
-body.theme-original .app-card,
-body.theme-original .card,
-body.theme-original .dashboard-content-panel,
-body.theme-original .login-card {
+body.theme-original .app-card, body.theme-original .card, body.theme-original .dashboard-content-panel, body.theme-original .login-card {
   border: 1px solid var(--app-border);
   border-radius: var(--lw-radius-lg);
   background: var(--app-surface-strong);
@@ -286,9 +269,7 @@ body.theme-original .login-card {
 }
 
 /* Soft distinct washes so consecutive cards / tables are easy to tell apart */
-body.theme-original .app-card[data-card-tone],
-body.theme-original .card[data-card-tone],
-body.theme-original .table-responsive[data-card-tone] {
+body.theme-original .app-card[data-card-tone], body.theme-original .card[data-card-tone], body.theme-original .table-responsive[data-card-tone] {
   background: var(--lw-card-tone, var(--app-surface-strong));
   border-color: var(--lw-card-line, var(--app-border));
   box-shadow:
@@ -333,8 +314,7 @@ body.theme-original.theme-light [data-card-tone="3"] { --lw-card-accent: color-m
 body.theme-original.theme-light [data-card-tone="4"] { --lw-card-accent: color-mix(in srgb, #d97706 55%, transparent); }
 body.theme-original.theme-light [data-card-tone="5"] { --lw-card-accent: color-mix(in srgb, #e11d48 55%, transparent); }
 
-body.theme-original .app-card:hover,
-body.theme-original .card:hover {
+body.theme-original .app-card:hover, body.theme-original .card:hover {
   border-color: color-mix(in srgb, var(--lw-primary) 28%, var(--app-border));
 }
 
@@ -342,9 +322,7 @@ body.theme-original .app-card::before {
   display: none;
 }
 
-body.theme-original .dashboard-menu.app-card,
-body.theme-original .dashboard-menu.card,
-body.theme-original .login-card {
+body.theme-original .dashboard-menu.app-card, body.theme-original .dashboard-menu.card, body.theme-original .login-card {
   background: var(--app-surface-strong);
   box-shadow:
     0 1px 0 color-mix(in srgb, #fff 5%, transparent) inset,
@@ -360,14 +338,12 @@ body.theme-original .table-responsive {
   box-shadow: var(--app-shadow);
 }
 
-body.theme-original .app-card .table-responsive,
-body.theme-original .card .table-responsive {
+body.theme-original .app-card .table-responsive, body.theme-original .card .table-responsive {
   background: color-mix(in srgb, var(--app-bg) 28%, transparent);
   box-shadow: none;
 }
 
-body.theme-original .table,
-body.theme-original .table-dark {
+body.theme-original .table, body.theme-original .table-dark {
   --bs-table-color: var(--app-text);
   --bs-table-bg: transparent;
   --bs-table-border-color: var(--app-border);
@@ -423,38 +399,31 @@ body.theme-original .btn-primary {
   box-shadow: 0 10px 22px -14px color-mix(in srgb, var(--lw-primary) 70%, transparent);
 }
 
-body.theme-original .btn-primary:hover,
-body.theme-original .btn-primary:focus {
+body.theme-original .btn-primary:hover, body.theme-original .btn-primary:focus {
   background: var(--lw-primary-2);
   border-color: var(--lw-primary-2);
   color: var(--lw-primary-ink);
 }
 
-body.theme-original .btn-outline-primary,
-body.theme-original .btn-outline-info,
-body.theme-original .btn-outline-success {
+body.theme-original .btn-outline-primary, body.theme-original .btn-outline-info, body.theme-original .btn-outline-success {
   border-color: color-mix(in srgb, var(--lw-primary) 45%, var(--app-border));
   color: var(--lw-primary-2);
 }
 
-body.theme-original .btn-outline-primary:hover,
-body.theme-original .btn-outline-info:hover,
-body.theme-original .btn-outline-success:hover {
+body.theme-original .btn-outline-primary:hover, body.theme-original .btn-outline-info:hover, body.theme-original .btn-outline-success:hover {
   background: color-mix(in srgb, var(--lw-primary) 14%, transparent);
   border-color: var(--lw-primary);
   color: var(--lw-primary-2);
 }
 
-body.theme-original .form-control,
-body.theme-original .form-select {
+body.theme-original .form-control, body.theme-original .form-select {
   border-radius: var(--lw-radius);
   border-color: var(--app-border);
   background: color-mix(in srgb, var(--app-bg-soft) 80%, transparent);
   color: var(--app-text);
 }
 
-body.theme-original .form-control:focus,
-body.theme-original .form-select:focus {
+body.theme-original .form-control:focus, body.theme-original .form-select:focus {
   border-color: var(--lw-primary);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--lw-primary) 18%, transparent);
   background: var(--app-surface-strong);
@@ -490,8 +459,7 @@ body.theme-original .form-select:focus {
     z-index: 1060;
   }
 
-  body.theme-original:has(.dashboard-workspace) .macos-window,
-  body.theme-original:has(.dashboard-workspace) .macos-window-body {
+  body.theme-original:has(.dashboard-workspace) .macos-window, body.theme-original:has(.dashboard-workspace) .macos-window-body {
     display: flex !important;
     flex: 1 1 auto;
     flex-direction: column;
@@ -515,8 +483,7 @@ body.theme-original .form-select:focus {
     transition: margin-left 0.46s var(--lw-ease), width 0.46s var(--lw-ease);
   }
 
-  body.theme-original:has(.dashboard-workspace.is-nav-toggling) main.app-sheet,
-  body.theme-original:has(.dashboard-workspace.is-nav-toggling) .dashboard-menu {
+  body.theme-original:has(.dashboard-workspace.is-nav-toggling) main.app-sheet, body.theme-original:has(.dashboard-workspace.is-nav-toggling) .dashboard-menu {
     transition: margin-left 0.46s var(--lw-ease), width 0.46s var(--lw-ease);
   }
 
@@ -635,8 +602,7 @@ body.theme-original .form-select:focus {
     color: var(--lw-primary-2);
   }
 
-  body.theme-original .dashboard-menu-list,
-  body.theme-original .dashboard-menu-rail {
+  body.theme-original .dashboard-menu-list, body.theme-original .dashboard-menu-rail {
     display: flex !important;
     flex-direction: column !important;
     grid-template-columns: none !important;
@@ -686,16 +652,13 @@ body.theme-original .form-select:focus {
       border-color 0.22s ease;
   }
 
-  body.theme-original .dashboard-menu-item:hover,
-  body.theme-original .dashboard-menu-item:focus-visible {
+  body.theme-original .dashboard-menu-item:hover, body.theme-original .dashboard-menu-item:focus-visible {
     color: var(--app-text);
     background: color-mix(in srgb, var(--lw-primary) 8%, transparent) !important;
     transform: none !important;
   }
 
-  body.theme-original .dashboard-menu-item.is-active,
-  body.theme-original .dashboard-menu-item[aria-current="page"],
-  body.theme-original .dashboard-menu-item[aria-pressed="true"] {
+  body.theme-original .dashboard-menu-item.is-active, body.theme-original .dashboard-menu-item[aria-current="page"], body.theme-original .dashboard-menu-item[aria-pressed="true"] {
     color: var(--lw-primary-2);
     font-weight: 700;
     background: color-mix(in srgb, var(--lw-primary) 12%, transparent) !important;
@@ -706,8 +669,7 @@ body.theme-original .form-select:focus {
     transform: none !important;
   }
 
-  body.theme-original .dashboard-menu-number,
-  body.theme-original .dashboard-menu-item small {
+  body.theme-original .dashboard-menu-number, body.theme-original .dashboard-menu-item small {
     display: none !important;
   }
 
@@ -750,8 +712,7 @@ body.theme-original .form-select:focus {
     z-index: 1;
   }
 
-  body.theme-original .dashboard-content-panel iframe,
-  body.theme-original .dashboard-home-panel {
+  body.theme-original .dashboard-content-panel iframe, body.theme-original .dashboard-home-panel {
     transform-origin: center top;
   }
 
@@ -759,9 +720,7 @@ body.theme-original .form-select:focus {
     padding-inline: 0.35rem;
   }
 
-  body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu-header > div,
-  body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu-copy,
-  body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu-sub {
+  body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu-header > div, body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu-copy, body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu-sub {
     display: none !important;
   }
 
@@ -776,28 +735,13 @@ body.theme-original .form-select:focus {
 }
 
 /* ——— Phone / tablet shell (student-like drawer) ——— */
-.staff-phone-menu-btn,
-.staff-nav-backdrop,
-.staff-nav-edge {
+.staff-phone-menu-btn, .staff-nav-backdrop, .staff-nav-edge {
   display: none;
 }
 
 /* Phone only: hide every theme picker — Original is forced in JS */
 @media (max-width: 991.98px) {
-  html.phone-style-lock .theme-style-select-wrap,
-  html.phone-style-lock .theme-style-select,
-  html.phone-style-lock [data-style-select],
-  html.phone-style-lock label.theme-style-select-wrap,
-  body.theme-original .theme-style-select-wrap,
-  body.theme-original [data-style-select],
-  body.theme-glass .theme-style-select-wrap,
-  body.theme-glass [data-style-select],
-  body.theme-macos .theme-style-select-wrap,
-  body.theme-macos [data-style-select],
-  body.theme-clarity .theme-style-select-wrap,
-  body.theme-clarity [data-style-select],
-  body.theme-institut .theme-style-select-wrap,
-  body.theme-institut [data-style-select] {
+  html.phone-style-lock .theme-style-select-wrap, html.phone-style-lock .theme-style-select, html.phone-style-lock [data-style-select], html.phone-style-lock label.theme-style-select-wrap, body.theme-original .theme-style-select-wrap, body.theme-original [data-style-select], body.theme-clarity .theme-style-select-wrap, body.theme-clarity [data-style-select], body.theme-institut .theme-style-select-wrap, body.theme-institut [data-style-select] {
     display: none !important;
   }
 
@@ -816,26 +760,31 @@ body.theme-original .form-select:focus {
     overflow-y: auto;
   }
 
+  body.theme-original:not(.embedded-view):not(.login-page) > .app-chrome.navbar,
+  body.theme-original.theme-dark:not(.embedded-view):not(.login-page) > .app-chrome.navbar,
+  body.theme-original.theme-light:not(.embedded-view):not(.login-page) > .app-chrome.navbar,
   body.theme-original:has(.dashboard-workspace) > .app-chrome.navbar,
   body.theme-original.theme-dark:has(.dashboard-workspace) > .app-chrome.navbar,
   body.theme-original.theme-light:has(.dashboard-workspace) > .app-chrome.navbar {
-    position: sticky;
+    position: sticky !important;
     top: 0;
     z-index: 90;
-    margin-left: 0;
-    width: 100%;
-    min-height: 3.25rem;
-    padding-block: 0.35rem;
+    margin: 0 !important;
+    width: 100% !important;
+    min-height: 3.25rem !important;
+    height: auto !important;
+    padding: 0.35rem 0 !important;
+    padding-top: max(0.35rem, env(safe-area-inset-top, 0px)) !important;
     background: color-mix(in srgb, var(--app-surface-strong) 96%, var(--lw-primary) 4%) !important;
     border-bottom: 1px solid var(--app-border) !important;
-    box-shadow: none;
+    box-shadow: none !important;
   }
 
   /* Beat style.css phone toggler / wrap rules — no second menu on the right */
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .navbar-toggler,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .navbar-toggler,
   body.theme-original .staff-collapse-toggler,
   body.theme-original .app-chrome .navbar-toggler,
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome #nav,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome #nav,
   body.theme-original .app-chrome #nav,
   body.theme-original .app-chrome .navbar-collapse {
     display: none !important;
@@ -849,34 +798,67 @@ body.theme-original .form-select:focus {
     pointer-events: none !important;
   }
 
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .app-chrome-inner,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .app-chrome-inner,
   body.theme-original .app-chrome .app-chrome-inner {
+    display: flex !important;
     flex-wrap: nowrap !important;
     align-items: center !important;
-    gap: 0.35rem;
+    gap: 0.35rem !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 2.75rem;
+    padding-inline: 0.65rem !important;
   }
 
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome .macos-toolbar-lead,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome .macos-toolbar-lead,
   body.theme-original .app-chrome .macos-toolbar-lead {
     flex: 1 1 auto !important;
     min-width: 0 !important;
-    max-width: calc(100% - 7.5rem) !important;
+    max-width: calc(100% - 8.25rem) !important;
     width: auto !important;
     display: flex !important;
     align-items: center;
     gap: 0.4rem;
   }
 
+  body.theme-original .app-chrome .navbar-logo {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+  }
+
+  body.theme-original .app-chrome .navbar-institution,
+  body.theme-original .app-chrome .navbar-brand {
+    max-width: none !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+  }
+
+  body.theme-original .navbar-institution-name {
+    display: block !important;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+    font-size: 0.78rem;
+    line-height: 1.2;
+  }
+
+  body.theme-original .navbar-institution-name span + span {
+    display: none !important;
+  }
+
   body.theme-original .staff-chrome-tray {
     display: inline-flex !important;
     align-items: center;
-    gap: 0.45rem;
-    margin-left: 0.25rem !important;
+    gap: 0.4rem;
+    margin-left: 0 !important;
     padding: 0;
     position: relative;
     z-index: 6;
     flex: 0 0 auto !important;
     order: 3;
+    height: 44px;
   }
 
   body.theme-original .staff-chrome-tray .theme-toggle.lw-theme-toggle {
@@ -884,13 +866,27 @@ body.theme-original .form-select:focus {
     min-width: var(--lw-toggle-w, 3.75rem) !important;
     height: var(--lw-toggle-h, 2rem) !important;
     min-height: var(--lw-toggle-h, 2rem) !important;
+    border: 0 !important;
     border-radius: 999px !important;
+    background: #0f172a !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 6px 16px rgba(2, 8, 23, 0.28) !important;
   }
 
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome [data-settings-dropdown] .settings-button,
+  body.theme-original.theme-light .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+    background: #7dd3fc !important;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+      0 6px 16px rgba(14, 165, 233, 0.28) !important;
+  }
+
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome [data-settings-dropdown] .settings-button,
   body.theme-original .staff-chrome-tray .settings-button {
     position: relative !important;
     inset: auto !important;
+    display: grid !important;
+    place-items: center;
     width: 44px !important;
     min-width: 44px !important;
     height: 44px !important;
@@ -904,6 +900,16 @@ body.theme-original .form-select:focus {
     box-shadow: none !important;
   }
 
+  body.theme-original .staff-chrome-tray .settings-button > span[aria-hidden="true"] {
+    display: none !important;
+  }
+
+  body.theme-original .staff-chrome-tray .settings-button .macos-icon-gear {
+    display: block !important;
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
   body.theme-original .staff-chrome-tray .settings-button:hover,
   body.theme-original .staff-chrome-tray .settings-button:focus-visible {
     background: color-mix(in srgb, var(--lw-primary) 14%, var(--app-surface-strong)) !important;
@@ -911,7 +917,7 @@ body.theme-original .form-select:focus {
     color: var(--lw-primary-2) !important;
   }
 
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome [data-settings-dropdown] .dropdown-menu,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome [data-settings-dropdown] .dropdown-menu,
   body.theme-original .staff-chrome-tray [data-settings-dropdown] .dropdown-menu {
     left: auto !important;
     right: 0 !important;
@@ -923,9 +929,13 @@ body.theme-original .form-select:focus {
     border: 1px solid var(--app-border) !important;
     box-shadow: 0 14px 32px rgba(0, 0, 0, 0.28);
     z-index: 1085;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
   }
 
-  body.theme-original:not(.theme-macos):not(.embedded-view):not(.login-page) .app-chrome [data-settings-dropdown] .dropdown-menu.show,
+  body.theme-original:not(.embedded-view):not(.login-page) .app-chrome [data-settings-dropdown] .dropdown-menu.show,
   body.theme-original .staff-chrome-tray [data-settings-dropdown] .dropdown-menu.show {
     display: flex !important;
     flex-direction: column;
@@ -939,20 +949,6 @@ body.theme-original .form-select:focus {
     letter-spacing: 0.06em;
     text-transform: uppercase;
     padding: 0.35rem 0.75rem 0.15rem;
-  }
-
-  body.theme-original .app-chrome .navbar-institution {
-    max-width: calc(100vw - 10.5rem);
-  }
-
-  body.theme-original .app-chrome .navbar-brand {
-    max-width: none;
-  }
-
-  body.theme-original .navbar-institution-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   /* Phone drawer: keep PC SVG icons + Configuration submenu */
@@ -974,9 +970,7 @@ body.theme-original .form-select:focus {
     gap: 0.1rem;
   }
 
-  body.theme-original:has(.dashboard-workspace) .macos-window,
-  body.theme-original:has(.dashboard-workspace) .macos-window-body,
-  body.theme-original:has(.dashboard-workspace) main.app-sheet {
+  body.theme-original:has(.dashboard-workspace) .macos-window, body.theme-original:has(.dashboard-workspace) .macos-window-body, body.theme-original:has(.dashboard-workspace) main.app-sheet {
     display: block !important;
     width: 100%;
     height: auto;
@@ -1081,13 +1075,11 @@ body.theme-original .form-select:focus {
     border-bottom: 1px solid color-mix(in srgb, var(--lw-primary) 40%, var(--app-border));
   }
 
-  body.theme-original .dashboard-menu-orbit,
-  body.theme-original .dashboard-menu-title-macos {
+  body.theme-original .dashboard-menu-orbit, body.theme-original .dashboard-menu-title-macos {
     display: none;
   }
 
-  body.theme-original .dashboard-menu-list,
-  body.theme-original .dashboard-menu-rail {
+  body.theme-original .dashboard-menu-list, body.theme-original .dashboard-menu-rail {
     display: flex !important;
     flex-direction: column !important;
     flex-wrap: nowrap !important;
@@ -1125,16 +1117,14 @@ body.theme-original .form-select:focus {
     transform: scale(0.98);
   }
 
-  body.theme-original .dashboard-menu-item.is-active,
-  body.theme-original .dashboard-menu-item[aria-current="page"] {
+  body.theme-original .dashboard-menu-item.is-active, body.theme-original .dashboard-menu-item[aria-current="page"] {
     border-color: color-mix(in srgb, var(--lw-primary) 28%, transparent) !important;
     background: color-mix(in srgb, var(--lw-primary) 12%, transparent) !important;
     color: var(--lw-primary-2);
     font-weight: 700;
   }
 
-  body.theme-original .dashboard-menu-number,
-  body.theme-original .dashboard-menu-item small {
+  body.theme-original .dashboard-menu-number, body.theme-original .dashboard-menu-item small {
     display: none !important;
   }
 
@@ -1178,20 +1168,13 @@ body.theme-original .form-select:focus {
     min-height: 60vh;
   }
 
-  body.theme-original .dashboard-content-panel .app-card,
-  body.theme-original .dashboard-content-panel .card,
-  body.theme-original .dashboard-home-panel > .app-card,
-  body.theme-original .dashboard-home-panel > .macos-panel,
-  body.theme-original .dashboard-home-panel > .macos-stat {
+  body.theme-original .dashboard-content-panel .app-card, body.theme-original .dashboard-content-panel .card, body.theme-original .dashboard-home-panel > .app-card, body.theme-original .dashboard-home-panel > .macos-panel, body.theme-original .dashboard-home-panel > .macos-stat {
     animation: staff-portal-rise 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  body.theme-original .dashboard-content-panel .app-card:nth-child(2),
-  body.theme-original .dashboard-content-panel .card:nth-child(2) { animation-delay: 0.05s; }
-  body.theme-original .dashboard-content-panel .app-card:nth-child(3),
-  body.theme-original .dashboard-content-panel .card:nth-child(3) { animation-delay: 0.1s; }
-  body.theme-original .dashboard-content-panel .app-card:nth-child(4),
-  body.theme-original .dashboard-content-panel .card:nth-child(4) { animation-delay: 0.15s; }
+  body.theme-original .dashboard-content-panel .app-card:nth-child(2), body.theme-original .dashboard-content-panel .card:nth-child(2) { animation-delay: 0.05s; }
+  body.theme-original .dashboard-content-panel .app-card:nth-child(3), body.theme-original .dashboard-content-panel .card:nth-child(3) { animation-delay: 0.1s; }
+  body.theme-original .dashboard-content-panel .app-card:nth-child(4), body.theme-original .dashboard-content-panel .card:nth-child(4) { animation-delay: 0.15s; }
 
   body.theme-original .dashboard-content-panel:has(> iframe:not([hidden])) {
     height: calc(100dvh - 5.5rem);
@@ -1202,8 +1185,7 @@ body.theme-original .form-select:focus {
     overflow: hidden;
   }
 
-  body.theme-original .app-card,
-  body.theme-original .card {
+  body.theme-original .app-card, body.theme-original .card {
     border-radius: 1rem;
   }
 
@@ -1211,8 +1193,7 @@ body.theme-original .form-select:focus {
     -webkit-overflow-scrolling: touch;
   }
 
-  body.theme-original .form-control,
-  body.theme-original .form-select {
+  body.theme-original .form-control, body.theme-original .form-select {
     font-size: 16px;
     min-height: 48px;
   }
@@ -1230,24 +1211,18 @@ body.theme-original .form-select:focus {
 }
 
 @media (max-width: 991.98px) and (prefers-reduced-motion: reduce) {
-  body.theme-original .dashboard-menu,
-  body.theme-original .staff-nav-backdrop {
+  body.theme-original .dashboard-menu, body.theme-original .staff-nav-backdrop {
     transition: none;
   }
 
-  body.theme-original .dashboard-content-panel .app-card,
-  body.theme-original .dashboard-content-panel .card,
-  body.theme-original .dashboard-menu-item:active {
+  body.theme-original .dashboard-content-panel .app-card, body.theme-original .dashboard-content-panel .card, body.theme-original .dashboard-menu-item:active {
     animation: none;
     transform: none;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body.theme-original .dashboard-menu,
-  body.theme-original .dashboard-menu-item,
-  body.theme-original .btn,
-  body.theme-original .theme-toggle {
+  body.theme-original .dashboard-menu, body.theme-original .dashboard-menu-item, body.theme-original .btn, body.theme-original .theme-toggle {
     transition: none !important;
   }
 }

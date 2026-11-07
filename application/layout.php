@@ -702,14 +702,13 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
         <link href="assets/motion.css?v=3" rel="stylesheet">
-        <link href="assets/style.css?v=94" rel="stylesheet">
-        <link href="assets/institut.css?v=3" rel="stylesheet">
-        <link href="assets/macos.css?v=52" rel="stylesheet">
-        <link href="assets/clarity.css?v=24" rel="stylesheet">
-        <link href="assets/skeleton.css?v=1" rel="stylesheet">
+        <link href="assets/style.css?v=96" rel="stylesheet">
+        <link href="assets/institut.css?v=4" rel="stylesheet">
+        <link href="assets/clarity.css?v=25" rel="stylesheet">
+        <link href="assets/skeleton.css?v=3" rel="stylesheet">
         <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
         <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-        <link href="assets/original-theme.css?v=15" rel="stylesheet">
+        <link href="assets/original-theme.css?v=17" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {
@@ -728,19 +727,23 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                     style = localStorage.getItem('app-style:' + accountScope) || localStorage.getItem('app-style') || 'original';
                     localStorage.setItem(styleKey, style);
                 }
-                if (style === 'alternate' || style === 'atlas') style = 'original';
-                if (style !== 'glass' && style !== 'macos' && style !== 'institut' && style !== 'clarity') style = 'original';
+                if (style === 'alternate' || style === 'atlas' || style === 'glass') style = 'original';
+                if (style === 'macos' || style === 'mac' || style === 'mac-os') style = 'clarity';
+                if (style !== 'institut' && style !== 'clarity') style = 'original';
                 /* Phone: lock to Original only (desktop keeps saved style). */
                 if (window.matchMedia && window.matchMedia('(max-width: 991.98px)').matches) {
                     style = 'original';
                     document.documentElement.classList.add('phone-style-lock');
+                } else if (localStorage.getItem(styleKey) !== style) {
+                    localStorage.setItem(styleKey, style);
                 }
                 document.documentElement.classList.add('theme-boot');
                 document.documentElement.dataset.appTheme = theme === 'light' ? 'light' : 'dark';
                 document.documentElement.dataset.appStyle = style;
                 document.documentElement.dataset.themeScope = themeScope;
                 document.documentElement.setAttribute('data-bs-theme', theme === 'light' ? 'light' : 'dark');
-                if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas') localStorage.setItem(styleKey, 'original');
+                if (localStorage.getItem(styleKey) === 'alternate' || localStorage.getItem(styleKey) === 'atlas' || localStorage.getItem(styleKey) === 'glass') localStorage.setItem(styleKey, 'original');
+                if (localStorage.getItem(styleKey) === 'macos' || localStorage.getItem(styleKey) === 'mac' || localStorage.getItem(styleKey) === 'mac-os') localStorage.setItem(styleKey, 'clarity');
             } catch (error) {}
         })();
         </script>
@@ -757,10 +760,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
             }
             body.classList.toggle('theme-light', theme === 'light');
             body.classList.toggle('theme-dark', theme !== 'light');
-            body.classList.remove('theme-alternate');
-            body.classList.remove('theme-atlas');
-            body.classList.toggle('theme-glass', style === 'glass');
-            body.classList.toggle('theme-macos', style === 'macos');
+            body.classList.remove('theme-alternate', 'theme-atlas', 'theme-glass', 'theme-macos');
             body.classList.toggle('theme-clarity', style === 'clarity');
             body.classList.toggle('theme-institut', style === 'institut');
             body.classList.toggle('theme-original', style === 'original');
@@ -832,8 +832,6 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                 <span class="visually-hidden">Thème visuel</span>
                                 <select class="theme-style-select" data-style-select aria-label="Choisir le thème" title="Choisir le thème">
                                     <option value="original">Original</option>
-                                    <option value="glass">Glass</option>
-                                    <option value="macos">Mac OS</option>
                                     <option value="clarity">Mac bureau</option>
                                     <option value="institut">Institut</option>
                                 </select>
@@ -886,8 +884,6 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                                 <label class="small mb-1 d-block" for="macos-style-select">Apparence</label>
                                 <select class="theme-style-select" id="macos-style-select" data-style-select aria-label="Choisir le thème">
                                     <option value="original">Original</option>
-                                    <option value="glass">Glass</option>
-                                    <option value="macos">Mac OS</option>
                                     <option value="clarity">Mac bureau</option>
                                     <option value="institut">Institut</option>
                                 </select>
@@ -1023,10 +1019,8 @@ function page_foot(): void {
 
             applyTheme(savedTheme);
             function normalizeStyle(style) {
-                if (style === 'atlas' || style === 'alternate') return 'original';
-                if (style === 'glass') return 'glass';
-                if (style === 'macos' || style === 'mac' || style === 'mac-os') return 'macos';
-                if (style === 'clarity' || style === 'mac-clair') return 'clarity';
+                if (style === 'atlas' || style === 'alternate' || style === 'glass') return 'original';
+                if (style === 'macos' || style === 'mac' || style === 'mac-os' || style === 'clarity' || style === 'mac-clair') return 'clarity';
                 if (style === 'institut' || style === 'accueil') return 'institut';
                 return 'original';
             }
@@ -1054,12 +1048,13 @@ function page_foot(): void {
                         localStorage.setItem(styleKey, 'original');
                     }
                 }
-                body.classList.remove('theme-alternate', 'theme-atlas');
-                body.classList.toggle('theme-glass', normalized === 'glass');
-                body.classList.toggle('theme-macos', normalized === 'macos');
+                body.classList.remove('theme-alternate', 'theme-atlas', 'theme-glass', 'theme-macos');
                 body.classList.toggle('theme-clarity', normalized === 'clarity');
                 body.classList.toggle('theme-institut', normalized === 'institut');
                 body.classList.toggle('theme-original', normalized === 'original');
+                if (!options.skipStore && !isPhoneViewport() && (style === 'glass' || style === 'macos' || style === 'mac' || style === 'mac-os')) {
+                    localStorage.setItem(styleKey, normalized);
+                }
                 document.documentElement.dataset.appStyle = normalized;
                 styleSelects.forEach(function (el) {
                     if (el.value !== normalized) el.value = normalized;
@@ -1070,9 +1065,7 @@ function page_foot(): void {
 
             function currentStyle() {
                 if (isPhoneViewport()) return 'original';
-                if (body.classList.contains('theme-macos')) return 'macos';
                 if (body.classList.contains('theme-clarity')) return 'clarity';
-                if (body.classList.contains('theme-glass')) return 'glass';
                 if (body.classList.contains('theme-institut')) return 'institut';
                 return 'original';
             }
@@ -1376,7 +1369,7 @@ function page_foot(): void {
             let drag = null;
 
             function isMacos() {
-                return body.classList.contains('theme-macos') || body.classList.contains('theme-clarity');
+                return body.classList.contains('theme-clarity');
             }
 
             function clearWindowInline() {
