@@ -23,8 +23,9 @@
   width: min(1280px, 98vw);
   height: min(860px, 78vh);
   display: block;
-  filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.35));
-  transform: scale(1.22);
+  /* Soft glow only — keep the stroke visually slim */
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
+  transform: scale(1.2);
   transform-origin: center;
 }
 
@@ -47,7 +48,7 @@ html.landing-intro-reveal body > *:not(.landing-intro) {
   .landing-intro-lottie {
     width: min(100vw, 100%);
     height: min(58vh, 420px);
-    transform: scale(1.28);
+    transform: scale(1.25);
   }
 }
 

@@ -45,7 +45,7 @@ if (reduced || !(shell instanceof HTMLElement) || !(canvas instanceof HTMLCanvas
     src: SRC,
     autoplay: true,
     loop: false,
-    speed: 0.9,
+    speed: 0.85,
     layout: { fit: 'contain', align: [0.5, 0.5] },
   });
 
