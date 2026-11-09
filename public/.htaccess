@@ -18,17 +18,23 @@ DirectoryIndex accueil.php index.php
     # broken <img> when the src (.php) is redirected before the bytes arrive.
     RewriteRule ^brand_logo\.php$ index.php [L,QSA]
 
+    # Render health probe must stay 200 with no redirect and no Neon.
+    RewriteRule ^health\.php$ - [L]
+    RewriteRule ^health$ health.php [L]
+
     # Use extensionless canonical URLs for PHP pages.
     # Build Location from the public Host header so reverse proxies (Render)
     # do not leak the internal listen port (:10000) into redirects.
     RewriteCond %{THE_REQUEST} "\s+(/[^?\s]+)\.php(?:[?\s])" [NC]
     RewriteCond %{REQUEST_URI} !^/brand_logo\.php$ [NC]
+    RewriteCond %{REQUEST_URI} !^/health\.php$ [NC]
     RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
     RewriteCond %{HTTPS} =on
     RewriteRule ^ https://%{HTTP_HOST}%1 [R=308,L,QSA,NE]
 
     RewriteCond %{THE_REQUEST} "\s+(/[^?\s]+)\.php(?:[?\s])" [NC]
     RewriteCond %{REQUEST_URI} !^/brand_logo\.php$ [NC]
+    RewriteCond %{REQUEST_URI} !^/health\.php$ [NC]
     RewriteRule ^ http://%{HTTP_HOST}%1 [R=308,L,QSA,NE]
 
     # Keep real public files (accueil, assets, images, exports).
