@@ -1,24 +1,32 @@
-.login-fail-lottie-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 5000;
+.login-fail-lottie-slot {
   display: grid;
   place-items: center;
-  padding: 1rem;
-  background: rgba(8, 10, 14, 0.22);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  cursor: pointer;
+  width: 100%;
+  margin: 0.85rem 0 0;
+  min-height: 7.5rem;
+}
+
+.login-fail-lottie-slot[hidden] {
+  display: none;
 }
 
 .login-fail-lottie {
-  width: min(360px, 78vw);
-  height: min(360px, 78vw);
-  pointer-events: none;
+  width: min(160px, 46vw);
+  height: min(160px, 46vw);
+}
+
+.student-gate .login-fail-lottie-slot {
+  margin-top: 0.7rem;
+  min-height: 6.5rem;
+}
+
+.student-gate .login-fail-lottie {
+  width: min(140px, 42vw);
+  height: min(140px, 42vw);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-fail-lottie-overlay {
+  .login-fail-lottie-slot {
     display: none;
   }
 }

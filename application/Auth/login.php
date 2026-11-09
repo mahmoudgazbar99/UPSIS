@@ -396,8 +396,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   </script>
   <?php endif; ?>
-<link href="assets/login-fail-lottie.css?v=1" rel="stylesheet">
-<script type="module" src="assets/login-fail-lottie.js?v=1"></script>
+<link href="assets/login-fail-lottie.css?v=2" rel="stylesheet">
+<script type="module" src="assets/login-fail-lottie.js?v=2"></script>
 <script src="assets/app-theme-wipe.js?v=7"></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>
