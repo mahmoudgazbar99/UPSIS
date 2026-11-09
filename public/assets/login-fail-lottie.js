@@ -3,43 +3,22 @@ import { DotLottie } from './dotlottie-web.js';
 const SRC = 'https://lottie.host/4f66f8cf-cda6-4720-a854-acb32c49aa59/314sJIwmSz.lottie';
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function findFirstUserField() {
-  const form = document.querySelector('form');
-  if (!form) return null;
-  const candidates = form.querySelectorAll(
-    '#cin:not([disabled]), #username:not([disabled]), input[name="cin"]:not([disabled]), input[name="username"]:not([disabled]), input:not([type="hidden"]):not([type="password"]):not([disabled])'
-  );
-  for (let i = 0; i < candidates.length; i += 1) {
-    const field = candidates[i];
-    if (field instanceof HTMLElement && !field.closest('[hidden]')) {
-      return field;
-    }
-  }
-  return form.querySelector('select#role, select[name="role"]');
-}
+function mountBetweenAlertAndFirstField(alertEl) {
+  if (reduced || !(alertEl instanceof HTMLElement)) return;
+  if (document.querySelector('.login-fail-lottie-slot')) return;
 
-function mountOnFirstUserField() {
-  if (reduced) return;
-  if (document.querySelector('.login-fail-lottie-on-field')) return;
-
-  const field = findFirstUserField();
-  if (!(field instanceof HTMLElement)) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'login-fail-field-wrap is-fail';
-  field.parentNode.insertBefore(wrap, field);
-  wrap.appendChild(field);
-
-  const overlay = document.createElement('div');
-  overlay.className = 'login-fail-lottie-on-field';
-  overlay.setAttribute('role', 'status');
-  overlay.setAttribute('aria-label', 'Connexion échouée');
+  const slot = document.createElement('div');
+  slot.className = 'login-fail-lottie-slot';
+  slot.setAttribute('role', 'status');
+  slot.setAttribute('aria-label', 'Connexion échouée');
 
   const canvas = document.createElement('canvas');
   canvas.className = 'login-fail-lottie';
   canvas.setAttribute('aria-hidden', 'true');
-  overlay.appendChild(canvas);
-  wrap.appendChild(overlay);
+  slot.appendChild(canvas);
+
+  // Exactly between the error banner and the first identity label/field.
+  alertEl.insertAdjacentElement('afterend', slot);
 
   new DotLottie({
     canvas,
@@ -51,6 +30,7 @@ function mountOnFirstUserField() {
   });
 }
 
-if (document.querySelector('[data-login-fail]')) {
-  mountOnFirstUserField();
+const failAlert = document.querySelector('[data-login-fail]');
+if (failAlert) {
+  mountBetweenAlertAndFirstField(failAlert);
 }

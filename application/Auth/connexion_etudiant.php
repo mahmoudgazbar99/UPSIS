@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/student-theme.css?v=15" rel="stylesheet">
   <link href="assets/student-lightswind.css?v=1" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-  <link href="assets/login-fail-lottie.css?v=4" rel="stylesheet">
+  <link href="assets/login-fail-lottie.css?v=5" rel="stylesheet">
 </head>
 <body class="student-gate">
   <?php student_theme_select(); ?>
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <a href="login.php">Personnel</a>
     </p>
   </main>
-<script type="module" src="assets/login-fail-lottie.js?v=4"></script>
+<script type="module" src="assets/login-fail-lottie.js?v=5"></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>
