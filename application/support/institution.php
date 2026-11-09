@@ -83,11 +83,17 @@ function institution_ensure(): void
     app_schema_mark_ready('institution');
 }
 
+function institution_settings_cache_path(): string
+{
+    return storage_path('cache' . DIRECTORY_SEPARATOR . 'institution_settings.json');
+}
+
 function institution_settings(bool $refresh = false): array
 {
     static $cache = null;
     if ($refresh) {
         $cache = null;
+        @unlink(institution_settings_cache_path());
     }
     if ($cache !== null) {
         return $cache;
@@ -105,12 +111,25 @@ function institution_settings(bool $refresh = false): array
         'formula_generale' => '',
         'formula_credit' => '',
     ];
+    $fileCache = institution_settings_cache_path();
+    if (!$refresh && is_file($fileCache) && (time() - (int) filemtime($fileCache)) < 120) {
+        $decoded = json_decode((string) file_get_contents($fileCache), true);
+        if (is_array($decoded)) {
+            $cache = array_merge($defaults, $decoded);
+            return $cache;
+        }
+    }
     try {
         institution_ensure();
         $rows = db()->query('SELECT setting_key, setting_value FROM system_settings')->fetchAll();
         foreach ($rows as $row) {
             $defaults[(string) $row['setting_key']] = (string) $row['setting_value'];
         }
+        $dir = dirname($fileCache);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($fileCache, json_encode($defaults, JSON_UNESCAPED_UNICODE));
     } catch (Throwable $exception) {
         /* Keep the built-in identity if the database is unavailable. */
     }
@@ -173,12 +192,28 @@ function institution_logo_src(): string
     if (!institution_logo_custom()) {
         return '/images/no_bg_logo.png?v=2';
     }
+    static $cachedSrc = null;
+    if ($cachedSrc !== null) {
+        return $cachedSrc;
+    }
+    $stampPath = storage_path('cache' . DIRECTORY_SEPARATOR . 'institution_logo_stamp.txt');
+    if (is_file($stampPath) && (time() - (int) filemtime($stampPath)) < 300) {
+        $stamp = (int) trim((string) file_get_contents($stampPath));
+        $cachedSrc = '/brand_logo?v=' . max(1, $stamp);
+        return $cachedSrc;
+    }
     try {
         $stamp = (int) db()->query("SELECT UNIX_TIMESTAMP(updated_at) FROM institution_logo WHERE asset_key = 'logo'")->fetchColumn();
+        $dir = dirname($stampPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($stampPath, (string) max(1, $stamp));
     } catch (Throwable $exception) {
         $stamp = time();
     }
-    return '/brand_logo?v=' . max(1, $stamp);
+    $cachedSrc = '/brand_logo?v=' . max(1, $stamp);
+    return $cachedSrc;
 }
 
 function institution_logo_file(): array

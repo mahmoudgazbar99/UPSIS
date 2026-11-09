@@ -7,6 +7,8 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
+    # Must match Neon (eu-central-1). Oregon→Frankfurt DB latency was ~9s/page.
+    region: frankfurt
     # Must not hit Neon — / and /accueil boot the full ERP and wake the DB.
     healthCheckPath: /health.php
     envVars:
