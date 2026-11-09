@@ -82,7 +82,6 @@ html[data-student-skin="nursing"][data-theme="light"] {
   outline-offset: 3px;
 }
 
-html[data-student-skin="nursing"] body.student-gate,
 html[data-student-skin="nursing"] body.student-space {
   color: var(--ink);
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -92,11 +91,11 @@ html[data-student-skin="nursing"] body.student-space {
     var(--bg);
 }
 
+/* Keep the premium glass gate look from student-login.css. */
 html[data-student-skin="nursing"] .student-gate {
   padding-top: 4.75rem;
 }
 
-html[data-student-skin="nursing"] .student-gate-card,
 html[data-student-skin="nursing"] .student-space-bar,
 html[data-student-skin="nursing"] .student-space-cards button,
 html[data-student-skin="nursing"] .student-space-sheet {
@@ -106,11 +105,6 @@ html[data-student-skin="nursing"] .student-space-sheet {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   color: var(--ink);
-}
-
-html[data-student-skin="nursing"] .student-gate-card {
-  box-shadow: var(--ux-elev-1, var(--shadow));
-  border-radius: 1.25rem;
 }
 
 html[data-student-skin="nursing"][data-theme="light"] .student-space-cards button,
@@ -128,7 +122,6 @@ html[data-student-skin="nursing"][data-theme="light"] .student-inbox-menu {
   box-shadow: var(--ux-elev-8);
 }
 
-html[data-student-skin="nursing"] .student-gate-logo,
 html[data-student-skin="nursing"] .student-space-bar img {
   padding: 0.25rem;
   border-radius: 0.75rem;
@@ -136,7 +129,6 @@ html[data-student-skin="nursing"] .student-space-bar img {
   object-fit: contain;
 }
 
-html[data-student-skin="nursing"] .student-gate-card h1,
 html[data-student-skin="nursing"] .student-space-bar strong,
 html[data-student-skin="nursing"] .student-space-cards button strong,
 html[data-student-skin="nursing"] .student-space-sheet h1,
@@ -149,7 +141,6 @@ html[data-student-skin="nursing"] .student-mail-modal .modal-title {
   color: var(--ink);
 }
 
-html[data-student-skin="nursing"] .student-gate-school,
 html[data-student-skin="nursing"] .student-space-bar p,
 html[data-student-skin="nursing"] .student-space-cards button small,
 html[data-student-skin="nursing"] .student-space-lead,
@@ -161,13 +152,11 @@ html[data-student-skin="nursing"] .student-mail-headers dt {
   color: var(--muted);
 }
 
-html[data-student-skin="nursing"] .student-gate label,
 html[data-student-skin="nursing"] .student-space-form label {
   color: var(--ink-soft);
   font-weight: 600;
 }
 
-html[data-student-skin="nursing"] .student-gate input,
 html[data-student-skin="nursing"] .student-space-form input,
 html[data-student-skin="nursing"] .student-space-form select,
 html[data-student-skin="nursing"] .student-space-form textarea {
@@ -182,7 +171,6 @@ html[data-student-skin="nursing"] .student-space-form select option {
   color: var(--ink);
 }
 
-html[data-student-skin="nursing"] .student-gate input:focus,
 html[data-student-skin="nursing"] .student-space-form input:focus,
 html[data-student-skin="nursing"] .student-space-form select:focus,
 html[data-student-skin="nursing"] .student-space-form textarea:focus {
@@ -191,14 +179,12 @@ html[data-student-skin="nursing"] .student-space-form textarea:focus {
   background: var(--surface);
 }
 
-html[data-student-skin="nursing"] .student-gate input:-webkit-autofill,
 html[data-student-skin="nursing"] .student-space-form input:-webkit-autofill {
   -webkit-text-fill-color: var(--ink);
   caret-color: var(--ink);
   box-shadow: 0 0 0 1000px var(--surface-2) inset;
 }
 
-html[data-student-skin="nursing"] .student-gate button[type="submit"],
 html[data-student-skin="nursing"] .student-space-form button,
 html[data-student-skin="nursing"] .student-space-bar-actions > a {
   border-radius: 0.85rem;
@@ -206,35 +192,10 @@ html[data-student-skin="nursing"] .student-space-bar-actions > a {
   color: var(--accent-ink);
 }
 
-html[data-student-skin="nursing"] .student-gate button[type="submit"]:hover,
 html[data-student-skin="nursing"] .student-space-form button:hover,
 html[data-student-skin="nursing"] .student-space-bar-actions > a:hover {
   background: var(--accent-hover);
   color: var(--accent-ink);
-}
-
-html[data-student-skin="nursing"] .student-gate-home {
-  border-color: var(--line-strong);
-  border-radius: 0.85rem;
-  color: var(--ink);
-  background: transparent;
-}
-
-html[data-student-skin="nursing"] .student-gate-home:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-html[data-student-skin="nursing"] .student-gate-links a {
-  color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-html[data-student-skin="nursing"] .student-gate-links a:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
 }
 
 html[data-student-skin="nursing"] .student-skin-select select {

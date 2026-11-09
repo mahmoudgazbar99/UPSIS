@@ -85,11 +85,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Créer un espace étudiant | <?= e(institution_name_inline()) ?></title>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-login.css?v=4" rel="stylesheet">
-  <link href="assets/student-theme.css?v=11" rel="stylesheet">
+  <link href="assets/student-theme.css?v=16" rel="stylesheet">
+  <link href="assets/student-login.css?v=6" rel="stylesheet">
 </head>
 <body class="student-gate">
   <main class="student-gate-card">
