@@ -214,7 +214,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </aside>
     <div class="card shadow-lg login-card">
       <div class="card-body p-5">
-        <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
+        <?php if ($error): ?><div class="alert alert-danger" data-login-fail="1" role="alert"><?= e($error) ?></div><?php endif; ?>
         <form method="post" action="login">
           <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
           <label class="form-label" for="role">Se connecter en tant que</label>
@@ -396,6 +396,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   </script>
   <?php endif; ?>
+<link href="assets/login-fail-lottie.css?v=1" rel="stylesheet">
+<script type="module" src="assets/login-fail-lottie.js?v=1"></script>
 <script src="assets/app-theme-wipe.js?v=7"></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>

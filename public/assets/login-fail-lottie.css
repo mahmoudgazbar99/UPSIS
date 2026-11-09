@@ -1,0 +1,24 @@
+.login-fail-lottie-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(8, 10, 14, 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+}
+
+.login-fail-lottie {
+  width: min(360px, 78vw);
+  height: min(360px, 78vw);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-fail-lottie-overlay {
+    display: none;
+  }
+}
