@@ -1,32 +1,55 @@
-.login-fail-lottie-slot {
-  display: grid;
-  place-items: center;
+.login-fail-field-wrap {
+  position: relative;
+  display: block;
   width: 100%;
-  margin: 0.35rem 0 0.85rem;
-  min-height: 7.5rem;
 }
 
-.login-fail-lottie-slot[hidden] {
-  display: none;
+.login-fail-lottie-on-field {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  border-radius: inherit;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+body.theme-dark .login-fail-lottie-on-field,
+body:not(.theme-light) .login-fail-lottie-on-field {
+  background: rgba(12, 16, 22, 0.45);
+}
+
+.student-gate .login-fail-lottie-on-field {
+  background: rgba(255, 255, 255, 0.62);
+  border-radius: 0.65rem;
 }
 
 .login-fail-lottie {
-  width: min(160px, 46vw);
-  height: min(160px, 46vw);
+  width: min(112px, 58%);
+  height: min(112px, 140%);
+  max-height: 4.8rem;
 }
 
-.student-gate .login-fail-lottie-slot {
-  margin-top: 0.7rem;
-  min-height: 6.5rem;
-}
-
-.student-gate .login-fail-lottie {
-  width: min(140px, 42vw);
-  height: min(140px, 42vw);
+.login-fail-field-wrap.is-fail > .form-control,
+.login-fail-field-wrap.is-fail > .form-select,
+.login-fail-field-wrap.is-fail > input,
+.login-fail-field-wrap.is-fail > select {
+  color: transparent !important;
+  caret-color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .login-fail-lottie-slot {
+  .login-fail-lottie-on-field {
     display: none;
+  }
+
+  .login-fail-field-wrap.is-fail > .form-control,
+  .login-fail-field-wrap.is-fail > .form-select,
+  .login-fail-field-wrap.is-fail > input,
+  .login-fail-field-wrap.is-fail > select {
+    color: inherit !important;
+    caret-color: auto;
   }
 }

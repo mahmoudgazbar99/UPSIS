@@ -20,23 +20,26 @@ function findFirstUserField() {
 
 function mountOnFirstUserField() {
   if (reduced) return;
-  if (document.querySelector('.login-fail-lottie-slot')) return;
+  if (document.querySelector('.login-fail-lottie-on-field')) return;
 
   const field = findFirstUserField();
   if (!(field instanceof HTMLElement)) return;
 
-  const slot = document.createElement('div');
-  slot.className = 'login-fail-lottie-slot';
-  slot.setAttribute('role', 'status');
-  slot.setAttribute('aria-label', 'Connexion échouée');
+  const wrap = document.createElement('div');
+  wrap.className = 'login-fail-field-wrap is-fail';
+  field.parentNode.insertBefore(wrap, field);
+  wrap.appendChild(field);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'login-fail-lottie-on-field';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-label', 'Connexion échouée');
 
   const canvas = document.createElement('canvas');
   canvas.className = 'login-fail-lottie';
   canvas.setAttribute('aria-hidden', 'true');
-  slot.appendChild(canvas);
-
-  // Place directly under the first visible identity field (role / CIN / username).
-  field.insertAdjacentElement('afterend', slot);
+  overlay.appendChild(canvas);
+  wrap.appendChild(overlay);
 
   new DotLottie({
     canvas,
