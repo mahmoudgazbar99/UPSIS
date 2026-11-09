@@ -3,19 +3,27 @@ import { DotLottie } from './dotlottie-web.js';
 const SRC = 'https://lottie.host/4f66f8cf-cda6-4720-a854-acb32c49aa59/314sJIwmSz.lottie';
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-function findMountPoint(alertEl) {
-  const form = alertEl.closest('form') || document.querySelector('form');
+function findFirstUserField() {
+  const form = document.querySelector('form');
   if (!form) return null;
-  const button = form.querySelector('button[type="submit"], .btn-primary, button:not([type])');
-  return button || form;
+  const candidates = form.querySelectorAll(
+    '#cin:not([disabled]), #username:not([disabled]), input[name="cin"]:not([disabled]), input[name="username"]:not([disabled]), input:not([type="hidden"]):not([type="password"]):not([disabled])'
+  );
+  for (let i = 0; i < candidates.length; i += 1) {
+    const field = candidates[i];
+    if (field instanceof HTMLElement && !field.closest('[hidden]')) {
+      return field;
+    }
+  }
+  return form.querySelector('select#role, select[name="role"]');
 }
 
-function mountUnderButton(alertEl) {
-  if (reduced || !(alertEl instanceof HTMLElement)) return;
+function mountOnFirstUserField() {
+  if (reduced) return;
   if (document.querySelector('.login-fail-lottie-slot')) return;
 
-  const anchor = findMountPoint(alertEl);
-  if (!anchor) return;
+  const field = findFirstUserField();
+  if (!(field instanceof HTMLElement)) return;
 
   const slot = document.createElement('div');
   slot.className = 'login-fail-lottie-slot';
@@ -27,11 +35,8 @@ function mountUnderButton(alertEl) {
   canvas.setAttribute('aria-hidden', 'true');
   slot.appendChild(canvas);
 
-  if (anchor.tagName === 'BUTTON' || anchor.classList.contains('btn')) {
-    anchor.insertAdjacentElement('afterend', slot);
-  } else {
-    anchor.appendChild(slot);
-  }
+  // Place directly under the first visible identity field (role / CIN / username).
+  field.insertAdjacentElement('afterend', slot);
 
   new DotLottie({
     canvas,
@@ -43,7 +48,6 @@ function mountUnderButton(alertEl) {
   });
 }
 
-const failAlert = document.querySelector('[data-login-fail]');
-if (failAlert) {
-  mountUnderButton(failAlert);
+if (document.querySelector('[data-login-fail]')) {
+  mountOnFirstUserField();
 }

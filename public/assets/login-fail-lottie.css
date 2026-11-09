@@ -2,7 +2,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  margin: 0.85rem 0 0;
+  margin: 0.35rem 0 0.85rem;
   min-height: 7.5rem;
 }
 
