@@ -5,11 +5,9 @@
   display: grid;
   place-items: center;
   margin: 0;
-  padding: 1.25rem;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(20, 184, 166, 0.12), transparent 52%),
-    #03070e;
-  color: #ecfdf5;
+  padding: 1rem;
+  background: #03070e;
+  color: #ffffff;
   opacity: 1;
   visibility: visible;
   transition: opacity 0.75s ease, visibility 0.75s ease;
@@ -22,9 +20,12 @@
 }
 
 .landing-intro-lottie {
-  width: min(420px, 78vw);
-  height: min(420px, 78vw);
+  width: min(1100px, 96vw);
+  height: min(780px, 72vh);
   display: block;
+  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.28));
+  transform: scale(1.18);
+  transform-origin: center;
 }
 
 html.landing-intro-pending,
@@ -40,6 +41,14 @@ html.landing-intro-pending body > *:not(.landing-intro) {
 html.landing-intro-reveal body > *:not(.landing-intro) {
   opacity: 1;
   transition: opacity 0.8s ease;
+}
+
+@media (max-width: 640px) {
+  .landing-intro-lottie {
+    width: min(100vw, 100%);
+    height: min(58vh, 420px);
+    transform: scale(1.28);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,6 @@
 import { DotLottie } from './dotlottie-web.js';
 
-const SRC = 'https://lottie.host/051f52d4-ac29-400e-b1e9-8ae5f8d3a9b9/bs3rMKYHQM.lottie';
+const SRC = new URL('./landing-heartbeat.lottie', import.meta.url).href;
 const PLAYS = 2;
 const FAILSAFE_MS = 12000;
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
