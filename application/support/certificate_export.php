@@ -561,7 +561,7 @@ function certificate_send_generated_document(
     if ($centerTwoUpCut) {
         certificate_center_landscape_cut($docxPath);
     }
-    $baseName = preg_replace('/[^A-Za-z0-9._-]/', '_', $baseName) ?: 'attestation';
+    $baseName = preg_replace('/[^A-Za-z0-9._-]+/', '_', $baseName) ?: 'attestation';
     if ($asPdf) {
         $pdfPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cert-pdf-' . bin2hex(random_bytes(8)) . '.pdf';
         try {
@@ -571,12 +571,15 @@ function certificate_send_generated_document(
             header('Content-Length: ' . (string) filesize($pdfPath));
             header('Cache-Control: no-store, no-cache, must-revalidate');
             readfile($pdfPath);
+            return;
+        } catch (Throwable $exception) {
+            // Free hosts may OOM LibreOffice; still deliver the filled Word file.
+            error_log('certificate PDF fallback to DOCX: ' . $exception->getMessage());
         } finally {
             if (is_file($pdfPath)) {
                 unlink($pdfPath);
             }
         }
-        return;
     }
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');

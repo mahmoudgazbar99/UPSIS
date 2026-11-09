@@ -5,8 +5,8 @@ ENV LANG=en_US.UTF-8 \
     LANGUAGE=en_US:en \
     COMPOSER_ALLOW_SUPERUSER=1
 
-# Postgres-only runtime. Keep the image lean for Render free cold starts.
-# Certificates: PDF preview via poppler; DOCX→PDF stays local (LibreOffice omitted).
+# Postgres runtime + headless Writer for attestation DOCX→PDF on Render.
+# Full LibreOffice desktop suite stays omitted to limit image bloat.
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		ca-certificates \
@@ -16,6 +16,9 @@ RUN apt-get update \
 		libjpeg62-turbo-dev \
 		libfreetype6-dev \
 		poppler-utils \
+		libreoffice-writer-nogui \
+		fonts-dejavu-core \
+		fonts-liberation \
 		locales \
 		unzip \
 		git \
@@ -42,8 +45,8 @@ RUN echo 'default_charset = "UTF-8"' >> /usr/local/etc/php/conf.d/charset.ini &&
     echo 'mbstring.func_overload = 0' >> /usr/local/etc/php/conf.d/charset.ini && \
     echo 'upload_max_filesize = 16M' >> /usr/local/etc/php/conf.d/uploads.ini && \
     echo 'post_max_size = 20M' >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo 'max_execution_time = 60' >> /usr/local/etc/php/conf.d/timeouts.ini && \
-    echo 'default_socket_timeout = 15' >> /usr/local/etc/php/conf.d/timeouts.ini
+    echo 'max_execution_time = 120' >> /usr/local/etc/php/conf.d/timeouts.ini && \
+    echo 'default_socket_timeout = 30' >> /usr/local/etc/php/conf.d/timeouts.ini
 
 WORKDIR /var/www/html
 

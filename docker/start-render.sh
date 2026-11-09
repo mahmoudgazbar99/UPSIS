@@ -3,6 +3,9 @@ set -euo pipefail
 
 port="${PORT:-10000}"
 hostname="${RENDER_EXTERNAL_HOSTNAME:-localhost}"
+# Headless Writer needs a writable home for UserInstallation profiles.
+export HOME="${HOME:-/tmp}"
+export SAL_DISABLE_OPENCL=1
 a2enmod rewrite headers >/dev/null
 
 sed -ri "s/^Listen .*/Listen 0.0.0.0:${port}/" /etc/apache2/ports.conf
