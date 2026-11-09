@@ -12,13 +12,17 @@ RUN apt-get update \
 		ca-certificates \
 		libzip-dev \
 		libpq-dev \
+		libpng-dev \
+		libjpeg62-turbo-dev \
+		libfreetype6-dev \
 		poppler-utils \
 		locales \
 		unzip \
 		git \
 	&& echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
 	&& locale-gen \
-	&& docker-php-ext-install pdo pdo_pgsql pgsql zip \
+	&& docker-php-ext-configure gd --with-freetype --with-jpeg \
+	&& docker-php-ext-install pdo pdo_pgsql pgsql zip gd \
 	&& curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
 	&& rm -rf /var/lib/apt/lists/*
 
