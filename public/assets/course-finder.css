@@ -1,0 +1,498 @@
+/* Course finder (staff dock). Restored after macos.css removal; works on Original / Clarity / Institut. */
+:root {
+  --course-finder-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --course-finder-border: rgba(255, 255, 255, 0.22);
+  --course-finder-highlight: rgba(255, 255, 255, 0.35);
+  --course-finder-text: #f5f5f7;
+}
+body.theme-original .course-finder-layer , body.theme-clarity .course-finder-layer , body.theme-institut .course-finder-layer {
+  position: fixed;
+  inset: 0 0 5.2rem 0;
+  z-index: 45;
+  display: grid;
+  place-items: end center;
+  padding: 1rem;
+}
+
+body.theme-original .course-finder-layer[hidden] , body.theme-clarity .course-finder-layer[hidden] , body.theme-institut .course-finder-layer[hidden] {
+  display: none;
+}
+
+body.theme-original .course-finder-window , body.theme-clarity .course-finder-window , body.theme-institut .course-finder-window {
+  display: flex;
+  flex-direction: column;
+  width: min(44rem, calc(100vw - 2rem));
+  height: min(32rem, calc(100dvh - 8rem));
+  overflow: hidden;
+  border: 1px solid var(--course-finder-border, var(--glass-border, rgba(255,255,255,0.22)));
+  border-radius: 14px;
+  background: rgba(28, 28, 30, 0.86);
+  color: var(--course-finder-text, var(--macos-text, #f5f5f7));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 var(--course-finder-highlight, var(--glass-highlight, rgba(255,255,255,0.35)));
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  transform-origin: center bottom;
+  opacity: 0;
+  transform: translateY(28px) scale(0.92);
+}
+
+body.theme-original .course-finder-window.is-in , body.theme-clarity .course-finder-window.is-in , body.theme-institut .course-finder-window.is-in {
+  animation: course-finder-in 0.72s var(--course-finder-ease, var(--macos-ease, cubic-bezier(0.22, 1, 0.36, 1))) forwards;
+}
+
+@keyframes course-finder-in {
+  from { opacity: 0; transform: translateY(36px) scale(0.9); }
+  to { opacity: 1; transform: none; }
+}
+
+body.theme-original .course-finder-titlebar , body.theme-clarity .course-finder-titlebar , body.theme-institut .course-finder-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.8rem;
+  padding: 0 0.85rem;
+  border-bottom: 1px solid var(--course-finder-border, var(--glass-border, rgba(255,255,255,0.22)));
+}
+
+body.theme-original .course-finder-titlebar h2 , body.theme-clarity .course-finder-titlebar h2 , body.theme-institut .course-finder-titlebar h2 {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+body.theme-original .course-finder-window , body.theme-clarity .course-finder-window , body.theme-institut .course-finder-window {
+  position: relative;
+}
+
+body.theme-original .course-finder-toolbar , body.theme-clarity .course-finder-toolbar , body.theme-institut .course-finder-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+body.theme-original .course-finder-toolbar button, body.theme-clarity .course-finder-toolbar button,
+body.theme-original .course-finder-sheet-actions button , body.theme-clarity .course-finder-sheet-actions button , body.theme-institut .course-finder-sheet-actions button {
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--course-finder-border, var(--glass-border, rgba(255,255,255,0.22)));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+body.theme-original .course-finder-toolbar button:hover, body.theme-clarity .course-finder-toolbar button:hover,
+body.theme-original .course-finder-toolbar button:focus-visible , body.theme-clarity .course-finder-toolbar button:focus-visible , body.theme-institut .course-finder-toolbar button:focus-visible {
+  background: rgba(10, 132, 255, 0.28);
+}
+
+body.theme-original .course-finder-status , body.theme-clarity .course-finder-status , body.theme-institut .course-finder-status {
+  min-height: 1.4rem;
+  margin: 0;
+  padding: 0.35rem 0.9rem 0;
+  font-size: 0.78rem;
+}
+
+body.theme-original .course-finder-body.is-drop , body.theme-clarity .course-finder-body.is-drop , body.theme-institut .course-finder-body.is-drop {
+  outline: 2px dashed rgba(126, 200, 255, 0.9);
+  outline-offset: -8px;
+  background: rgba(10, 132, 255, 0.12);
+}
+
+body.theme-original .course-finder-item.is-drop , body.theme-clarity .course-finder-item.is-drop , body.theme-institut .course-finder-item.is-drop {
+  background: rgba(10, 132, 255, 0.28);
+  outline: 2px solid rgba(126, 200, 255, 0.95);
+}
+
+body.theme-original .course-finder-open , body.theme-clarity .course-finder-open , body.theme-institut .course-finder-open {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+  cursor: default;
+}
+
+body.theme-original .course-finder-more , body.theme-clarity .course-finder-more , body.theme-institut .course-finder-more {
+  min-height: 1.7rem;
+  padding: 0 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+body.theme-original .course-finder-more:hover, body.theme-clarity .course-finder-more:hover,
+body.theme-original .course-finder-more:focus-visible , body.theme-clarity .course-finder-more:focus-visible , body.theme-institut .course-finder-more:focus-visible {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+body.theme-original .course-finder-menu , body.theme-clarity .course-finder-menu , body.theme-institut .course-finder-menu {
+  position: fixed;
+  z-index: 80;
+  display: grid;
+  width: max-content;
+  min-width: 11.5rem;
+  max-width: 16rem;
+  margin: 0;
+  padding: 0.28rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(40, 40, 42, 0.72);
+  color: #f5f5f7;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  transform-origin: top left;
+}
+
+body.theme-original .course-finder-menu.is-in , body.theme-clarity .course-finder-menu.is-in , body.theme-institut .course-finder-menu.is-in {
+  animation: course-finder-menu-in 0.18s var(--course-finder-ease, var(--macos-ease, cubic-bezier(0.22, 1, 0.36, 1)));
+}
+
+@keyframes course-finder-menu-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+body.theme-original .course-finder-menu[hidden] , body.theme-clarity .course-finder-menu[hidden] , body.theme-institut .course-finder-menu[hidden] {
+  display: none;
+}
+
+body.theme-original .course-finder-menu button , body.theme-clarity .course-finder-menu button , body.theme-institut .course-finder-menu button {
+  display: block;
+  width: 100%;
+  min-height: 1.55rem;
+  margin: 0;
+  padding: 0.18rem 0.7rem;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+body.theme-original .course-finder-menu button:hover, body.theme-clarity .course-finder-menu button:hover,
+body.theme-original .course-finder-menu button:focus-visible , body.theme-clarity .course-finder-menu button:focus-visible , body.theme-institut .course-finder-menu button:focus-visible {
+  background: #0a84ff;
+  color: #fff;
+  outline: none;
+}
+
+body.theme-original .course-finder-menu button.is-danger:hover, body.theme-clarity .course-finder-menu button.is-danger:hover,
+body.theme-original .course-finder-menu button.is-danger:focus-visible , body.theme-clarity .course-finder-menu button.is-danger:focus-visible , body.theme-institut .course-finder-menu button.is-danger:focus-visible {
+  background: #ff3b30;
+}
+
+body.theme-original .course-finder-menu-rule , body.theme-clarity .course-finder-menu-rule , body.theme-institut .course-finder-menu-rule {
+  height: 1px;
+  margin: 0.28rem 0.35rem;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+body.theme-original .course-finder-more , body.theme-clarity .course-finder-more , body.theme-institut .course-finder-more {
+  opacity: 0;
+}
+
+body.theme-original .course-finder-item:hover .course-finder-more, body.theme-clarity .course-finder-item:hover .course-finder-more,
+body.theme-original .course-finder-item:focus-within .course-finder-more , body.theme-clarity .course-finder-item:focus-within .course-finder-more , body.theme-institut .course-finder-item:focus-within .course-finder-more {
+  opacity: 1;
+}
+
+body.theme-original.theme-light .course-finder-menu , body.theme-clarity.theme-light .course-finder-menu , body.theme-institut.theme-light .course-finder-menu , body.theme-institut.theme-light .course-finder-menu , body.theme-institut.theme-light .course-finder-menu {
+  background: rgba(246, 246, 246, 0.78);
+  color: #1d1d1f;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.theme-original.theme-light .course-finder-menu-rule , body.theme-clarity.theme-light .course-finder-menu-rule , body.theme-institut.theme-light .course-finder-menu-rule , body.theme-institut.theme-light .course-finder-menu-rule , body.theme-institut.theme-light .course-finder-menu-rule {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+body.theme-original .course-finder-sheet , body.theme-clarity .course-finder-sheet , body.theme-institut .course-finder-sheet {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0.85rem 0.85rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+body.theme-original .course-finder-sheet[hidden] , body.theme-clarity .course-finder-sheet[hidden] , body.theme-institut .course-finder-sheet[hidden] {
+  display: none;
+}
+
+body.theme-original .course-finder-sheet p , body.theme-clarity .course-finder-sheet p , body.theme-institut .course-finder-sheet p {
+  margin: 0;
+}
+
+body.theme-original .course-finder-sheet input, body.theme-clarity .course-finder-sheet input,
+body.theme-original .course-finder-sheet select , body.theme-clarity .course-finder-sheet select , body.theme-institut .course-finder-sheet select {
+  display: block;
+  width: 100%;
+  margin-top: 0.3rem;
+  min-height: 2.2rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--course-finder-border, var(--glass-border, rgba(255,255,255,0.22)));
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  font: inherit;
+}
+
+body.theme-original:not(.theme-light) .course-finder-sheet select , body.theme-clarity:not(.theme-light) .course-finder-sheet select , body.theme-institut:not(.theme-light) .course-finder-sheet select , body.theme-institut:not(.theme-light) .course-finder-sheet select , body.theme-institut:not(.theme-light) .course-finder-sheet select {
+  color-scheme: dark;
+  background-color: #2c2c2e;
+  color: #f5f5f7;
+}
+
+body.theme-original:not(.theme-light) .course-finder-sheet select option, body.theme-clarity:not(.theme-light) .course-finder-sheet select option,
+body.theme-original:not(.theme-light) .course-finder-sheet select optgroup , body.theme-clarity:not(.theme-light) .course-finder-sheet select optgroup , body.theme-institut:not(.theme-light) .course-finder-sheet select optgroup , body.theme-institut:not(.theme-light) .course-finder-sheet select optgroup , body.theme-institut:not(.theme-light) .course-finder-sheet select optgroup {
+  background-color: #2c2c2e;
+  color: #f5f5f7;
+}
+
+body.theme-original.theme-light .course-finder-sheet select , body.theme-clarity.theme-light .course-finder-sheet select , body.theme-institut.theme-light .course-finder-sheet select , body.theme-institut.theme-light .course-finder-sheet select , body.theme-institut.theme-light .course-finder-sheet select {
+  color-scheme: light;
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+body.theme-original.theme-light .course-finder-sheet select option, body.theme-clarity.theme-light .course-finder-sheet select option,
+body.theme-original.theme-light .course-finder-sheet select optgroup , body.theme-clarity.theme-light .course-finder-sheet select optgroup , body.theme-institut.theme-light .course-finder-sheet select optgroup , body.theme-institut.theme-light .course-finder-sheet select optgroup , body.theme-institut.theme-light .course-finder-sheet select optgroup {
+  background-color: #ffffff;
+  color: #1d1d1f;
+}
+
+body.theme-original .course-finder-sheet-actions , body.theme-clarity .course-finder-sheet-actions , body.theme-institut .course-finder-sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+body.theme-original .course-finder-back , body.theme-clarity .course-finder-back , body.theme-institut .course-finder-back {
+  display: grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+body.theme-original .course-finder-back:hover, body.theme-clarity .course-finder-back:hover,
+body.theme-original .course-finder-back:focus-visible , body.theme-clarity .course-finder-back:focus-visible , body.theme-institut .course-finder-back:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body.theme-original .course-finder-body , body.theme-clarity .course-finder-body , body.theme-institut .course-finder-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 1.1rem;
+}
+
+body.theme-original .course-finder-grid , body.theme-clarity .course-finder-grid , body.theme-institut .course-finder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.85rem 0.4rem;
+}
+
+body.theme-original .course-finder-body.is-opening .course-finder-item , body.theme-clarity .course-finder-body.is-opening .course-finder-item , body.theme-institut .course-finder-body.is-opening .course-finder-item {
+  animation: course-finder-icon 0.62s var(--course-finder-ease, var(--macos-ease, cubic-bezier(0.22, 1, 0.36, 1))) both;
+}
+
+body.theme-original .course-finder-body.is-opening .course-finder-item:nth-child(2) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(2) , body.theme-institut .course-finder-body.is-opening .course-finder-item:nth-child(2) { animation-delay: 0.04s; }
+body.theme-original .course-finder-body.is-opening .course-finder-item:nth-child(3) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(3) , body.theme-institut .course-finder-body.is-opening .course-finder-item:nth-child(3) { animation-delay: 0.08s; }
+body.theme-original .course-finder-body.is-opening .course-finder-item:nth-child(4) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(4) , body.theme-institut .course-finder-body.is-opening .course-finder-item:nth-child(4) { animation-delay: 0.12s; }
+body.theme-original .course-finder-body.is-opening .course-finder-item:nth-child(5) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(5) , body.theme-institut .course-finder-body.is-opening .course-finder-item:nth-child(5) { animation-delay: 0.16s; }
+body.theme-original .course-finder-body.is-opening .course-finder-item:nth-child(6) , body.theme-clarity .course-finder-body.is-opening .course-finder-item:nth-child(6) , body.theme-institut .course-finder-body.is-opening .course-finder-item:nth-child(6) { animation-delay: 0.2s; }
+
+@keyframes course-finder-icon {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+body.theme-original .course-finder-item , body.theme-clarity .course-finder-item , body.theme-institut .course-finder-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  min-height: 6.2rem;
+  padding: 0.45rem 0.3rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  text-align: center;
+  cursor: default;
+}
+
+body.theme-original .course-finder-item:hover, body.theme-clarity .course-finder-item:hover,
+body.theme-original .course-finder-item:focus-visible , body.theme-clarity .course-finder-item:focus-visible , body.theme-institut .course-finder-item:focus-visible {
+  background: rgba(10, 132, 255, 0.18);
+  outline: none;
+}
+
+body.theme-original .course-finder-glyph svg , body.theme-clarity .course-finder-glyph svg , body.theme-institut .course-finder-glyph svg {
+  width: 4.4rem;
+  height: 3.6rem;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25));
+}
+
+body.theme-original .course-finder-item.is-file .course-finder-glyph svg , body.theme-clarity .course-finder-item.is-file .course-finder-glyph svg , body.theme-institut .course-finder-item.is-file .course-finder-glyph svg {
+  width: 3.1rem;
+  height: 3.8rem;
+}
+
+body.theme-original .course-finder-item span , body.theme-clarity .course-finder-item span , body.theme-institut .course-finder-item span {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+body.theme-original .course-finder-item small , body.theme-clarity .course-finder-item small , body.theme-institut .course-finder-item small {
+  color: rgba(245, 245, 247, 0.62);
+}
+
+body.theme-original .course-finder-empty , body.theme-clarity .course-finder-empty , body.theme-institut .course-finder-empty {
+  margin: 2rem auto;
+  max-width: 22rem;
+  text-align: center;
+  color: rgba(245, 245, 247, 0.75);
+}
+
+body.theme-original .course-finder-preview , body.theme-clarity .course-finder-preview , body.theme-institut .course-finder-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+body.theme-original.theme-light .course-finder-window , body.theme-clarity.theme-light .course-finder-window , body.theme-institut.theme-light .course-finder-window , body.theme-institut.theme-light .course-finder-window , body.theme-institut.theme-light .course-finder-window {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1d1d1f;
+}
+
+body.theme-original.theme-light .course-finder-item small, body.theme-clarity.theme-light .course-finder-item small,
+body.theme-original.theme-light .course-finder-empty , body.theme-clarity.theme-light .course-finder-empty , body.theme-institut.theme-light .course-finder-empty , body.theme-institut.theme-light .course-finder-empty , body.theme-institut.theme-light .course-finder-empty {
+  color: #3a3a3c;
+}
+
+@media (max-width: 767.98px) {
+  body.theme-original .course-finder-layer , body.theme-clarity .course-finder-layer , body.theme-institut .course-finder-layer {
+    inset: 0;
+    place-items: center;
+    padding:
+      max(0.45rem, env(safe-area-inset-top, 0px))
+      0.45rem
+      calc(4.8rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  body.theme-original .course-finder-window , body.theme-clarity .course-finder-window , body.theme-institut .course-finder-window {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100dvh - 5.6rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+    border-radius: 12px;
+  }
+
+  body.theme-original .course-finder-titlebar , body.theme-clarity .course-finder-titlebar , body.theme-institut .course-finder-titlebar {
+    flex-wrap: wrap;
+    align-items: center;
+    height: auto;
+    min-height: 0;
+    padding: 0.4rem 0.5rem;
+    gap: 0.35rem;
+  }
+
+  body.theme-original .course-finder-titlebar h2 , body.theme-clarity .course-finder-titlebar h2 , body.theme-institut .course-finder-titlebar h2 {
+    flex: 1 1 auto;
+    font-size: 0.92rem;
+  }
+
+  body.theme-original .course-finder-toolbar , body.theme-clarity .course-finder-toolbar , body.theme-institut .course-finder-toolbar {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+
+  body.theme-original .course-finder-toolbar button , body.theme-clarity .course-finder-toolbar button , body.theme-institut .course-finder-toolbar button {
+    flex: 1 1 auto;
+    min-height: 2.25rem;
+    font-size: 0.75rem;
+  }
+
+  body.theme-original .course-finder-body , body.theme-clarity .course-finder-body , body.theme-institut .course-finder-body {
+    padding: 0.65rem;
+  }
+
+  body.theme-original .course-finder-grid , body.theme-clarity .course-finder-grid , body.theme-institut .course-finder-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem 0.2rem;
+  }
+
+  body.theme-original .course-finder-glyph svg, body.theme-clarity .course-finder-glyph svg,
+  body.theme-original .course-finder-item.is-file .course-finder-glyph svg , body.theme-clarity .course-finder-item.is-file .course-finder-glyph svg , body.theme-institut .course-finder-item.is-file .course-finder-glyph svg {
+    width: 3rem;
+    height: 2.45rem;
+  }
+
+  body.theme-original .course-finder-open, body.theme-clarity .course-finder-open,
+  body.theme-original .course-finder-more, body.theme-clarity .course-finder-more,
+  body.theme-original .course-finder-window, body.theme-clarity .course-finder-window,
+  body.theme-original .course-finder-menu button , body.theme-clarity .course-finder-menu button , body.theme-institut .course-finder-menu button {
+    touch-action: manipulation;
+  }
+
+  body.theme-original .course-finder-sheet input, body.theme-clarity .course-finder-sheet input,
+  body.theme-original .course-finder-sheet select , body.theme-clarity .course-finder-sheet select , body.theme-institut .course-finder-sheet select {
+    font-size: 16px;
+  }
+
+  body.theme-original .course-finder-preview , body.theme-clarity .course-finder-preview , body.theme-institut .course-finder-preview {
+    min-height: 14rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.theme-original .course-finder-window, body.theme-clarity .course-finder-window,
+  body.theme-original .course-finder-window.is-in, body.theme-clarity .course-finder-window.is-in,
+  body.theme-original .course-finder-body.is-opening .course-finder-item , body.theme-clarity .course-finder-body.is-opening .course-finder-item , body.theme-institut .course-finder-body.is-opening .course-finder-item {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

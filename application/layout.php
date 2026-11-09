@@ -709,6 +709,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
         <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
         <link href="assets/original-theme.css?v=18" rel="stylesheet">
+        <link href="assets/course-finder.css?v=1" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
         (function () {
