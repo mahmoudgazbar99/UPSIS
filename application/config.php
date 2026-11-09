@@ -295,13 +295,12 @@ function db_connect(): AppPdo
             parse_str($parts['query'], $query);
         }
         $sslmode = (string) ($query['sslmode'] ?? 'require');
-        // Short connect timeout: a sleeping Neon must fail/retry fast, not hang Apache.
+        // Neon pooler rejects multi -c startup options. Keep DSN minimal.
         $dsn = 'pgsql:host=' . $parts['host']
             . ';port=' . (string) ($parts['port'] ?? '5432')
             . ';dbname=' . ltrim((string) ($parts['path'] ?? ''), '/')
             . ';sslmode=' . $sslmode
-            . ';connect_timeout=8'
-            . ';options=' . rawurlencode('-c statement_timeout=20000 -c client_encoding=UTF8 -c TimeZone=UTC');
+            . ';connect_timeout=8';
         $pdo = new AppPdo($dsn, rawurldecode((string) ($parts['user'] ?? '')), rawurldecode((string) ($parts['pass'] ?? '')), $options);
     } else {
         $host = getenv('DB_HOST') ?: DB_HOST;
@@ -313,13 +312,11 @@ function db_connect(): AppPdo
             $options
         );
     }
-    // Session SETs are safe on direct Neon; skip on pooler (transaction mode).
-    if (!$usingPooler) {
-        $pdo->exec("SET client_encoding TO 'UTF8'");
-        $pdo->exec("SET TIME ZONE 'UTC'");
-        if (getenv('RENDER') === 'true') {
-            $pdo->exec('SET statement_timeout TO 20000');
-        }
+    // Prefer per-request SET over DSN options (pooler-safe inside the checkout).
+    $pdo->exec("SET client_encoding TO 'UTF8'");
+    $pdo->exec("SET TIME ZONE 'UTC'");
+    if (getenv('RENDER') === 'true') {
+        $pdo->exec('SET statement_timeout TO 20000');
     }
     return $pdo;
 }
