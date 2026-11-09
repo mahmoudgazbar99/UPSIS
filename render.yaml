@@ -1,11 +1,14 @@
+# PHP is not a Render native runtime — Docker is required on Render.
+# Free plan sleeps after idle; first hit can take 30–90s+ (Render wake + Neon wake).
+# Prefer Neon POOLED DATABASE_URL (host contains -pooler) for web traffic.
 services:
   - type: web
     name: upsis
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
-    # Cheap path: do not hit DB-backed login pages for health probes.
-    healthCheckPath: /
+    # Must not hit Neon — / and /accueil boot the full ERP and wake the DB.
+    healthCheckPath: /health.php
     envVars:
       - key: RENDER
         value: "true"

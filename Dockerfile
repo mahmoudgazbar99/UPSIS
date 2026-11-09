@@ -1,16 +1,25 @@
-FROM php:8.3-apache
+FROM php:8.3-apache-bookworm
 
 ENV LANG=en_US.UTF-8 \
     LC_ALL=en_US.UTF-8 \
-    LANGUAGE=en_US:en
+    LANGUAGE=en_US:en \
+    COMPOSER_ALLOW_SUPERUSER=1
 
-# LibreOffice is huge and slows Render free cold starts. Certificates that need
-# DOCX→PDF conversion stay available locally; Render keeps PDF preview via poppler.
+# Postgres-only runtime. Keep the image lean for Render free cold starts.
+# Certificates: PDF preview via poppler; DOCX→PDF stays local (LibreOffice omitted).
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends ca-certificates libzip-dev libpq-dev poppler-utils locales \
+	&& apt-get install -y --no-install-recommends \
+		ca-certificates \
+		libzip-dev \
+		libpq-dev \
+		poppler-utils \
+		locales \
+		unzip \
+		git \
 	&& echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
 	&& locale-gen \
-	&& docker-php-ext-install mysqli pdo pdo_mysql pdo_pgsql pgsql zip \
+	&& docker-php-ext-install pdo pdo_pgsql pgsql zip \
+	&& curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN a2enmod rewrite headers \
@@ -28,13 +37,20 @@ RUN echo 'default_charset = "UTF-8"' >> /usr/local/etc/php/conf.d/charset.ini &&
     echo 'mbstring.encoding_translation = On' >> /usr/local/etc/php/conf.d/charset.ini && \
     echo 'mbstring.func_overload = 0' >> /usr/local/etc/php/conf.d/charset.ini && \
     echo 'upload_max_filesize = 16M' >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo 'post_max_size = 20M' >> /usr/local/etc/php/conf.d/uploads.ini
+    echo 'post_max_size = 20M' >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo 'max_execution_time = 60' >> /usr/local/etc/php/conf.d/timeouts.ini && \
+    echo 'default_socket_timeout = 15' >> /usr/local/etc/php/conf.d/timeouts.ini
 
 WORKDIR /var/www/html
 
-COPY . /var/www/html/
+# Install PHP deps before copying the full tree so Composer layer caches better.
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts
 
-RUN chown -R www-data:www-data /var/www/html
+COPY . /var/www/html/
+RUN composer dump-autoload --optimize --no-dev \
+	&& chown -R www-data:www-data /var/www/html \
+	&& rm -f /usr/local/bin/composer
 
 ENV PORT=10000
 CMD ["bash", "/var/www/html/docker/start-render.sh"]

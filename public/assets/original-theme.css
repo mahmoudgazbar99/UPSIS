@@ -53,10 +53,31 @@ body.theme-original.theme-light {
 }
 
 /* ——— Chrome / top bar ——— */
-body.theme-original .app-chrome.navbar, body.theme-original.theme-dark .app-chrome.navbar, body.theme-original.theme-light .app-chrome.navbar {
-  min-height: 0;
-  padding-block: 0.2rem;
-  background: color-mix(in srgb, var(--app-surface-strong) 92%, transparent) !important;
+body.theme-original .macos-titlebar,
+body.theme-original .macos-dock,
+body.theme-original .macos-command-overlay,
+body.theme-original .macos-restore-hint,
+body.theme-original .macos-only-control,
+body.theme-original .macos-inner-titlebar,
+body.theme-original .dashboard-menu-title-macos,
+body.theme-original .staff-phone-menu-btn {
+  display: none !important;
+}
+
+body.theme-original .macos-window,
+body.theme-original .macos-window-body {
+  display: contents;
+}
+
+body.theme-original .app-chrome.navbar,
+body.theme-original.theme-dark .app-chrome.navbar,
+body.theme-original.theme-light .app-chrome.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  min-height: 3.25rem;
+  padding-block: 0.35rem;
+  background: color-mix(in srgb, var(--app-surface-strong) 94%, var(--lw-primary) 6%) !important;
   border-bottom: 1px solid var(--app-border) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -67,7 +88,10 @@ body.theme-original .app-chrome .app-chrome-inner {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 0.35rem 0.5rem;
+  gap: 0.45rem 0.65rem;
+  width: 100%;
+  max-width: none;
+  min-height: 2.75rem;
 }
 
 body.theme-original .app-chrome .macos-toolbar-lead {
@@ -81,27 +105,138 @@ body.theme-original .app-chrome .macos-toolbar-lead {
 }
 
 body.theme-original .app-chrome .navbar-brand.navbar-institution {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   min-width: 0;
   flex: 0 1 auto;
+  max-width: min(28rem, 46vw);
+}
+
+body.theme-original .app-chrome .navbar-logo {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+}
+
+body.theme-original .navbar-institution-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+body.theme-original .navbar-institution-name span + span {
+  display: none;
 }
 
 body.theme-original .app-chrome #nav {
+  display: flex !important;
   flex: 0 1 auto;
+  align-items: center;
   justify-content: flex-end;
+  min-width: 0;
+}
+
+body.theme-original .app-chrome .app-chrome-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.theme-original .app-chrome .app-chrome-actions > .nav-item {
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+
+body.theme-original .app-chrome .nav-item:has(.clarity-menu-clock) {
+  display: none !important;
+}
+
+body.theme-original .macos-bar-theme-select .theme-style-select-wrap,
+body.theme-original .macos-bar-theme-select .theme-style-select {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  min-width: 8.5rem;
+  max-width: 11rem;
+  height: 2.35rem;
+  margin: 0;
 }
 
 body.theme-original .staff-chrome-tray {
   display: inline-flex !important;
   align-items: center;
   gap: 0.45rem;
-  margin-left: auto;
+  margin-left: 0.15rem;
   flex: 0 0 auto;
   position: relative;
   z-index: 5;
+  height: 2.75rem;
 }
 
-body.theme-original .staff-chrome-tray .theme-toggle, body.theme-original .staff-chrome-tray .settings-button {
+body.theme-original .staff-chrome-tray .theme-toggle,
+body.theme-original .staff-chrome-tray .settings-button {
   flex: 0 0 auto;
+}
+
+body.theme-original .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+  width: var(--lw-toggle-w, 3.75rem) !important;
+  min-width: var(--lw-toggle-w, 3.75rem) !important;
+  height: var(--lw-toggle-h, 2rem) !important;
+  min-height: var(--lw-toggle-h, 2rem) !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: #0f172a !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 6px 16px rgba(2, 8, 23, 0.28) !important;
+}
+
+body.theme-original.theme-light .staff-chrome-tray .theme-toggle.lw-theme-toggle {
+  background: #7dd3fc !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 6px 16px rgba(14, 165, 233, 0.28) !important;
+}
+
+body.theme-original .staff-chrome-tray .settings-button {
+  display: grid !important;
+  place-items: center;
+  width: 2.5rem !important;
+  min-width: 2.5rem !important;
+  height: 2.5rem !important;
+  min-height: 2.5rem !important;
+  padding: 0 !important;
+  border: 1px solid var(--app-border) !important;
+  border-radius: var(--lw-radius) !important;
+  background: color-mix(in srgb, var(--app-surface-strong) 88%, transparent) !important;
+  color: var(--app-text) !important;
+  box-shadow: none !important;
+}
+
+body.theme-original .staff-chrome-tray .settings-button > span[aria-hidden="true"] {
+  display: none !important;
+}
+
+body.theme-original .staff-chrome-tray .settings-button .macos-icon-gear {
+  display: block !important;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+body.theme-original .staff-chrome-tray .settings-button:hover,
+body.theme-original .staff-chrome-tray .settings-button:focus-visible {
+  background: color-mix(in srgb, var(--lw-primary) 14%, var(--app-surface-strong)) !important;
+  border-color: color-mix(in srgb, var(--lw-primary) 40%, var(--app-border)) !important;
+  color: var(--lw-primary-2) !important;
 }
 
 body.theme-original .staff-chrome-tray [data-settings-dropdown] {
@@ -114,7 +249,7 @@ body.theme-original .staff-chrome-tray [data-settings-dropdown] .dropdown-menu {
 }
 
 body.theme-original .clarity-menu-clock {
-  display: none;
+  display: none !important;
 }
 
 /* SVG nav icons — shared phone + PC (beat emoji fallbacks in style.css) */
@@ -985,7 +1120,7 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
   }
 
   body.theme-original:has(.dashboard-workspace) .staff-phone-menu-btn {
-    display: grid;
+    display: grid !important;
     place-items: center;
     width: 44px;
     height: 44px;

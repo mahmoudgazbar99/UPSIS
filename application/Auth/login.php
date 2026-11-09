@@ -130,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/clarity.css?v=25" rel="stylesheet">
   <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-  <link href="assets/original-theme.css?v=17" rel="stylesheet">
+  <link href="assets/original-theme.css?v=18" rel="stylesheet">
   <script>
   (function () {
     try {

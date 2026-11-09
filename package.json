@@ -6,6 +6,7 @@
   "dependencies": {
     "@lottiefiles/dotlottie-web": "^0.82.1",
     "@neon/config": "^1.11.3",
-    "@neon/env": "^1.6.15"
+    "@neon/env": "^1.6.15",
+    "lightswind": "^3.2.5"
   }
 }

@@ -1,4 +1,5 @@
 ﻿node_modules/
+design/lightswind-ref/node_modules/
 vendor/
 storage/logs/*
 storage/cache/*

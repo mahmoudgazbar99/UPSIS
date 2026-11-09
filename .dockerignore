@@ -4,6 +4,7 @@
 .env
 .env.*
 node_modules
+design/lightswind-ref
 tests
 storage/logs
 storage/cache
@@ -11,3 +12,4 @@ storage/uploads
 storage/generated
 storage/tmp
 terminals
+*.md

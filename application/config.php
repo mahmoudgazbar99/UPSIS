@@ -273,16 +273,18 @@ function app_schema_mark_ready(string $name): void
 function db_connect(): AppPdo
 {
     app_load_env();
-    $options = [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false,
-    ];
-    // Neon only on Render. Prefer the pooled URL for web requests (faster handshakes).
+    // Neon only on Render. Prefer pooled URL for web (faster handshakes after wake).
     // Local Docker keeps its own Postgres so logins stay fast.
     $url = getenv('RENDER') === 'true'
         ? (getenv('DATABASE_URL') ?: getenv('DATABASE_URL_UNPOOLED') ?: '')
         : '';
+    $usingPooler = $url !== '' && str_contains((string) (parse_url($url, PHP_URL_HOST) ?: ''), '-pooler');
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        // Neon transaction pooler cannot keep native prepared statements across checkouts.
+        PDO::ATTR_EMULATE_PREPARES => $usingPooler,
+    ];
     if ($url !== '') {
         $parts = parse_url($url);
         if ($parts === false || empty($parts['host'])) {
@@ -293,11 +295,13 @@ function db_connect(): AppPdo
             parse_str($parts['query'], $query);
         }
         $sslmode = (string) ($query['sslmode'] ?? 'require');
+        // Short connect timeout: a sleeping Neon must fail/retry fast, not hang Apache.
         $dsn = 'pgsql:host=' . $parts['host']
             . ';port=' . (string) ($parts['port'] ?? '5432')
             . ';dbname=' . ltrim((string) ($parts['path'] ?? ''), '/')
             . ';sslmode=' . $sslmode
-            . ';connect_timeout=5';
+            . ';connect_timeout=8'
+            . ';options=' . rawurlencode('-c statement_timeout=20000 -c client_encoding=UTF8 -c TimeZone=UTC');
         $pdo = new AppPdo($dsn, rawurldecode((string) ($parts['user'] ?? '')), rawurldecode((string) ($parts['pass'] ?? '')), $options);
     } else {
         $host = getenv('DB_HOST') ?: DB_HOST;
@@ -309,10 +313,13 @@ function db_connect(): AppPdo
             $options
         );
     }
-    $pdo->exec("SET client_encoding TO 'UTF8'");
-    $pdo->exec("SET TIME ZONE 'UTC'");
-    if (getenv('RENDER') === 'true') {
-        $pdo->exec('SET statement_timeout TO 20000');
+    // Session SETs are safe on direct Neon; skip on pooler (transaction mode).
+    if (!$usingPooler) {
+        $pdo->exec("SET client_encoding TO 'UTF8'");
+        $pdo->exec("SET TIME ZONE 'UTC'");
+        if (getenv('RENDER') === 'true') {
+            $pdo->exec('SET statement_timeout TO 20000');
+        }
     }
     return $pdo;
 }
