@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-theme.css?v=16" rel="stylesheet">
-  <link href="assets/student-login.css?v=6" rel="stylesheet">
+  <link href="assets/student-login.css?v=7" rel="stylesheet">
 </head>
 <body class="student-gate">
   <main class="student-gate-card">
