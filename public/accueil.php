@@ -163,8 +163,18 @@ $navItems['contact'] = 'nav_contact';
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.classList.add('js');
       document.documentElement.style.scrollBehavior = 'auto';
+      try {
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          document.documentElement.classList.add('landing-intro-pending');
+        }
+      } catch (error) {}
     })();
   </script>
+  <link href="assets/landing-intro-lottie.css?v=1" rel="stylesheet">
+  <style>
+    .landing-intro{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:#03070e}
+    html.landing-intro-pending,html.landing-intro-pending body{overflow:hidden;height:100%}
+  </style>
   <title><?= t('meta_title') ?></title>
   <meta name="description" content="<?= t('meta_desc') ?>">
   <meta name="theme-color" content="#03070e">
@@ -190,6 +200,9 @@ $navItems['contact'] = 'nav_contact';
   <link rel="preload" as="image" type="image/webp" href="images/landing/skills-lab.webp" imagesrcset="images/landing/skills-lab-640.webp 640w, images/landing/skills-lab.webp 1152w" imagesizes="(min-width: 960px) 44vw, 92vw">
 </head>
 <body>
+  <div class="landing-intro" data-landing-intro role="status" aria-live="polite" aria-label="Chargement">
+    <canvas class="landing-intro-lottie" data-landing-intro-lottie width="512" height="512" aria-hidden="true"></canvas>
+  </div>
   <div class="page-atmosphere" aria-hidden="true">
     <div class="page-grid"></div>
     <div class="page-light-pan">
@@ -837,6 +850,7 @@ $navItems['contact'] = 'nav_contact';
       }
     })();
   </script>
+<script type="module" src="assets/landing-intro-lottie.js?v=1"></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>
