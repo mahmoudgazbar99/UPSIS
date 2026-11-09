@@ -4,23 +4,26 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: #0b1016;
+  background:
+    radial-gradient(circle at 50% 35%, #ffffff 0%, #f3f6fb 55%, #e7eef8 100%);
+  color: #111827;
 }
 
 .not-found-card {
-  width: min(28rem, 100%);
+  width: min(56rem, 96vw);
   text-align: center;
 }
 
 .not-found-lottie {
-  width: min(420px, 88vw);
-  height: min(420px, 88vw);
+  width: min(720px, 94vw);
+  height: min(720px, 94vw);
   margin: 0 auto;
   display: block;
+  filter: contrast(1.15) saturate(1.05);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .not-found-lottie {
-    opacity: 0.85;
+    opacity: 0.95;
   }
 }
