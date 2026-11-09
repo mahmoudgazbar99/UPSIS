@@ -1,5 +1,6 @@
 Options -Indexes
 DirectoryIndex accueil.php index.php
+ErrorDocument 404 /404.php
 
 <IfModule mod_authz_core.c>
     Require all granted
@@ -22,12 +23,17 @@ DirectoryIndex accueil.php index.php
     RewriteRule ^health\.php$ - [L]
     RewriteRule ^health$ health.php [L]
 
+    # 404 page must stay reachable for ErrorDocument and direct visits.
+    RewriteRule ^404\.php$ - [L]
+    RewriteRule ^404$ 404.php [L]
+
     # Use extensionless canonical URLs for PHP pages.
     # Build Location from the public Host header so reverse proxies (Render)
     # do not leak the internal listen port (:10000) into redirects.
     RewriteCond %{THE_REQUEST} "\s+(/[^?\s]+)\.php(?:[?\s])" [NC]
     RewriteCond %{REQUEST_URI} !^/brand_logo\.php$ [NC]
     RewriteCond %{REQUEST_URI} !^/health\.php$ [NC]
+    RewriteCond %{REQUEST_URI} !^/404\.php$ [NC]
     RewriteCond %{HTTP:X-Forwarded-Proto} =https [OR]
     RewriteCond %{HTTPS} =on
     RewriteRule ^ https://%{HTTP_HOST}%1 [R=308,L,QSA,NE]
@@ -35,6 +41,7 @@ DirectoryIndex accueil.php index.php
     RewriteCond %{THE_REQUEST} "\s+(/[^?\s]+)\.php(?:[?\s])" [NC]
     RewriteCond %{REQUEST_URI} !^/brand_logo\.php$ [NC]
     RewriteCond %{REQUEST_URI} !^/health\.php$ [NC]
+    RewriteCond %{REQUEST_URI} !^/404\.php$ [NC]
     RewriteRule ^ http://%{HTTP_HOST}%1 [R=308,L,QSA,NE]
 
     # Keep real public files (accueil, assets, images, exports).
