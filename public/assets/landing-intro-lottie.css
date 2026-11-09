@@ -20,11 +20,11 @@
 }
 
 .landing-intro-lottie {
-  width: min(1100px, 96vw);
-  height: min(780px, 72vh);
+  width: min(1280px, 98vw);
+  height: min(860px, 78vh);
   display: block;
-  filter: drop-shadow(0 0 18px rgba(255, 255, 255, 0.28));
-  transform: scale(1.18);
+  filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.35));
+  transform: scale(1.22);
   transform-origin: center;
 }
 

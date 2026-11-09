@@ -170,7 +170,7 @@ $navItems['contact'] = 'nav_contact';
       } catch (error) {}
     })();
   </script>
-  <link href="assets/landing-intro-lottie.css?v=2" rel="stylesheet">
+  <link href="assets/landing-intro-lottie.css?v=3" rel="stylesheet">
   <style>
     .landing-intro{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:#03070e}
     html.landing-intro-pending,html.landing-intro-pending body{overflow:hidden;height:100%}
@@ -850,7 +850,7 @@ $navItems['contact'] = 'nav_contact';
       }
     })();
   </script>
-<script type="module" src="assets/landing-intro-lottie.js?v=2"></script>
+<script type="module" src="assets/landing-intro-lottie.js?v=3"></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>
