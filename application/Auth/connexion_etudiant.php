@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="assets/student-theme.css?v=16" rel="stylesheet">
   <link href="assets/student-lightswind.css?v=1" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-  <link href="assets/student-login.css?v=7" rel="stylesheet">
+  <link href="assets/student-login.css?v=8" rel="stylesheet">
   <link href="assets/login-fail-lottie.css?v=5" rel="stylesheet">
 </head>
 <body class="student-gate">

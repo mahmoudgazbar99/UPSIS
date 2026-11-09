@@ -6,16 +6,18 @@
 .student-gate {
   --gate-bg: #0b0f17;
   --gate-card: rgba(15, 23, 42, 0.65);
-  --gate-border: rgba(20, 184, 166, 0.25);
-  --gate-input: rgba(30, 41, 59, 0.5);
+  --gate-border: rgba(20, 184, 166, 0.35);
+  --gate-input: rgba(30, 41, 59, 0.55);
   --gate-input-border: rgba(20, 184, 166, 0.3);
   --gate-text: #ffffff;
   --gate-muted: #94a3b8;
-  --gate-label: #cbd5e1;
-  --gate-accent: #14b8a6;
+  --gate-label: #e2e8f0;
   --gate-link: #2dd4bf;
   --gate-home-bg: rgba(255, 255, 255, 0.05);
-  --gate-home-border: rgba(255, 255, 255, 0.1);
+  --gate-home-border: rgba(255, 255, 255, 0.14);
+  --gate-flare: rgba(94, 234, 212, 0.55);
+  --gate-glow: rgba(20, 184, 166, 0.18);
+  --gate-motif-opacity: 0.55;
   min-height: 100vh;
   min-height: 100dvh;
   margin: 0;
@@ -24,30 +26,86 @@
   padding: 1.5rem;
   color: var(--gate-text);
   font-family: "Plus Jakarta Sans", Inter, "Segoe UI", sans-serif;
+  background-color: var(--gate-bg);
+  background-image:
+    radial-gradient(circle at 70% 20%, rgba(20, 184, 166, 0.16) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+    url("../images/student-gate-motif.svg");
+  background-repeat: no-repeat;
+  background-size: auto, auto, cover;
+  background-position: center, center, center;
+  position: relative;
+  isolation: isolate;
+}
+
+.student-gate::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: var(--gate-motif-opacity);
   background:
-    radial-gradient(circle at 70% 20%, rgba(20, 184, 166, 0.12) 0%, transparent 50%),
-    radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 50%),
-    var(--gate-bg);
+    radial-gradient(ellipse 42% 34% at 82% 18%, rgba(20, 184, 166, 0.14), transparent 70%),
+    radial-gradient(ellipse 36% 30% at 12% 86%, rgba(6, 182, 212, 0.1), transparent 72%);
 }
 
 .student-gate > .portal-theme-toggle {
   position: fixed;
   z-index: 50;
   top: 1rem;
-  inset-inline-end: 1rem;
+  left: 50%;
+  right: auto;
+  inset-inline-end: auto;
+  transform: translateX(-50%);
 }
 
 .student-gate-card {
+  position: relative;
   width: min(28rem, 100%);
   padding: 2.15rem 1.85rem 1.7rem;
-  border-radius: 1.25rem;
+  border-radius: 1.35rem;
   background: var(--gate-card);
   border: 1px solid var(--gate-border);
   box-shadow:
     0 20px 50px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(20, 184, 166, 0.1);
+    0 0 30px rgba(20, 184, 166, 0.14),
+    0 0 60px rgba(20, 184, 166, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  overflow: hidden;
+}
+
+.student-gate-card::before,
+.student-gate-card::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--gate-flare) 35%,
+    #ffffff 50%,
+    var(--gate-flare) 65%,
+    transparent 100%
+  );
+  opacity: 0.85;
+  filter: blur(0.2px);
+}
+
+.student-gate-card::before {
+  top: 0;
+  box-shadow: 0 0 18px rgba(94, 234, 212, 0.55);
+}
+
+.student-gate-card::after {
+  bottom: 0;
+  opacity: 0.55;
+  box-shadow: 0 0 14px rgba(94, 234, 212, 0.35);
 }
 
 .student-gate-logo {
@@ -61,10 +119,10 @@
 .student-gate-card h1 {
   margin: 0;
   text-align: center;
-  font-family: "Plus Jakarta Sans", Inter, "Segoe UI", sans-serif;
-  font-size: clamp(1.55rem, 3.4vw, 1.9rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 3.6vw, 2.05rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--gate-text);
 }
 
@@ -81,23 +139,24 @@
   display: block;
   margin: 0 0 0.4rem;
   color: var(--gate-label);
-  font-size: 12px;
+  font-size: 0.84rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .student-gate input {
   width: 100%;
   margin-bottom: 0.95rem;
   padding: 0.88rem 0.95rem;
-  border-radius: 0.85rem;
+  border-radius: 0.95rem;
   border: 1px solid var(--gate-input-border);
   background: var(--gate-input);
   color: var(--gate-text);
   font: inherit;
   font-size: 0.98rem;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease;
+  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.04);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .student-gate input::placeholder {
@@ -121,6 +180,7 @@
 }
 
 .student-gate button[type="submit"] {
+  position: relative;
   width: 100%;
   margin-top: 0.25rem;
   padding: 0.95rem 1rem;
@@ -133,13 +193,22 @@
   letter-spacing: 0.01em;
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  overflow: hidden;
   transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
+}
+
+.student-gate button[type="submit"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 48% 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28), transparent);
+  pointer-events: none;
 }
 
 .student-gate button[type="submit"]:hover {
   transform: translateY(-1px);
   filter: brightness(1.05);
-  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.48);
+  box-shadow: 0 8px 22px rgba(16, 185, 129, 0.5);
 }
 
 .student-gate button[type="submit"]:active {
@@ -164,8 +233,8 @@
 }
 
 .student-gate-home:hover {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.09);
   color: #ffffff;
   transform: translateY(-1px);
 }
@@ -209,31 +278,35 @@
   color: #d1fae5;
 }
 
-/* Light mode — restore toggle behavior with a bright glass twin */
+/* Light mode — same structure, nursing-bright twin (toggle works as before) */
 html[data-theme="light"] .student-gate {
   --gate-bg: #f4f7f5;
-  --gate-card: rgba(255, 255, 255, 0.72);
-  --gate-border: rgba(5, 150, 105, 0.22);
-  --gate-input: rgba(240, 245, 242, 0.88);
+  --gate-card: rgba(255, 255, 255, 0.78);
+  --gate-border: rgba(5, 150, 105, 0.28);
+  --gate-input: rgba(240, 245, 242, 0.92);
   --gate-input-border: rgba(5, 150, 105, 0.28);
   --gate-text: #0a0f0d;
   --gate-muted: #5b6b63;
   --gate-label: #3f4a44;
-  --gate-accent: #059669;
   --gate-link: #047857;
-  --gate-home-bg: rgba(255, 255, 255, 0.55);
+  --gate-home-bg: rgba(255, 255, 255, 0.7);
   --gate-home-border: rgba(15, 23, 42, 0.12);
-  background:
+  --gate-flare: rgba(5, 150, 105, 0.45);
+  --gate-glow: rgba(16, 185, 129, 0.12);
+  --gate-motif-opacity: 0.28;
+  background-color: var(--gate-bg);
+  background-image:
     radial-gradient(circle at 70% 20%, rgba(16, 185, 129, 0.14) 0%, transparent 50%),
     radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
-    var(--gate-bg);
+    url("../images/student-gate-motif.svg");
   color: var(--gate-text);
 }
 
 html[data-theme="light"] .student-gate-card {
   box-shadow:
     0 20px 50px rgba(15, 23, 42, 0.12),
-    0 0 30px rgba(16, 185, 129, 0.08);
+    0 0 30px rgba(16, 185, 129, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 html[data-theme="light"] .student-gate-logo {
@@ -245,6 +318,7 @@ html[data-theme="light"] .student-gate-logo {
 
 html[data-theme="light"] .student-gate input {
   color: var(--gate-text);
+  box-shadow: none;
 }
 
 html[data-theme="light"] .student-gate input::placeholder {
@@ -295,7 +369,6 @@ html[data-theme="light"] .student-gate .alert-success {
 
   .student-gate > .portal-theme-toggle {
     top: 0.75rem;
-    inset-inline-end: 0.75rem;
   }
 
   .student-gate-card {
