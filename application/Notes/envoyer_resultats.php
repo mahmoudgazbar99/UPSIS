@@ -39,6 +39,20 @@ page_head('Envoyer les résultats', 'grades');
 </div>
 <?php if ($message): ?><div class="alert alert-success"><?= e($message) ?></div><?php endif; ?>
 <?php if ($error): ?><div class="alert alert-danger"><?= e($error) ?></div><?php endif; ?>
+<?php if ($published): ?>
+  <div class="card app-card mb-4">
+    <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <h2 class="h5 mb-1">Résultats publiés</h2>
+        <p class="text-secondary mb-0">Vous pouvez passer à la promotion / archivage, ou fermer cette étape.</p>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="promotion.php?embed=1&amp;year=<?= rawurlencode($year) ?>">Passer à Promotion / archivage</a>
+        <a class="btn btn-outline-light" href="index.php">Fermer</a>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
 
 <div class="row g-3 mb-4">
   <div class="col-md-4">

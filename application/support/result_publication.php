@@ -449,6 +449,60 @@ function result_publish_all(string $year = ''): array
     return ['sent' => $sent, 'year' => $year];
 }
 
+/**
+ * Prerequisites before Promotion / archivage can run for a school year.
+ *
+ * @return list<string> Blocker messages (empty = OK).
+ */
+function promotion_prerequisites(string $year = ''): array
+{
+    $year = $year !== '' ? $year : result_active_year();
+    $blockers = [];
+    if (!result_is_published($year)) {
+        $blockers[] = 'Les résultats de l’année ' . $year . ' n’ont pas encore été envoyés aux profils étudiants.';
+    }
+    $missing = result_students_missing_marks();
+    if ($missing !== []) {
+        $blockers[] = count($missing) . ' étudiant(s) ont encore des notes manquantes.';
+    }
+    $undecided = result_undecided_below_threshold($year);
+    if ($undecided !== []) {
+        $blockers[] = count($undecided) . ' dossier(s) sous le seuil attendent encore une décision (rachat / refus).';
+    }
+    return $blockers;
+}
+
+/**
+ * Progression plan driven by published jury decision.
+ * admis + admis_par_rachat → advance ; refusee → redouble.
+ *
+ * @return array{decision:string,next_level:string,statut:string,threshold:float,policy_id:int,jury_decision:string}
+ */
+function result_progression_plan(string $levelCode, ?float $average, ?int $programId, string $juryDecision): array
+{
+    $juryDecision = trim($juryDecision);
+    if (in_array($juryDecision, ['admis', 'admis_par_rachat'], true)) {
+        $plan = progression_plan($levelCode, 20.0, $programId);
+        $plan['decision'] = $juryDecision;
+        $plan['jury_decision'] = $juryDecision;
+        if ($average !== null) {
+            $plan['threshold'] = result_pass_threshold($programId);
+        }
+        return $plan;
+    }
+    if ($juryDecision === 'refusee') {
+        $plan = progression_plan($levelCode, null, $programId);
+        $plan['decision'] = 'refusee';
+        $plan['next_level'] = $levelCode;
+        $plan['statut'] = 'actif';
+        $plan['jury_decision'] = 'refusee';
+        return $plan;
+    }
+    $plan = progression_plan($levelCode, $average, $programId);
+    $plan['jury_decision'] = $juryDecision !== '' ? $juryDecision : (string) $plan['decision'];
+    return $plan;
+}
+
 function result_published_for_student(int $studentId, string $year = ''): ?array
 {
     $row = result_row_for_student($studentId, $year);
