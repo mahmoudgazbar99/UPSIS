@@ -40,6 +40,7 @@ return [
     'ajouter_matiere.php' => 'Pedagogie/ajouter_matiere.php',
     'ajouter_unite.php' => 'Pedagogie/ajouter_unite.php',
     'groupes.php' => 'Pedagogie/groupes.php',
+    'capacite_groupes.php' => 'Pedagogie/capacite_groupes.php',
     'formule_calcul.php' => 'Pedagogie/formule_calcul.php',
     'politique_promotion.php' => 'Pedagogie/politique_promotion.php',
     'politique_presence.php' => 'Pedagogie/politique_presence.php',

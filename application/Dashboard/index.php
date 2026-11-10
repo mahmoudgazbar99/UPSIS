@@ -367,6 +367,7 @@ function dashboard_menu(): void {
         <div class="dashboard-menu-sub" hidden>
           <?php
           dashboard_menu_item('etablissement.php?embed=1', 'Nom de l’établissement', 'Modifier les noms français et arabe des attestations', 'accounts', '');
+          dashboard_menu_item('capacite_groupes.php?embed=1', 'Capacité maximale des groupes', 'Plafond Cours, TD et TP', 'groups', '');
           dashboard_menu_item('structure_academique.php?embed=1', 'Structure académique', 'Programmes, niveaux, périodes', 'groups', '');
           dashboard_menu_item('specialites.php?embed=1', 'Spécialités', 'Créer ou désactiver', 'enroll', '');
           dashboard_menu_item('frais_scolarite.php?embed=1', 'Frais de scolarité', 'Montant et devise', 'finance', '');

@@ -1101,46 +1101,110 @@ function ensure_etudiant_compte_table(PDO $pdo): void
     app_schema_mark_ready('etudiant_compte');
 }
 
-function assign_tronc_commun_groups(PDO $pdo, int $studentId): void {
+function group_enrollment_count(PDO $pdo, int $groupId): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM groupe_etudiant WHERE id_groupe = ?');
+    $stmt->execute([$groupId]);
+    return (int) $stmt->fetchColumn();
+}
+
+function group_capacity_remaining(PDO $pdo, int $groupId): int
+{
+    $stmt = $pdo->prepare(
+        'SELECT g.capacite,
+                (SELECT COUNT(*) FROM groupe_etudiant ge WHERE ge.id_groupe = g.id_groupe) AS effectif
+         FROM groupe g
+         WHERE g.id_groupe = ?
+         LIMIT 1'
+    );
+    $stmt->execute([$groupId]);
+    $row = $stmt->fetch();
+    if (!$row) {
+        throw new RuntimeException('Groupe introuvable.');
+    }
+    return max(0, (int) $row['capacite'] - (int) $row['effectif']);
+}
+
+function group_assert_can_add(PDO $pdo, int $groupId, int $seats = 1): void
+{
+    $remaining = group_capacity_remaining($pdo, $groupId);
+    if ($remaining < $seats) {
+        throw new RuntimeException('Ce groupe a atteint sa capacité maximale.');
+    }
+}
+
+/**
+ * Pick an open Cours group under capacity, then an open TD child.
+ *
+ * @return array{0:int,1:int}
+ */
+function group_pick_course_and_td(PDO $pdo, string $semester): array
+{
     $courseQuery = $pdo->prepare(
-        'SELECT g.id_groupe, COUNT(ge.id_etudiant) AS effectif
+        'SELECT g.id_groupe, g.capacite, COUNT(ge.id_etudiant) AS effectif
          FROM groupe g
          LEFT JOIN groupe_etudiant ge ON ge.id_groupe = g.id_groupe
          WHERE g.semestre = ? AND g.type_groupe = "Cours"
-         GROUP BY g.id_groupe, g.numero
+         GROUP BY g.id_groupe, g.numero, g.capacite
          ORDER BY g.numero'
     );
+    $courseQuery->execute([$semester]);
+    $courses = $courseQuery->fetchAll();
+    if (!$courses) {
+        throw new RuntimeException('Aucun groupe Cours disponible pour ' . $semester . '.');
+    }
+
+    $openCourses = array_values(array_filter(
+        $courses,
+        static fn (array $course): bool => (int) $course['effectif'] < (int) $course['capacite']
+    ));
+    if (!$openCourses) {
+        throw new RuntimeException('Tous les groupes Cours de ' . $semester . ' ont atteint leur capacité maximale.');
+    }
+
+    $minimumEnrollment = min(array_map(
+        static fn (array $course): int => (int) $course['effectif'],
+        $openCourses
+    ));
+    $leastPopulated = array_values(array_filter(
+        $openCourses,
+        static fn (array $course): bool => (int) $course['effectif'] === $minimumEnrollment
+    ));
+    $courseGroupId = (int) $leastPopulated[random_int(0, count($leastPopulated) - 1)]['id_groupe'];
+
     $tdQuery = $pdo->prepare(
-        'SELECT id_groupe FROM groupe
-         WHERE id_groupe_parent = ? AND type_groupe = "TD"
-         ORDER BY numero'
+        'SELECT g.id_groupe, g.capacite, COUNT(ge.id_etudiant) AS effectif
+         FROM groupe g
+         LEFT JOIN groupe_etudiant ge ON ge.id_groupe = g.id_groupe
+         WHERE g.id_groupe_parent = ? AND g.type_groupe = "TD"
+         GROUP BY g.id_groupe, g.numero, g.capacite
+         ORDER BY g.numero'
     );
+    $tdQuery->execute([$courseGroupId]);
+    $tdGroups = $tdQuery->fetchAll();
+    if (count($tdGroups) !== 2) {
+        throw new RuntimeException('Chaque groupe Cours doit avoir exactement deux groupes TD.');
+    }
+    $openTd = array_values(array_filter(
+        $tdGroups,
+        static fn (array $td): bool => (int) $td['effectif'] < (int) $td['capacite']
+    ));
+    if (!$openTd) {
+        throw new RuntimeException('Les groupes TD liés au Cours sélectionné ont atteint leur capacité maximale.');
+    }
+    $tdGroupId = (int) $openTd[random_int(0, count($openTd) - 1)]['id_groupe'];
+
+    return [$courseGroupId, $tdGroupId];
+}
+
+function assign_tronc_commun_groups(PDO $pdo, int $studentId): void {
     $attach = $pdo->prepare('INSERT INTO groupe_etudiant (id_groupe, id_etudiant) VALUES (?, ?)');
     foreach (['S1', 'S2', 'S3'] as $semester) {
-        $courseQuery->execute([$semester]);
-        $courses = $courseQuery->fetchAll();
-        if (!$courses) {
-            throw new RuntimeException('Aucun groupe Cours disponible pour ' . $semester . '.');
-        }
-
-        $minimumEnrollment = min(array_map(
-            static fn (array $course): int => (int) $course['effectif'],
-            $courses
-        ));
-        $leastPopulated = array_values(array_filter(
-            $courses,
-            static fn (array $course): bool => (int) $course['effectif'] === $minimumEnrollment
-        ));
-        $courseGroupId = (int) $leastPopulated[random_int(0, count($leastPopulated) - 1)]['id_groupe'];
-
-        $tdQuery->execute([$courseGroupId]);
-        $tdGroupIds = array_map('intval', $tdQuery->fetchAll(PDO::FETCH_COLUMN));
-        if (count($tdGroupIds) !== 2) {
-            throw new RuntimeException('Chaque groupe Cours doit avoir exactement deux groupes TD.');
-        }
-
+        [$courseGroupId, $tdGroupId] = group_pick_course_and_td($pdo, $semester);
+        group_assert_can_add($pdo, $courseGroupId);
+        group_assert_can_add($pdo, $tdGroupId);
         $attach->execute([$courseGroupId, $studentId]);
-        $attach->execute([$tdGroupIds[random_int(0, 1)], $studentId]);
+        $attach->execute([$tdGroupId, $studentId]);
     }
 }
 
@@ -1150,46 +1214,13 @@ function assign_student_to_academic_groups(PDO $pdo, int $studentId, string $lev
         throw new RuntimeException('Le niveau académique sélectionné est invalide.');
     }
 
-    $courseQuery = $pdo->prepare(
-        'SELECT g.id_groupe, COUNT(ge.id_etudiant) AS effectif
-         FROM groupe g
-         LEFT JOIN groupe_etudiant ge ON ge.id_groupe = g.id_groupe
-         WHERE g.semestre = ? AND g.type_groupe = "Cours"
-         GROUP BY g.id_groupe, g.numero
-         ORDER BY g.numero'
-    );
-    $tdQuery = $pdo->prepare(
-        'SELECT id_groupe FROM groupe
-         WHERE id_groupe_parent = ? AND type_groupe = "TD"
-         ORDER BY numero'
-    );
     $attach = $pdo->prepare('INSERT INTO groupe_etudiant (id_groupe, id_etudiant) VALUES (?, ?)');
-
     foreach ($semesters as $semester) {
-        $courseQuery->execute([$semester]);
-        $courses = $courseQuery->fetchAll();
-        if (!$courses) {
-            throw new RuntimeException('Aucun groupe Cours disponible pour ' . $semester . '.');
-        }
-
-        $minimumEnrollment = min(array_map(
-            static fn (array $course): int => (int) $course['effectif'],
-            $courses
-        ));
-        $leastPopulated = array_values(array_filter(
-            $courses,
-            static fn (array $course): bool => (int) $course['effectif'] === $minimumEnrollment
-        ));
-        $courseGroupId = (int) $leastPopulated[random_int(0, count($leastPopulated) - 1)]['id_groupe'];
-
-        $tdQuery->execute([$courseGroupId]);
-        $tdGroupIds = array_map('intval', $tdQuery->fetchAll(PDO::FETCH_COLUMN));
-        if (count($tdGroupIds) !== 2) {
-            throw new RuntimeException('Chaque groupe Cours doit avoir exactement deux groupes TD.');
-        }
-
+        [$courseGroupId, $tdGroupId] = group_pick_course_and_td($pdo, $semester);
+        group_assert_can_add($pdo, $courseGroupId);
+        group_assert_can_add($pdo, $tdGroupId);
         $attach->execute([$courseGroupId, $studentId]);
-        $attach->execute([$tdGroupIds[random_int(0, 1)], $studentId]);
+        $attach->execute([$tdGroupId, $studentId]);
     }
 }
 

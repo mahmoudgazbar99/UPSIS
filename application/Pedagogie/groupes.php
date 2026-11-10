@@ -153,6 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'chang
                    AND old_group.type_groupe IN ("Cours", "TD")'
             );
             $remove->execute([$studentId, $targetGroup['semestre']]);
+            group_assert_can_add($pdo, $courseGroupId);
+            group_assert_can_add($pdo, $tdGroupId);
             $attach = $pdo->prepare('INSERT INTO groupe_etudiant (id_groupe, id_etudiant) VALUES (?, ?)');
             $attach->execute([$courseGroupId, $studentId]);
             $attach->execute([$tdGroupId, $studentId]);
@@ -292,7 +294,12 @@ $courseGroups = db()->query(
         <thead><tr><th>Semestre</th><th>Groupe</th><th>Nombre actuel d’étudiants</th><th>Capacité de référence</th></tr></thead>
         <tbody>
         <?php foreach ($courseGroups as $courseGroup): ?>
-          <tr>
+          <?php
+            $courseEffectif = (int) $courseGroup['effectif'];
+            $courseCapacite = (int) $courseGroup['capacite'];
+            $courseOver = $courseEffectif > $courseCapacite;
+          ?>
+          <tr class="<?= $courseOver ? 'table-warning' : '' ?>">
             <td><?= e($courseGroup['semestre']) ?></td>
             <td>
               <button
@@ -305,8 +312,11 @@ $courseGroups = db()->query(
                 <span class="group-roster-chip-hint" aria-hidden="true">voir</span>
               </button>
             </td>
-            <td><?= (int) $courseGroup['effectif'] ?> étudiant<?= (int) $courseGroup['effectif'] > 1 ? 's' : '' ?></td>
-            <td><?= (int) $courseGroup['capacite'] ?> étudiants</td>
+            <td>
+              <?= $courseEffectif ?> étudiant<?= $courseEffectif > 1 ? 's' : '' ?>
+              <?php if ($courseOver): ?><br><small class="text-warning">Dépassement du plafond</small><?php endif; ?>
+            </td>
+            <td><?= $courseCapacite ?> étudiants</td>
           </tr>
         <?php endforeach; ?>
         <?php if (!$courseGroups): ?><tr><td colspan="4" class="text-center text-secondary py-4">Aucun groupe Cours disponible.</td></tr><?php endif; ?>
