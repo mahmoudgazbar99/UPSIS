@@ -143,7 +143,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['finder'] ?? '') === '1') {
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: private, no-store');
     header('X-Content-Type-Options: nosniff');
-    $reply = static function (bool $ok, string $message) use ($teacherId): void {
+    $emitFinderJson = static function (array $payload): never {
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+        if ($json === false) {
+            $json = '{"ok":false,"message":"Réponse JSON invalide.","courses":[],"subjects":[]}';
+        }
+        echo $json;
+        exit;
+    };
+    $reply = static function (bool $ok, string $message) use ($teacherId, $courseAdmin, $emitFinderJson): void {
         $slimFolder = static function (array $node) use (&$slimFolder): array {
             return [
                 'id' => (int) ($node['id'] ?? 0),
@@ -158,50 +166,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['finder'] ?? '') === '1') {
                 }, is_array($node['files'] ?? null) ? $node['files'] : []),
             ];
         };
-        $payload = [
-            'ok' => $ok,
-            'message' => $message,
-            'courses' => array_map($slimFolder, $courseAdmin ? course_tree_all() : course_tree_for_teacher($teacherId)),
-            'subjects' => mes_cours_subject_rows($courseAdmin, $teacherId),
-        ];
-        if ($courseAdmin) {
-            $payload['teachers'] = course_teachers_with_subjects();
+        try {
+            $payload = [
+                'ok' => $ok,
+                'message' => $message,
+                'courses' => array_map($slimFolder, $courseAdmin ? course_tree_all() : course_tree_for_teacher($teacherId)),
+                'subjects' => mes_cours_subject_rows($courseAdmin, $teacherId),
+            ];
+            if ($courseAdmin) {
+                $payload['teachers'] = course_teachers_with_subjects();
+            }
+        } catch (Throwable $buildError) {
+            error_log('mes_cours finder payload: ' . $buildError->getMessage());
+            $payload = [
+                'ok' => $ok,
+                'message' => $message !== '' ? $message : 'Action enregistrée, rafraîchissez la fenêtre.',
+                'courses' => [],
+                'subjects' => [],
+            ];
         }
-        echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
-        exit;
+        $emitFinderJson($payload);
     };
     try {
-        verify_csrf();
+        $csrf = (string) ($_POST['csrf_token'] ?? '');
+        if ($csrf === '' || empty($_SESSION['csrf_token']) || !hash_equals((string) $_SESSION['csrf_token'], $csrf)) {
+            $reply(false, 'Session expirée. Actualisez la page puis réessayez.');
+        }
         $action = mes_cours_post_text('action');
         $actorId = mes_cours_actor($courseAdmin, $teacherId, $action);
         switch ($action) {
             case 'create_course':
                 course_create_root($actorId, mes_cours_post_int('id_mat'), mes_cours_post_text('nom'));
                 $reply(true, 'Cours créé.');
+                break;
             case 'create_folder':
                 course_create_folder($actorId, mes_cours_post_int('id_parent'), mes_cours_post_text('nom'));
                 $reply(true, 'Dossier créé.');
+                break;
             case 'upload':
                 $count = course_upload_files($actorId, mes_cours_post_int('id_dossier'), (array) ($_FILES['pdfs'] ?? []));
                 $reply(true, $count === 1 ? '1 PDF ajouté.' : $count . ' PDF ajoutés.');
+                break;
             case 'rename_folder':
                 course_rename_folder($actorId, mes_cours_post_int('id_dossier'), mes_cours_post_text('nom'));
                 $reply(true, 'Nom modifié.');
+                break;
             case 'rename_file':
                 course_rename_file($actorId, mes_cours_post_int('id_fichier'), mes_cours_post_text('nom'));
                 $reply(true, 'Nom modifié.');
+                break;
             case 'delete_folder':
                 course_delete_folder($actorId, mes_cours_post_int('id_dossier'));
                 $reply(true, 'Dossier supprimé.');
+                break;
             case 'delete_file':
                 course_delete_file($actorId, mes_cours_post_int('id_fichier'));
                 $reply(true, 'Fichier supprimé.');
+                break;
             case 'move_file':
                 course_move_file($actorId, mes_cours_post_int('id_fichier'), mes_cours_post_int('id_dossier'));
                 $reply(true, 'Fichier déplacé.');
+                break;
             case 'move_folder':
                 course_move_folder($actorId, mes_cours_post_int('id_dossier'), mes_cours_post_int('id_parent'));
                 $reply(true, 'Dossier déplacé.');
+                break;
             default:
                 $reply(false, 'Action inconnue.');
         }
@@ -209,7 +238,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['finder'] ?? '') === '1') {
         $reply(false, $error->getMessage());
     } catch (Throwable $error) {
         error_log('mes_cours finder: ' . $error->getMessage());
-        $reply(false, 'Action impossible. Réessayez.');
+        try {
+            $reply(false, 'Action impossible. Réessayez.');
+        } catch (Throwable $nested) {
+            error_log('mes_cours finder nested: ' . $nested->getMessage());
+            $emitFinderJson([
+                'ok' => false,
+                'message' => 'Action impossible. Réessayez.',
+                'courses' => [],
+                'subjects' => [],
+            ]);
+        }
     }
 }
 

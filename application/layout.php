@@ -394,8 +394,22 @@ function macos_dock(): void {
                 var keep = fields.action === 'create_course' ? [] : pathIds();
                 setStatus('Enregistrement…');
                 layer.setAttribute('aria-busy', 'true');
-                return fetch('mes_cours.php', { method: 'POST', body: form, credentials: 'same-origin', cache: 'no-store' })
-                    .then(function (response) { return response.json(); })
+                return fetch('mes_cours.php', { method: 'POST', body: form, credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } })
+                    .then(function (response) {
+                        return response.text().then(function (text) {
+                            var data = null;
+                            if (text) {
+                                try { data = JSON.parse(text); } catch (parseError) {
+                                    throw new Error(response.ok ? 'Réponse invalide du serveur.' : 'Action impossible (HTTP ' + response.status + ').');
+                                }
+                            }
+                            if (!response.ok) {
+                                throw new Error((data && data.message) ? data.message : 'Action impossible (HTTP ' + response.status + ').');
+                            }
+                            if (!data) throw new Error('Réponse vide du serveur.');
+                            return data;
+                        });
+                    })
                     .then(function (data) {
                         if (data && data.courses) {
                             courses = data.courses;
