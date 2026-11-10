@@ -71,6 +71,7 @@ try {
         $programId = (int) ($student['id_program'] ?? 0);
         $programId = $programId > 0 ? $programId : null;
         $niveau = (string) ($student['niveau_etude'] ?? $student['niveau'] ?? '');
+        $numero = certificate_allocate_number('inscription', true);
         institution_replace_docx_placeholders($docPath, [
             'nom' => repair_export_text((string) ($student['nom'] ?? '')),
             'prenom' => repair_export_text((string) ($student['prenom'] ?? '')),
@@ -86,9 +87,9 @@ try {
             'sec_generale' => $institution['sec_generale'],
             'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
             'establishment_fr' => $institution['establishment_fr'],
+            'num_att' => $numero,
         ]);
-        $numero = certificate_allocate_number('inscription', true);
-        certificate_docx_apply_extras($docPath, $numero, $cachetFile['path'] ?? null);
+        certificate_docx_apply_extras($docPath, null, $cachetFile['path'] ?? null);
 
         prepare_certificate_page($docPath);
     }

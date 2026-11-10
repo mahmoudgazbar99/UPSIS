@@ -55,6 +55,8 @@ try {
     $programId = $programId > 0 ? $programId : null;
     $fileBase = 'Certificat_Inscription_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $student['cin_passeport']);
     $docxPath = institution_copy_docx_template($templatePath);
+    $preview = ($_GET['preview'] ?? '') === '1';
+    $numero = certificate_allocate_number('inscription', !$preview);
     institution_replace_docx_placeholders($docxPath, [
         'nom' => (string) ($student['nom'] ?? ''),
         'prenom' => (string) ($student['prenom'] ?? ''),
@@ -70,11 +72,10 @@ try {
         'sec_generale' => $institution['sec_generale'],
         'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
         'establishment_fr' => $institution['establishment_fr'],
+        'num_att' => $numero,
     ]);
-
-    $preview = ($_GET['preview'] ?? '') === '1';
-    $numero = certificate_allocate_number('inscription', !$preview);
-    certificate_docx_apply_extras($docxPath, $numero, $cachetFile['path'] ?? null);
+    // Number goes into ${num_att} in the Word template; extras = cachet only.
+    certificate_docx_apply_extras($docxPath, null, $cachetFile['path'] ?? null);
     $asPdf = !$preview && certificate_wants_pdf();
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview, true);
 

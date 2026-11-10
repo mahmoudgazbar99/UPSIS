@@ -183,14 +183,16 @@ function certificate_allocate_number(string $type, bool $commit): string
     return $label;
 }
 
-function certificate_docx_apply_extras(string $docxPath, string $numeroLabel, ?string $cachetPath): void
+function certificate_docx_apply_extras(string $docxPath, ?string $numeroLabel, ?string $cachetPath): void
 {
     $archive = new ZipArchive();
     if ($archive->open($docxPath) !== true) {
         throw new RuntimeException('Impossible d’ouvrir le document pour le cachet / numéro.');
     }
     try {
-        certificate_docx_inject_number($archive, $numeroLabel);
+        if (is_string($numeroLabel) && trim($numeroLabel) !== '') {
+            certificate_docx_inject_number($archive, $numeroLabel);
+        }
         if (is_string($cachetPath) && $cachetPath !== '' && is_file($cachetPath)) {
             certificate_docx_inject_cachet($archive, $cachetPath);
         }
@@ -219,17 +221,22 @@ function certificate_docx_inject_number(ZipArchive $archive, string $numeroLabel
         throw new RuntimeException('Corps Word introuvable.');
     }
 
-    // Soft-replace ${numero_attestation} if present in any paragraph.
+    // Soft-replace template markers if present (${num_att} preferred).
     $replaced = false;
+    $markers = [
+        '${num_att}',
+        '{num_att}',
+        '${numero_attestation}',
+        '{numero_attestation}',
+    ];
     foreach ($xpath->query('//w:t') as $textNode) {
         $value = (string) ($textNode->nodeValue ?? '');
-        if (str_contains($value, '${numero_attestation}') || str_contains($value, '{numero_attestation}')) {
-            $textNode->nodeValue = str_replace(
-                ['${numero_attestation}', '{numero_attestation}'],
-                [$numeroLabel, $numeroLabel],
-                $value
-            );
-            $replaced = true;
+        foreach ($markers as $marker) {
+            if (str_contains($value, $marker)) {
+                $textNode->nodeValue = str_replace($marker, $numeroLabel, $value);
+                $value = (string) $textNode->nodeValue;
+                $replaced = true;
+            }
         }
     }
 
