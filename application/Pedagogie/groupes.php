@@ -318,30 +318,54 @@ $courseGroups = db()->query(
 
 <dialog class="group-roster-dialog" data-group-roster-dialog aria-labelledby="groupRosterTitle">
   <div class="group-roster-panel app-card">
+    <header class="group-roster-titlebar" aria-hidden="true">
+      <div class="group-roster-traffic">
+        <button type="button" class="group-roster-dot group-roster-dot-close" data-group-roster-close tabindex="-1" aria-hidden="true"></button>
+        <span class="group-roster-dot group-roster-dot-min" aria-hidden="true"></span>
+        <span class="group-roster-dot group-roster-dot-max" aria-hidden="true"></span>
+      </div>
+      <p class="group-roster-titlebar-label" data-group-roster-titlebar>Liste du groupe</p>
+    </header>
     <div class="group-roster-panel-head">
       <div>
         <p class="eyebrow mb-1">Liste du groupe</p>
         <h2 class="h4 mb-0" id="groupRosterTitle" data-group-roster-title>Étudiants du groupe</h2>
         <p class="text-secondary small mb-0 mt-1" data-group-roster-meta>Chargement…</p>
       </div>
-      <button type="button" class="btn btn-outline-secondary btn-sm" data-group-roster-close aria-label="Fermer">Fermer</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm group-roster-close-btn" data-group-roster-close aria-label="Fermer">Fermer</button>
     </div>
-    <div class="group-roster-panel-body table-responsive">
-      <table class="table table-dark table-hover align-middle mb-0">
-        <thead>
-          <tr>
-            <th>N° inscription</th>
-            <th>Nom</th>
-            <th>Prénom</th>
-            <th>CIN / passeport</th>
-            <th>Groupe TD</th>
-            <th>Groupe TP</th>
-          </tr>
-        </thead>
-        <tbody data-group-roster-body>
-          <tr><td colspan="6" class="text-center text-secondary py-4">Chargement…</td></tr>
-        </tbody>
-      </table>
+    <div class="group-roster-panel-body">
+      <div class="app-skeleton-stage group-roster-skeleton" data-group-roster-skeleton aria-busy="true" aria-label="Chargement de la liste">
+        <div class="sk-card">
+          <span class="sk sk-line is-mid"></span>
+          <span class="sk sk-line is-short"></span>
+        </div>
+        <?php for ($sk = 0; $sk < 7; $sk++): ?>
+        <div class="sk-row group-roster-sk-row">
+          <span class="sk sk-line" style="width:14%"></span>
+          <span class="sk sk-line" style="width:18%"></span>
+          <span class="sk sk-line" style="width:16%"></span>
+          <span class="sk sk-line" style="width:16%"></span>
+          <span class="sk sk-line is-mid" style="width:18%"></span>
+          <span class="sk sk-line is-short" style="width:12%"></span>
+        </div>
+        <?php endfor; ?>
+      </div>
+      <div class="table-responsive group-roster-table-wrap" data-group-roster-table hidden>
+        <table class="table table-dark table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>N° inscription</th>
+              <th>Nom</th>
+              <th>Prénom</th>
+              <th>CIN / passeport</th>
+              <th>Groupe TD</th>
+              <th>Groupe TP</th>
+            </tr>
+          </thead>
+          <tbody data-group-roster-body></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </dialog>
@@ -402,6 +426,9 @@ $courseGroups = db()->query(
   background: var(--app-surface-strong, #1e1e1e);
   box-shadow: var(--ux-elev-24, 0 24px 38px 3px rgba(0, 0, 0, 0.18));
 }
+.group-roster-titlebar {
+  display: none;
+}
 .group-roster-panel-head {
   display: flex;
   align-items: flex-start;
@@ -412,7 +439,22 @@ $courseGroups = db()->query(
 }
 .group-roster-panel-body {
   max-height: min(68vh, 38rem);
+  overflow: auto;
   padding: 0;
+}
+.group-roster-skeleton {
+  min-height: 16rem;
+  padding: 1rem 1.15rem 1.2rem;
+}
+.group-roster-sk-row {
+  padding: 0.35rem 0;
+}
+.group-roster-table-wrap[hidden],
+.group-roster-skeleton[hidden] {
+  display: none !important;
+}
+.group-roster-table-wrap.is-ready {
+  animation: sk-fade 0.3s ease;
 }
 body.theme-light .group-roster-chip {
   color: var(--app-text, #1d1b20);
@@ -425,6 +467,14 @@ body.theme-light .group-roster-dialog::backdrop {
     flex-direction: column;
     align-items: stretch;
   }
+  .group-roster-sk-row {
+    flex-wrap: wrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .group-roster-table-wrap.is-ready {
+    animation: none;
+  }
 }
 </style>
 <script>
@@ -433,9 +483,12 @@ body.theme-light .group-roster-dialog::backdrop {
     var dialog = document.querySelector('[data-group-roster-dialog]');
     if (!dialog || typeof dialog.showModal !== 'function') return;
     var titleEl = dialog.querySelector('[data-group-roster-title]');
+    var titlebarEl = dialog.querySelector('[data-group-roster-titlebar]');
     var metaEl = dialog.querySelector('[data-group-roster-meta]');
     var bodyEl = dialog.querySelector('[data-group-roster-body]');
-    var closeBtn = dialog.querySelector('[data-group-roster-close]');
+    var skeletonEl = dialog.querySelector('[data-group-roster-skeleton]');
+    var tableWrap = dialog.querySelector('[data-group-roster-table]');
+    var closeBtns = dialog.querySelectorAll('[data-group-roster-close]');
     var requestId = 0;
     var embed = <?= app_is_embedded() ? "'1'" : "''" ?>;
 
@@ -448,14 +501,37 @@ body.theme-light .group-roster-dialog::backdrop {
         .replace(/'/g, '&#39;');
     }
 
-    function setBusy(message) {
-      if (metaEl) metaEl.textContent = message || '';
+    function showSkeleton(message) {
+      if (metaEl) metaEl.textContent = message || 'Chargement des étudiants…';
+      if (skeletonEl) skeletonEl.hidden = false;
+      if (tableWrap) {
+        tableWrap.hidden = true;
+        tableWrap.classList.remove('is-ready');
+      }
+      if (bodyEl) bodyEl.innerHTML = '';
+    }
+
+    function showError(message) {
+      if (metaEl) metaEl.textContent = message || 'Impossible de charger les étudiants.';
+      if (skeletonEl) skeletonEl.hidden = true;
+      if (tableWrap) {
+        tableWrap.hidden = false;
+        tableWrap.classList.add('is-ready');
+      }
       if (bodyEl) {
-        bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">' + escapeHtml(message || 'Chargement…') + '</td></tr>';
+        bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">' + escapeHtml(message || 'Impossible de charger les étudiants.') + '</td></tr>';
       }
     }
 
-    function renderRows(students) {
+    function renderRows(students, label) {
+      if (metaEl) {
+        metaEl.textContent = students.length + ' étudiant(s) — ' + label;
+      }
+      if (skeletonEl) skeletonEl.hidden = true;
+      if (tableWrap) {
+        tableWrap.hidden = false;
+        tableWrap.classList.add('is-ready');
+      }
       if (!bodyEl) return;
       if (!students.length) {
         bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">Aucun étudiant dans ce groupe.</td></tr>';
@@ -476,7 +552,8 @@ body.theme-light .group-roster-dialog::backdrop {
     function openGroup(groupId, label) {
       var current = ++requestId;
       if (titleEl) titleEl.textContent = label;
-      setBusy('Chargement des étudiants…');
+      if (titlebarEl) titlebarEl.textContent = label;
+      showSkeleton('Chargement des étudiants…');
       dialog.showModal();
       var url = 'groupes.php?ajax=group_students&id_groupe=' + encodeURIComponent(groupId);
       if (embed === '1') url += '&embed=1';
@@ -490,16 +567,13 @@ body.theme-light .group-roster-dialog::backdrop {
       }).then(function (result) {
         if (current !== requestId) return;
         if (!result.ok || !result.payload || !result.payload.ok) {
-          setBusy((result.payload && result.payload.error) || 'Impossible de charger les étudiants.');
+          showError((result.payload && result.payload.error) || 'Impossible de charger les étudiants.');
           return;
         }
-        if (metaEl) {
-          metaEl.textContent = (result.payload.students || []).length + ' étudiant(s) — ' + label;
-        }
-        renderRows(result.payload.students || []);
+        renderRows(result.payload.students || [], label);
       }).catch(function () {
         if (current !== requestId) return;
-        setBusy('Impossible de charger les étudiants.');
+        showError('Impossible de charger les étudiants.');
       });
     }
 
@@ -509,11 +583,11 @@ body.theme-light .group-roster-dialog::backdrop {
       });
     });
 
-    if (closeBtn) {
-      closeBtn.addEventListener('click', function () {
+    closeBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
         dialog.close();
       });
-    }
+    });
 
     dialog.addEventListener('click', function (event) {
       if (event.target === dialog) dialog.close();

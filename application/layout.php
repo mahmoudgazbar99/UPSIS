@@ -704,7 +704,7 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="assets/motion.css?v=3" rel="stylesheet">
         <link href="assets/style.css?v=96" rel="stylesheet">
         <link href="assets/institut.css?v=4" rel="stylesheet">
-        <link href="assets/clarity.css?v=25" rel="stylesheet">
+        <link href="assets/clarity.css?v=26" rel="stylesheet">
         <link href="assets/skeleton.css?v=3" rel="stylesheet">
         <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
         <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">

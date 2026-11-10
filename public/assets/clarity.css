@@ -1744,3 +1744,150 @@ body.theme-clarity .dashboard-home-panel .macos-stat-blue span { background: rgb
 body.theme-clarity .dashboard-home-panel .macos-stat-green span { background: rgba(52, 211, 153, 0.22); }
 body.theme-clarity .dashboard-home-panel .macos-stat-purple span { background: rgba(168, 85, 247, 0.22); }
 body.theme-clarity .dashboard-home-panel .macos-stat-orange span { background: rgba(249, 115, 22, 0.22); }
+
+/* Group roster dialog — Mac bureau window chrome */
+body.theme-clarity .group-roster-dialog::backdrop {
+  background: rgba(8, 10, 14, 0.55);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
+}
+
+body.theme-clarity .group-roster-panel {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.82);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.38),
+    0 2px 0 rgba(255, 255, 255, 0.18) inset;
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  color: var(--desk-ink, var(--macos-text, #f5f5f7));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body.theme-clarity.theme-light .group-roster-panel {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.9);
+  color: var(--desk-ink, #17324d);
+}
+
+body.theme-clarity .group-roster-titlebar {
+  display: flex !important;
+  position: relative;
+  align-items: center;
+  flex: 0 0 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--desk-line, rgba(255, 255, 255, 0.12));
+  background: rgba(44, 44, 48, 0.28);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+body.theme-clarity.theme-light .group-roster-titlebar {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+body.theme-clarity .group-roster-traffic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 58px;
+  z-index: 1;
+}
+
+body.theme-clarity .group-roster-dot {
+  width: 13px;
+  height: 13px;
+  display: inline-block;
+  border: 0;
+  border-radius: 50%;
+  padding: 0;
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+body.theme-clarity .group-roster-dot-close {
+  background: #ff5f57;
+  cursor: pointer;
+}
+
+body.theme-clarity .group-roster-dot-min { background: #febc2e; }
+body.theme-clarity .group-roster-dot-max { background: #28c840; }
+
+body.theme-clarity .group-roster-titlebar-label {
+  position: absolute;
+  left: 50%;
+  margin: 0;
+  color: var(--desk-ink, var(--macos-text, #f5f5f7));
+  font-size: 13px;
+  font-weight: 600;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+body.theme-clarity .group-roster-panel-head {
+  padding: 0.95rem 1.15rem 0.85rem;
+  border-bottom: 1px solid var(--desk-line, rgba(255, 255, 255, 0.12));
+  background: transparent;
+}
+
+body.theme-clarity .group-roster-panel-head .eyebrow {
+  display: none;
+}
+
+body.theme-clarity .group-roster-close-btn {
+  border-radius: 999px;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+body.theme-clarity.theme-light .group-roster-close-btn {
+  border-color: rgba(23, 50, 77, 0.14);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.theme-clarity .group-roster-chip {
+  border-radius: 10px;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  font-family: inherit;
+}
+
+body.theme-clarity .group-roster-chip:hover,
+body.theme-clarity .group-roster-chip:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: none;
+}
+
+body.theme-clarity.theme-light .group-roster-chip {
+  border-color: rgba(23, 50, 77, 0.12);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.theme-clarity .group-roster-panel-body .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: inherit;
+  color: inherit;
+  background: transparent;
+}
+
+body.theme-clarity .group-roster-panel-body .table thead th {
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--desk-ink, #f5f5f7) 72%, transparent);
+  border-bottom-color: var(--desk-line, rgba(255, 255, 255, 0.12));
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body.theme-clarity .group-roster-panel-body .table td {
+  border-color: var(--desk-line, rgba(255, 255, 255, 0.08));
+}
+
+body.theme-clarity .group-roster-skeleton {
+  padding: 1rem 1.1rem 1.15rem;
+}
