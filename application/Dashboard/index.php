@@ -290,7 +290,7 @@ function dashboard_menu_item(
       <?php if ($number !== ''): ?><span class="dashboard-menu-number"><?= e($number) ?></span><?php endif; ?>
       <span class="dashboard-menu-copy">
         <strong class="dashboard-menu-title-row">
-          <span class="dashboard-menu-title-text"><?= e($title) ?></span>
+          <span class="dashboard-menu-title-text"><span class="dashboard-menu-title-scroll"><?= e($title) ?></span></span>
           <?php if ($badgeCount > 0): ?><span class="dashboard-alert-count" aria-label="<?= $badgeCount ?> en attente"><?= $badgeCount ?></span><?php endif; ?>
         </strong>
         <small><?= e($subtitle) ?></small>
@@ -912,6 +912,67 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
       link.setAttribute('aria-current', 'page');
     });
   });
+})();
+(function () {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const items = document.querySelectorAll('.dashboard-menu-item');
+  let touchTimer = 0;
+
+  function measure(item) {
+    const clip = item.querySelector('.dashboard-menu-title-text');
+    const scroll = item.querySelector('.dashboard-menu-title-scroll');
+    if (!clip || !scroll) return;
+    clip.classList.remove('can-marquee');
+    scroll.style.removeProperty('--shift');
+    scroll.style.removeProperty('--marquee-duration');
+    item.classList.remove('is-title-marquee');
+    const overflow = scroll.scrollWidth - clip.clientWidth;
+    if (overflow > 4 && !reduceMotion.matches) {
+      scroll.style.setProperty('--shift', (-overflow - 10) + 'px');
+      scroll.style.setProperty('--marquee-duration', Math.max(3.2, Math.min(8, 2.4 + overflow / 28)) + 's');
+      clip.classList.add('can-marquee');
+    }
+  }
+
+  function measureAll() {
+    items.forEach(measure);
+  }
+
+  function startTouchMarquee(item) {
+    measure(item);
+    if (!item.querySelector('.dashboard-menu-title-text.can-marquee')) return;
+    items.forEach(function (other) {
+      if (other !== item) other.classList.remove('is-title-marquee');
+    });
+    item.classList.add('is-title-marquee');
+    window.clearTimeout(touchTimer);
+  }
+
+  function stopTouchMarquee(item, delay) {
+    window.clearTimeout(touchTimer);
+    touchTimer = window.setTimeout(function () {
+      item.classList.remove('is-title-marquee');
+    }, delay || 0);
+  }
+
+  items.forEach(function (item) {
+    measure(item);
+    item.addEventListener('mouseenter', function () { measure(item); });
+    item.addEventListener('focusin', function () { measure(item); });
+    item.addEventListener('touchstart', function () { startTouchMarquee(item); }, { passive: true });
+    item.addEventListener('touchend', function () { stopTouchMarquee(item, 1600); }, { passive: true });
+    item.addEventListener('touchcancel', function () { stopTouchMarquee(item, 0); }, { passive: true });
+  });
+
+  window.addEventListener('resize', measureAll);
+  if (window.ResizeObserver) {
+    const menu = document.querySelector('.dashboard-menu');
+    if (menu) new ResizeObserver(measureAll).observe(menu);
+  }
+  if (reduceMotion.addEventListener) {
+    reduceMotion.addEventListener('change', measureAll);
+  }
+  requestAnimationFrame(measureAll);
 })();
 document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   button.addEventListener('click', function () {

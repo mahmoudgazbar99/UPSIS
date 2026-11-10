@@ -824,6 +824,14 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     white-space: nowrap;
   }
 
+  body.theme-original .dashboard-menu-item strong.dashboard-menu-title-row {
+    display: inline-flex;
+    overflow: hidden;
+    text-overflow: clip;
+    max-width: 100%;
+    min-width: 0;
+  }
+
   body.theme-original .dashboard-menu-group {
     display: flex;
     flex-direction: column;
@@ -1269,6 +1277,14 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  body.theme-original .dashboard-menu-item strong.dashboard-menu-title-row {
+    display: inline-flex;
+    overflow: hidden;
+    text-overflow: clip;
+    max-width: 100%;
+    min-width: 0;
   }
 
   body.theme-original .dashboard-menu-icon {
