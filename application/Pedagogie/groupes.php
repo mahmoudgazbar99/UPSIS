@@ -297,10 +297,13 @@ $courseGroups = db()->query(
             <td>
               <button
                 type="button"
-                class="btn btn-link p-0 fw-bold text-decoration-underline group-roster-trigger"
+                class="group-roster-chip"
                 data-group-id="<?= (int) $courseGroup['id_groupe'] ?>"
                 data-group-label="Groupe <?= (int) $courseGroup['numero'] ?> · <?= e((string) $courseGroup['semestre']) ?>"
-              >Groupe <?= (int) $courseGroup['numero'] ?></button>
+              >
+                <span class="group-roster-chip-label">Groupe <?= (int) $courseGroup['numero'] ?></span>
+                <span class="group-roster-chip-hint" aria-hidden="true">voir</span>
+              </button>
             </td>
             <td><?= (int) $courseGroup['effectif'] ?> étudiant<?= (int) $courseGroup['effectif'] > 1 ? 's' : '' ?></td>
             <td><?= (int) $courseGroup['capacite'] ?> étudiants</td>
@@ -313,92 +316,171 @@ $courseGroups = db()->query(
   </div>
 </div>
 
-<div class="modal fade" id="groupRosterModal" tabindex="-1" aria-labelledby="groupRosterModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content bg-dark text-light border-secondary">
-      <div class="modal-header border-secondary">
-        <h2 class="modal-title h5 mb-0" id="groupRosterModalLabel">Étudiants du groupe</h2>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+<dialog class="group-roster-dialog" data-group-roster-dialog aria-labelledby="groupRosterTitle">
+  <div class="group-roster-panel app-card">
+    <div class="group-roster-panel-head">
+      <div>
+        <p class="eyebrow mb-1">Liste du groupe</p>
+        <h2 class="h4 mb-0" id="groupRosterTitle" data-group-roster-title>Étudiants du groupe</h2>
+        <p class="text-secondary small mb-0 mt-1" data-group-roster-meta>Chargement…</p>
       </div>
-      <div class="modal-body">
-        <p class="text-secondary small mb-3" data-group-roster-meta>Sélectionnez un groupe pour afficher la liste.</p>
-        <div class="table-responsive">
-          <table class="table table-dark table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th>N° inscription</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>CIN / passeport</th>
-                <th>Groupe TD</th>
-                <th>Groupe TP</th>
-              </tr>
-            </thead>
-            <tbody data-group-roster-body>
-              <tr><td colspan="6" class="text-center text-secondary py-4">Chargement…</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="modal-footer border-secondary">
-        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Fermer</button>
-      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-group-roster-close aria-label="Fermer">Fermer</button>
+    </div>
+    <div class="group-roster-panel-body table-responsive">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>N° inscription</th>
+            <th>Nom</th>
+            <th>Prénom</th>
+            <th>CIN / passeport</th>
+            <th>Groupe TD</th>
+            <th>Groupe TP</th>
+          </tr>
+        </thead>
+        <tbody data-group-roster-body>
+          <tr><td colspan="6" class="text-center text-secondary py-4">Chargement…</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
-</div>
+</dialog>
+
+<style>
+.group-roster-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.15rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--app-accent, #14b8a6) 45%, transparent);
+  background: color-mix(in srgb, var(--app-accent, #14b8a6) 14%, transparent);
+  color: var(--app-text, #e6e1e5);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  box-shadow: var(--ux-elev-1, 0 1px 3px 1px rgba(0, 0, 0, 0.12));
+}
+.group-roster-chip:hover,
+.group-roster-chip:focus-visible {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--app-accent, #14b8a6) 24%, transparent);
+  border-color: color-mix(in srgb, var(--app-accent, #14b8a6) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-accent, #14b8a6) 18%, transparent),
+    var(--ux-elev-4, 0 4px 5px 0 rgba(0, 0, 0, 0.14));
+  outline: none;
+}
+.group-roster-chip-hint {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-accent, #2dd4bf);
+  opacity: 0.9;
+}
+.group-roster-dialog {
+  border: 0;
+  padding: 0;
+  max-width: min(72rem, calc(100vw - 1.5rem));
+  width: min(72rem, calc(100vw - 1.5rem));
+  background: transparent;
+  color: inherit;
+}
+.group-roster-dialog::backdrop {
+  background: rgba(3, 7, 14, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.group-roster-panel {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  border: 1px solid var(--app-border, rgba(255, 255, 255, 0.14));
+  background: var(--app-surface-strong, #1e1e1e);
+  box-shadow: var(--ux-elev-24, 0 24px 38px 3px rgba(0, 0, 0, 0.18));
+}
+.group-roster-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.15rem 1.25rem 0.95rem;
+  border-bottom: 1px solid var(--app-border, rgba(255, 255, 255, 0.12));
+}
+.group-roster-panel-body {
+  max-height: min(68vh, 38rem);
+  padding: 0;
+}
+body.theme-light .group-roster-chip {
+  color: var(--app-text, #1d1b20);
+}
+body.theme-light .group-roster-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+@media (max-width: 640px) {
+  .group-roster-panel-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+</style>
 <script>
 (function () {
-  var modalEl = document.getElementById('groupRosterModal');
-  if (!modalEl || typeof bootstrap === 'undefined') return;
-  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  var titleEl = document.getElementById('groupRosterModalLabel');
-  var metaEl = modalEl.querySelector('[data-group-roster-meta]');
-  var bodyEl = modalEl.querySelector('[data-group-roster-body]');
-  var requestId = 0;
+  function boot() {
+    var dialog = document.querySelector('[data-group-roster-dialog]');
+    if (!dialog || typeof dialog.showModal !== 'function') return;
+    var titleEl = dialog.querySelector('[data-group-roster-title]');
+    var metaEl = dialog.querySelector('[data-group-roster-meta]');
+    var bodyEl = dialog.querySelector('[data-group-roster-body]');
+    var closeBtn = dialog.querySelector('[data-group-roster-close]');
+    var requestId = 0;
+    var embed = <?= app_is_embedded() ? "'1'" : "''" ?>;
 
-  function escapeHtml(value) {
-    return String(value == null ? '' : value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  function setBusy(message) {
-    if (metaEl) metaEl.textContent = message || '';
-    if (bodyEl) {
-      bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">' + escapeHtml(message || 'Chargement…') + '</td></tr>';
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
-  }
 
-  function renderRows(students) {
-    if (!bodyEl) return;
-    if (!students.length) {
-      bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">Aucun étudiant dans ce groupe.</td></tr>';
-      return;
+    function setBusy(message) {
+      if (metaEl) metaEl.textContent = message || '';
+      if (bodyEl) {
+        bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">' + escapeHtml(message || 'Chargement…') + '</td></tr>';
+      }
     }
-    bodyEl.innerHTML = students.map(function (row) {
-      return '<tr>'
-        + '<td>' + escapeHtml(row.num_inscription || '—') + '</td>'
-        + '<td>' + escapeHtml(row.nom || '—') + '</td>'
-        + '<td>' + escapeHtml(row.prenom || '—') + '</td>'
-        + '<td>' + escapeHtml(row.cin_passeport || '—') + '</td>'
-        + '<td>' + escapeHtml(row.groupe_td || '—') + '</td>'
-        + '<td>' + escapeHtml(row.groupe_tp || '—') + '</td>'
-        + '</tr>';
-    }).join('');
-  }
 
-  document.querySelectorAll('.group-roster-trigger').forEach(function (button) {
-    button.addEventListener('click', function () {
-      var groupId = button.getAttribute('data-group-id') || '';
-      var label = button.getAttribute('data-group-label') || 'Groupe';
+    function renderRows(students) {
+      if (!bodyEl) return;
+      if (!students.length) {
+        bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">Aucun étudiant dans ce groupe.</td></tr>';
+        return;
+      }
+      bodyEl.innerHTML = students.map(function (row) {
+        return '<tr>'
+          + '<td>' + escapeHtml(row.num_inscription || '—') + '</td>'
+          + '<td>' + escapeHtml(row.nom || '—') + '</td>'
+          + '<td>' + escapeHtml(row.prenom || '—') + '</td>'
+          + '<td>' + escapeHtml(row.cin_passeport || '—') + '</td>'
+          + '<td>' + escapeHtml(row.groupe_td || '—') + '</td>'
+          + '<td>' + escapeHtml(row.groupe_tp || '—') + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+
+    function openGroup(groupId, label) {
       var current = ++requestId;
       if (titleEl) titleEl.textContent = label;
       setBusy('Chargement des étudiants…');
-      modal.show();
-      fetch('groupes.php?ajax=group_students&id_groupe=' + encodeURIComponent(groupId), {
+      dialog.showModal();
+      var url = 'groupes.php?ajax=group_students&id_groupe=' + encodeURIComponent(groupId);
+      if (embed === '1') url += '&embed=1';
+      fetch(url, {
         headers: { 'Accept': 'application/json' },
         credentials: 'same-origin'
       }).then(function (response) {
@@ -419,8 +501,30 @@ $courseGroups = db()->query(
         if (current !== requestId) return;
         setBusy('Impossible de charger les étudiants.');
       });
+    }
+
+    document.querySelectorAll('.group-roster-chip').forEach(function (button) {
+      button.addEventListener('click', function () {
+        openGroup(button.getAttribute('data-group-id') || '', button.getAttribute('data-group-label') || 'Groupe');
+      });
     });
-  });
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function () {
+        dialog.close();
+      });
+    }
+
+    dialog.addEventListener('click', function (event) {
+      if (event.target === dialog) dialog.close();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
 })();
 </script>
 
