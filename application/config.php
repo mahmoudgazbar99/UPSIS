@@ -1513,6 +1513,7 @@ function audit_record(string $category, string $action, string $summary): void
 require_once __DIR__ . '/support/institution.php';
 require_once __DIR__ . '/support/academic_policy.php';
 require_once __DIR__ . '/support/certificate_config.php';
+require_once __DIR__ . '/support/inscription_policy.php';
 require_once __DIR__ . '/support/course_library.php';
 if (!in_array(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')), ['account_status.php', 'etudiant_inbox.php'], true)) {
     validate_current_account_status();

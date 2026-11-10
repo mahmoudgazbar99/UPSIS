@@ -408,19 +408,19 @@ function student_sheet_import(array $rows): array
         $levels[mb_strtolower((string) $level['label'])] = (string) $level['code'];
     }
     $seenIdentity = [];
-    $requiredNew = [
-        'nom' => 'Nom',
-        'prenom' => 'Prénom',
-        'cin_passeport' => 'CIN ou passeport',
-        'email' => 'E-mail',
-        'date_naissance' => 'Date de naissance',
-        'sexe' => 'Sexe',
-        'specialite' => 'Spécialité',
-        'niveau' => 'Niveau',
-        'date_inscrit' => 'Date d\'inscription',
-        'annee_bac' => 'Année du bac',
-        'specialite_bac' => 'Spécialité du bac',
-    ];
+    $catalog = inscription_field_catalog();
+    $requiredNew = [];
+    foreach (inscription_required_field_keys() as $field) {
+        if ($field === 'id_spec') {
+            $requiredNew['specialite'] = $catalog['id_spec']['label'] ?? 'Spécialité';
+            continue;
+        }
+        $requiredNew[$field] = $catalog[$field]['label'] ?? $field;
+    }
+    // Import always needs a specialty column mapping target.
+    if (!isset($requiredNew['specialite'])) {
+        $requiredNew['specialite'] = 'Spécialité';
+    }
     foreach ($rows as $offset => $row) {
         $line = $offset + 2;
         $present = array_keys($row);

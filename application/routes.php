@@ -24,6 +24,7 @@ return [
 
     'inscription.php' => 'Scolarite/inscription.php',
     'inscription_old.php' => 'Scolarite/inscription_old.php',
+    'inscription_regles.php' => 'Scolarite/inscription_regles.php',
     'identite.php' => 'Scolarite/identite.php',
     'etablissement.php' => 'Scolarite/etablissement.php',
     'attestations_config.php' => 'Scolarite/attestations_config.php',
