@@ -11,6 +11,90 @@ $student = null;
 $groups = [];
 $error = '';
 
+if (($_GET['ajax'] ?? '') === 'group_students') {
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    $groupId = filter_input(INPUT_GET, 'id_groupe', FILTER_VALIDATE_INT) ?: 0;
+    if ($groupId <= 0) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Groupe invalide.'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    try {
+        $groupMeta = db()->prepare(
+            'SELECT id_groupe, semestre, type_groupe, numero
+             FROM groupe
+             WHERE id_groupe = ? AND type_groupe = "Cours"
+             LIMIT 1'
+        );
+        $groupMeta->execute([$groupId]);
+        $meta = $groupMeta->fetch();
+        if (!$meta) {
+            http_response_code(404);
+            echo json_encode(['ok' => false, 'error' => 'Groupe Cours introuvable.'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $studentsQuery = db()->prepare(
+            'SELECT e.num_inscription, e.nom, e.prenom, e.cin_passeport,
+                    (
+                        SELECT CASE
+                            WHEN parent.numero IS NOT NULL
+                                THEN CONCAT("Cours ", parent.numero, " · TD ", ((td.numero - 1) % 2) + 1)
+                            ELSE CONCAT("TD ", td.numero)
+                        END
+                        FROM groupe_etudiant ge_td
+                        JOIN groupe td ON td.id_groupe = ge_td.id_groupe
+                            AND td.type_groupe = "TD"
+                            AND td.semestre = g.semestre
+                        LEFT JOIN groupe parent ON parent.id_groupe = td.id_groupe_parent
+                        WHERE ge_td.id_etudiant = e.id_etudiant
+                        ORDER BY td.numero
+                        LIMIT 1
+                    ) AS groupe_td,
+                    (
+                        SELECT CONCAT("TP ", tp.numero)
+                        FROM groupe_etudiant ge_tp
+                        JOIN groupe tp ON tp.id_groupe = ge_tp.id_groupe
+                            AND tp.type_groupe = "TP"
+                            AND tp.semestre = g.semestre
+                        WHERE ge_tp.id_etudiant = e.id_etudiant
+                        ORDER BY tp.numero
+                        LIMIT 1
+                    ) AS groupe_tp
+             FROM groupe_etudiant ge
+             JOIN etudiant e ON e.id_etudiant = ge.id_etudiant
+             JOIN groupe g ON g.id_groupe = ge.id_groupe
+             WHERE ge.id_groupe = ?
+             ORDER BY e.nom, e.prenom, e.num_inscription'
+        );
+        $studentsQuery->execute([$groupId]);
+        $rows = $studentsQuery->fetchAll();
+        echo json_encode([
+            'ok' => true,
+            'group' => [
+                'id_groupe' => (int) $meta['id_groupe'],
+                'semestre' => (string) $meta['semestre'],
+                'numero' => (int) $meta['numero'],
+                'label' => 'Groupe ' . (int) $meta['numero'] . ' · ' . (string) $meta['semestre'],
+            ],
+            'students' => array_map(static function (array $row): array {
+                return [
+                    'num_inscription' => (string) ($row['num_inscription'] ?? ''),
+                    'nom' => (string) ($row['nom'] ?? ''),
+                    'prenom' => (string) ($row['prenom'] ?? ''),
+                    'cin_passeport' => (string) ($row['cin_passeport'] ?? ''),
+                    'groupe_td' => (string) ($row['groupe_td'] ?? ''),
+                    'groupe_tp' => (string) ($row['groupe_tp'] ?? ''),
+                ];
+            }, $rows),
+        ], JSON_UNESCAPED_UNICODE);
+    } catch (Throwable $exception) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Impossible de charger les étudiants.'], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'change_group') {
     verify_csrf();
     $studentId = filter_input(INPUT_POST, 'id_etudiant', FILTER_VALIDATE_INT) ?: 0;
@@ -133,7 +217,7 @@ $availableGroups = db()->query(
               FIELD(g.type_groupe, "Cours", "TD"), g.numero'
 )->fetchAll();
 $courseGroups = db()->query(
-    'SELECT g.semestre, g.numero, g.capacite,
+    'SELECT g.id_groupe, g.semestre, g.numero, g.capacite,
             (SELECT COUNT(*) FROM groupe_etudiant members WHERE members.id_groupe = g.id_groupe) AS effectif
      FROM groupe g
      WHERE g.type_groupe = "Cours"
@@ -210,7 +294,14 @@ $courseGroups = db()->query(
         <?php foreach ($courseGroups as $courseGroup): ?>
           <tr>
             <td><?= e($courseGroup['semestre']) ?></td>
-            <td><strong>Groupe <?= (int) $courseGroup['numero'] ?></strong></td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-link p-0 fw-bold text-decoration-underline group-roster-trigger"
+                data-group-id="<?= (int) $courseGroup['id_groupe'] ?>"
+                data-group-label="Groupe <?= (int) $courseGroup['numero'] ?> · <?= e((string) $courseGroup['semestre']) ?>"
+              >Groupe <?= (int) $courseGroup['numero'] ?></button>
+            </td>
             <td><?= (int) $courseGroup['effectif'] ?> étudiant<?= (int) $courseGroup['effectif'] > 1 ? 's' : '' ?></td>
             <td><?= (int) $courseGroup['capacite'] ?> étudiants</td>
           </tr>
@@ -221,6 +312,117 @@ $courseGroups = db()->query(
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="groupRosterModal" tabindex="-1" aria-labelledby="groupRosterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-light border-secondary">
+      <div class="modal-header border-secondary">
+        <h2 class="modal-title h5 mb-0" id="groupRosterModalLabel">Étudiants du groupe</h2>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-secondary small mb-3" data-group-roster-meta>Sélectionnez un groupe pour afficher la liste.</p>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>N° inscription</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>CIN / passeport</th>
+                <th>Groupe TD</th>
+                <th>Groupe TP</th>
+              </tr>
+            </thead>
+            <tbody data-group-roster-body>
+              <tr><td colspan="6" class="text-center text-secondary py-4">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var modalEl = document.getElementById('groupRosterModal');
+  if (!modalEl || typeof bootstrap === 'undefined') return;
+  var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  var titleEl = document.getElementById('groupRosterModalLabel');
+  var metaEl = modalEl.querySelector('[data-group-roster-meta]');
+  var bodyEl = modalEl.querySelector('[data-group-roster-body]');
+  var requestId = 0;
+
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function setBusy(message) {
+    if (metaEl) metaEl.textContent = message || '';
+    if (bodyEl) {
+      bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">' + escapeHtml(message || 'Chargement…') + '</td></tr>';
+    }
+  }
+
+  function renderRows(students) {
+    if (!bodyEl) return;
+    if (!students.length) {
+      bodyEl.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-4">Aucun étudiant dans ce groupe.</td></tr>';
+      return;
+    }
+    bodyEl.innerHTML = students.map(function (row) {
+      return '<tr>'
+        + '<td>' + escapeHtml(row.num_inscription || '—') + '</td>'
+        + '<td>' + escapeHtml(row.nom || '—') + '</td>'
+        + '<td>' + escapeHtml(row.prenom || '—') + '</td>'
+        + '<td>' + escapeHtml(row.cin_passeport || '—') + '</td>'
+        + '<td>' + escapeHtml(row.groupe_td || '—') + '</td>'
+        + '<td>' + escapeHtml(row.groupe_tp || '—') + '</td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  document.querySelectorAll('.group-roster-trigger').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var groupId = button.getAttribute('data-group-id') || '';
+      var label = button.getAttribute('data-group-label') || 'Groupe';
+      var current = ++requestId;
+      if (titleEl) titleEl.textContent = label;
+      setBusy('Chargement des étudiants…');
+      modal.show();
+      fetch('groupes.php?ajax=group_students&id_groupe=' + encodeURIComponent(groupId), {
+        headers: { 'Accept': 'application/json' },
+        credentials: 'same-origin'
+      }).then(function (response) {
+        return response.json().then(function (payload) {
+          return { ok: response.ok, payload: payload };
+        });
+      }).then(function (result) {
+        if (current !== requestId) return;
+        if (!result.ok || !result.payload || !result.payload.ok) {
+          setBusy((result.payload && result.payload.error) || 'Impossible de charger les étudiants.');
+          return;
+        }
+        if (metaEl) {
+          metaEl.textContent = (result.payload.students || []).length + ' étudiant(s) — ' + label;
+        }
+        renderRows(result.payload.students || []);
+      }).catch(function () {
+        if (current !== requestId) return;
+        setBusy('Impossible de charger les étudiants.');
+      });
+    });
+  });
+})();
+</script>
 
 <?php if ($student): ?>
 <div class="card app-card mb-4">
