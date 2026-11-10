@@ -26,6 +26,7 @@ return [
     'inscription_old.php' => 'Scolarite/inscription_old.php',
     'identite.php' => 'Scolarite/identite.php',
     'etablissement.php' => 'Scolarite/etablissement.php',
+    'attestations_config.php' => 'Scolarite/attestations_config.php',
     'etudiant_inbox.php' => 'Scolarite/etudiant_inbox.php',
     'student_photo.php' => 'Scolarite/student_photo.php',
 

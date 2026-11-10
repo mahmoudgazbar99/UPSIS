@@ -48,9 +48,11 @@ if (!mkdir($workDir, 0700, true) && !is_dir($workDir)) {
 
 $pdfPath = $workDir . DIRECTORY_SEPARATOR . 'Attestations_Inscription_Tous_Etudiants.pdf';
 $logoFile = null;
+$cachetFile = null;
 
 try {
     $logoFile = institution_logo_file();
+    $cachetFile = certificate_cachet_file();
     foreach ($students as $student) {
         $dateNaissance = '';
         if (!empty($student['date_naissance'])) {
@@ -85,6 +87,8 @@ try {
             'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
             'establishment_fr' => $institution['establishment_fr'],
         ]);
+        $numero = certificate_allocate_number('inscription', true);
+        certificate_docx_apply_extras($docPath, $numero, $cachetFile['path'] ?? null);
 
         prepare_certificate_page($docPath);
     }
@@ -177,6 +181,9 @@ try {
     }
     if (is_array($logoFile) && !empty($logoFile['temporary']) && is_file($logoFile['path'])) {
         unlink($logoFile['path']);
+    }
+    if (is_array($cachetFile) && !empty($cachetFile['temporary']) && is_file($cachetFile['path'])) {
+        unlink($cachetFile['path']);
     }
 }
 }

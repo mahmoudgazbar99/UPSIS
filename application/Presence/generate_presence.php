@@ -40,10 +40,12 @@ $currentYear = (int) date('Y');
 $fileBase = 'Attestation_Presence_' . preg_replace('/[^A-Za-z0-9_-]/', '_', (string) $student['cin_passeport']);
 $docxPath = null;
 $logoFile = null;
+$cachetFile = null;
 
 try {
     $institution = institution_brand();
     $logoFile = institution_logo_file();
+    $cachetFile = certificate_cachet_file();
     $niveau = (string) ($student['niveau_etude'] ?? $student['niveau'] ?? '');
     $programId = (int) ($student['id_program'] ?? 0);
     $programId = $programId > 0 ? $programId : null;
@@ -67,6 +69,8 @@ try {
     ]);
 
     $preview = ($_GET['preview'] ?? '') === '1';
+    $numero = certificate_allocate_number('presence', !$preview);
+    certificate_docx_apply_extras($docxPath, $numero, $cachetFile['path'] ?? null);
     $asPdf = !$preview && certificate_wants_pdf();
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview, true);
 } catch (Throwable $exception) {
@@ -79,5 +83,8 @@ try {
     }
     if (is_array($logoFile) && !empty($logoFile['temporary']) && is_file($logoFile['path'])) {
         unlink($logoFile['path']);
+    }
+    if (is_array($cachetFile) && !empty($cachetFile['temporary']) && is_file($cachetFile['path'])) {
+        unlink($cachetFile['path']);
     }
 }

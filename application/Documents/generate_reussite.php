@@ -40,6 +40,13 @@ $section = $phpWord->addSection([
 
 $brand = institution_brand();
 $logoFile = institution_logo_file();
+$cachetFile = certificate_cachet_file();
+$preview = ($_GET['preview'] ?? '') === '1';
+$numero = certificate_allocate_number('reussite', !$preview);
+$section->addText($numero, [
+    'bold' => true,
+    'size' => 10,
+], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT, 'spaceAfter' => 120]);
 $section->addImage($logoFile['path'], [
     'width' => 460,
     'height' => 85,
@@ -95,8 +102,16 @@ $section->addText(
     ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::BOTH, 'spaceBefore' => 450]
 );
 
+if (is_array($cachetFile) && !empty($cachetFile['path']) && is_file($cachetFile['path'])) {
+    $section->addImage($cachetFile['path'], [
+        'width' => 90,
+        'height' => 90,
+        'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT,
+    ]);
+}
+
 $footer = $section->addFooter();
-$footer->addText('Référence : ' . $student['num_inscription'] . ' — Fait le ' . date('d/m/Y'), [
+$footer->addText($numero . ' — Référence : ' . $student['num_inscription'] . ' — Fait le ' . date('d/m/Y'), [
     'size' => 10,
 ], ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::RIGHT]);
 
@@ -112,7 +127,6 @@ unlink($tempFile);
 try {
     $writer = IOFactory::createWriter($phpWord, 'Word2007');
     $writer->save($docxPath);
-    $preview = ($_GET['preview'] ?? '') === '1';
     $asPdf = !$preview && certificate_wants_pdf();
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview);
 } catch (Throwable $exception) {
@@ -128,6 +142,9 @@ try {
     }
     if (!empty($logoFile['temporary']) && is_file($logoFile['path'])) {
         unlink($logoFile['path']);
+    }
+    if (is_array($cachetFile) && !empty($cachetFile['temporary']) && is_file($cachetFile['path'])) {
+        unlink($cachetFile['path']);
     }
 }
 
