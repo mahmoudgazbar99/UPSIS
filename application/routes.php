@@ -56,6 +56,9 @@ return [
     'gestion_notes.php' => 'Notes/gestion_notes.php',
     'grille_notes.php' => 'Notes/grille_notes.php',
     'releve_notes.php' => 'Notes/releve_notes.php',
+    'resultats_rachat.php' => 'Notes/resultats_rachat.php',
+    'envoyer_resultats.php' => 'Notes/envoyer_resultats.php',
+    'releve_etudiant.php' => 'Notes/releve_etudiant.php',
 
     'presence_etudiants.php' => 'Presence/presence_etudiants.php',
     'feuille_presence.php' => 'Presence/feuille_presence.php',

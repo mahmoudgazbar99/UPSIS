@@ -770,7 +770,7 @@ function enforce_student_route_isolation(): void {
     if ($script === 'account_status.php' && ($_GET['espace'] ?? '') === 'etudiant') {
         return;
     }
-    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'student_photo.php', 'stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php'], true)) {
+    if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'student_photo.php', 'stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php', 'releve_etudiant.php'], true)) {
         return;
     }
     header('Location: dashboard.php');
@@ -1516,6 +1516,7 @@ require_once __DIR__ . '/support/academic_policy.php';
 require_once __DIR__ . '/support/certificate_config.php';
 require_once __DIR__ . '/support/inscription_policy.php';
 require_once __DIR__ . '/support/security_policy.php';
+require_once __DIR__ . '/support/result_publication.php';
 require_once __DIR__ . '/support/course_library.php';
 if (!in_array(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')), ['account_status.php', 'etudiant_inbox.php'], true)) {
     validate_current_account_status();

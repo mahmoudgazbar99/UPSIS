@@ -181,6 +181,8 @@ function pgsql_sql(string $sql): string
             'stage_critere' => '(code)',
             'stage_categorie' => '(nom)',
             'emploi_groupe_pdf' => '(id_groupe)',
+            'resultat_campagne' => '(annee_scolaire)',
+            'etudiant_resultat' => '(id_etudiant, annee_scolaire)',
         ];
         $name = strtolower($table[1]);
         if (!isset($targets[$name])) {

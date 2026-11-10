@@ -326,6 +326,30 @@ function dashboard_menu(): void {
     if (is_admin() || is_teacher()) {
       dashboard_menu_item('gestion_notes.php?embed=1', 'Notes', 'Saisir les notes autorisées', 'grades', $num());
     }
+    if (is_admin()) {
+      $rachatPending = 0;
+      try {
+        $rachatPending = result_pending_rachat_count();
+      } catch (Throwable $exception) {
+        $rachatPending = 0;
+      }
+      dashboard_menu_item(
+        'resultats_rachat.php?embed=1',
+        'Résultats sous le seuil',
+        'Admis par rachat ou refusée',
+        'alert',
+        $num(),
+        false,
+        $rachatPending
+      );
+      dashboard_menu_item(
+        'envoyer_resultats.php?embed=1',
+        'Envoyer les résultats',
+        'Vérifier notes puis publier les relevés',
+        'grades',
+        $num()
+      );
+    }
     if (is_scolarite()) {
       dashboard_menu_item('demandes_presence.php?embed=1', 'Demandes de présence', 'Attestations demandées par les étudiants', 'attestation', $num());
       dashboard_menu_item('releve_notes.php?embed=1', 'Relevé de notes', 'Consulter un dossier', 'grades', $num());

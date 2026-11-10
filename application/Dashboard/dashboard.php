@@ -73,6 +73,7 @@ if ($studentId === false || $studentId <= 0 || !is_student()) {
 $profile = null;
 $timetable = [];
 $grades = [];
+$publishedResult = null;
 $emploiPdfs = [];
 $courses = [];
 $dbError = '';
@@ -221,17 +222,33 @@ try {
     $timetableQuery->execute(array_merge([$studentId], $levelSemesters));
     $timetable = $timetableQuery->fetchAll();
 
-    // Étape 4 — Notes du dossier, avec la description ECUE de chaque matière.
-    $gradesQuery = $pdo->prepare(
-        'SELECT m.code_ecue, m.description_ecue, m.semestre, m.volume_tp,
-                n.note, n.note_cours, n.note_td, n.note_tp, n.note_rattrapage
-         FROM note n
-         INNER JOIN matiere m ON m.id_mat = n.id_mat
-         WHERE n.id_etudiant = ?
-         ORDER BY FIELD(m.semestre, "S1", "S2", "S3", "S4", "S5", "S6"), m.code_ecue'
-    );
-    $gradesQuery->execute([$studentId]);
-    $grades = $gradesQuery->fetchAll();
+    // Étape 4 — Notes : visibles seulement après publication officielle des résultats.
+    $grades = [];
+    $publishedResult = null;
+    try {
+        $publishedResult = result_published_for_student((int) $studentId);
+        if ($publishedResult !== null) {
+            foreach ($publishedResult['marks'] as $mark) {
+                $grades[] = [
+                    'code_ecue' => (string) ($mark['code_ecue'] ?? ''),
+                    'description_ecue' => (string) ($mark['description_ecue'] ?? ''),
+                    'semestre' => (string) ($mark['semestre'] ?? ''),
+                    'volume_tp' => $mark['volume_tp'] ?? null,
+                    'note' => $mark['note'] ?? null,
+                    'note_cours' => $mark['note_cours'] ?? null,
+                    'note_td' => $mark['note_td'] ?? null,
+                    'note_tp' => $mark['note_tp'] ?? null,
+                    'note_rattrapage' => $mark['note_rattrapage'] ?? null,
+                    'coeff' => $mark['coeff'] ?? null,
+                    'credit' => $mark['credit'] ?? null,
+                ];
+            }
+        }
+    } catch (Throwable $exception) {
+        error_log('dashboard: published results unavailable: ' . $exception->getMessage());
+        $publishedResult = null;
+        $grades = [];
+    }
     $emploiPdfs = emploi_pdf_for_student($studentId);
     $portalPlan = student_portal_plan($pdo, $studentId);
     $portalAbsences = student_portal_absences($pdo, $studentId);
@@ -279,6 +296,9 @@ $gradesBySemester = [];
 foreach ($grades as $grade) {
     $gradesBySemester[(string) $grade['semestre']][] = $grade;
 }
+$resultsPublished = isset($publishedResult) && is_array($publishedResult);
+$resultDecisionLabel = $resultsPublished ? result_decision_label((string) $publishedResult['decision']) : '';
+$resultAverage = $resultsPublished ? $publishedResult['moyenne'] : null;
 $panels = ['profil', 'emploi', 'cours', 'notes', 'plan', 'absences', 'groupe', 'psy', 'contacts', 'reclamation', 'stage'];
 if ($attestationOpen) {
     $panels[] = 'attestation';
@@ -816,32 +836,43 @@ if (!empty($explorerFragment)) {
     </section>
 
     <section class="student-space-sheet<?= $openPanel === 'notes' ? ' is-entering' : '' ?>" data-sheet="notes"<?= $openPanel === 'notes' ? '' : ' hidden' ?>>
-      <h1>Notes du semestre</h1>
-      <?php if ($gradesBySemester === []): ?>
-        <p class="student-space-lead">Aucune note n’est enregistrée pour le moment.</p>
+      <h1>Résultats</h1>
+      <?php if (!$resultsPublished): ?>
+        <p class="student-space-lead">Les résultats n’ont pas encore été publiés par l’administration. Vous serez notifié dès qu’ils seront disponibles.</p>
       <?php else: ?>
-        <?php foreach ($gradesBySemester as $semester => $semesterGrades): ?>
-          <h2><?= e($semester) ?></h2>
-          <div class="student-space-table-wrap">
-            <table>
-              <thead>
-                <tr><th>Matière</th><th>CC</th><th>Examen</th><th>TP</th><th>Résultat</th></tr>
-              </thead>
-              <tbody>
-                <?php foreach ($semesterGrades as $grade): ?>
-                  <?php $result = calculated_note($grade); ?>
-                  <tr>
-                    <td><?= e((string) $grade['code_ecue']) ?> — <?= e((string) $grade['description_ecue']) ?></td>
-                    <td><?= dashboard_note($grade['note_cours']) ?></td>
-                    <td><?= dashboard_note($grade['note_td']) ?></td>
-                    <td><?= dashboard_note($grade['note_tp']) ?></td>
-                    <td><?= $result === null ? '—' : dashboard_note($result) ?></td>
-                  </tr>
-                <?php endforeach; ?>
-              </tbody>
-            </table>
-          </div>
-        <?php endforeach; ?>
+        <p class="student-space-lead">
+          Décision : <strong><?= e($resultDecisionLabel) ?></strong>
+          <?php if ($resultAverage !== null): ?>
+            · Moyenne : <strong><?= e(number_format((float) $resultAverage, 2, ',', ' ')) ?></strong>/20
+          <?php endif; ?>
+        </p>
+        <p class="mb-3"><a class="student-space-link" href="releve_etudiant.php">Télécharger mon relevé de notes</a></p>
+        <?php if ($gradesBySemester === []): ?>
+          <p class="student-space-lead">Le relevé publié ne contient aucune ligne de note.</p>
+        <?php else: ?>
+          <?php foreach ($gradesBySemester as $semester => $semesterGrades): ?>
+            <h2><?= e($semester) ?></h2>
+            <div class="student-space-table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Matière</th><th>CC</th><th>Examen</th><th>TP</th><th>Résultat</th></tr>
+                </thead>
+                <tbody>
+                  <?php foreach ($semesterGrades as $grade): ?>
+                    <?php $result = calculated_note($grade); ?>
+                    <tr>
+                      <td><?= e((string) $grade['code_ecue']) ?> — <?= e((string) $grade['description_ecue']) ?></td>
+                      <td><?= dashboard_note($grade['note_cours']) ?></td>
+                      <td><?= dashboard_note($grade['note_td']) ?></td>
+                      <td><?= dashboard_note($grade['note_tp']) ?></td>
+                      <td><?= $result === null ? '—' : dashboard_note($result) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                </tbody>
+              </table>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
       <?php endif; ?>
     </section>
 
