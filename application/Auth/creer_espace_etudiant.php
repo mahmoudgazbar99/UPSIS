@@ -19,12 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string) ($_POST['password'] ?? '');
     $confirm = (string) ($_POST['password_confirm'] ?? '');
 
+    $policyError = password_policy_check_new($password, $confirm);
     if ($cin === '' || mb_strlen($cin) > 40 || $birth === '') {
         $error = 'Indiquez le CIN ou le passeport et la date de naissance du dossier d’inscription.';
-    } elseif (strlen($password) < 8 || strlen($password) > 72) {
-        $error = 'Le mot de passe doit contenir entre 8 et 72 caractères.';
-    } elseif (!hash_equals($password, $confirm)) {
-        $error = 'Les deux mots de passe ne correspondent pas.';
+    } elseif ($policyError !== null) {
+        $error = $policyError;
     } else {
         $createBucket = 'creer:' . strtolower($cin);
         if (auth_rate_limited($createBucket)) {
@@ -62,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $generation = $pdo->prepare('SELECT auth_generation FROM etudiant_compte WHERE id_etudiant = ? LIMIT 1');
                     $generation->execute([(int) $student['id_etudiant']]);
                     $_SESSION['student_auth_generation'] = (int) $generation->fetchColumn();
+                    $_SESSION['last_activity'] = time();
                     audit_record(
                         'compte',
                         'creer',
@@ -104,9 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <label for="date_naissance">Date de naissance</label>
       <input id="date_naissance" name="date_naissance" type="date" value="<?= e($birth) ?>" required>
       <label for="password">Mot de passe</label>
-      <input id="password" name="password" type="password" minlength="8" maxlength="72" required autocomplete="new-password">
+      <input id="password" name="password" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" required autocomplete="new-password">
       <label for="password_confirm">Confirmer le mot de passe</label>
-      <input id="password_confirm" name="password_confirm" type="password" minlength="8" maxlength="72" required autocomplete="new-password">
+      <input id="password_confirm" name="password_confirm" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" required autocomplete="new-password">
+      <p class="student-gate-hint"><?= e(password_policy_hint()) ?></p>
       <button type="submit">Créer mon espace</button>
     </form>
     <p class="student-gate-links">

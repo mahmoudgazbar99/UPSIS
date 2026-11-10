@@ -37,9 +37,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = identity_error('cin');
     } elseif (in_array($type, ['finance', 'scolarite'], true) && mb_strlen($login) > 80) {
         $error = 'L’identifiant finance ne peut pas dépasser 80 caractères.';
-    } elseif ($password !== '' && strlen($password) < 8) {
-        $error = 'Le nouveau mot de passe doit contenir au moins 8 caractères.';
-    } elseif ($password !== $confirmation) {
+    } elseif ($password !== '' && ($policyError = password_policy_check_new($password, $confirmation)) !== null) {
+        $error = $policyError;
+    } elseif ($password === '' && $confirmation !== '') {
         $error = 'Les deux mots de passe ne correspondent pas.';
     } elseif ($password !== '' && !password_verify((string) ($_POST['admin_password'] ?? ''), admin_password_hash())) {
         $error = 'Le mot de passe administrateur est incorrect.';
@@ -217,7 +217,7 @@ function account_password_field(string $id, string $name, string $label, string 
     ?>
     <label class="form-label" for="<?= e($id) ?>"><?= $label ?><?php if ($hint !== ''): ?> <span class="text-secondary"><?= e($hint) ?></span><?php endif; ?></label>
     <div class="password-field">
-      <input class="form-control" id="<?= e($id) ?>" name="<?= e($name) ?>" type="password" minlength="8" autocomplete="new-password">
+      <input class="form-control" id="<?= e($id) ?>" name="<?= e($name) ?>" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" autocomplete="new-password">
       <button type="button" class="password-toggle" data-password-toggle aria-label="Afficher le mot de passe" aria-pressed="false" title="Afficher le mot de passe">
         <svg class="password-icon-show" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
         <svg class="password-icon-hide" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
@@ -272,7 +272,7 @@ function account_password_field(string $id, string $name, string $label, string 
         </div>
         <input type="hidden" name="admin_password" id="adminPasswordField" value="">
         <div class="col-12">
-          <p class="text-secondary small mb-2">Le mot de passe enregistré est chiffré et ne peut pas être relu. L’œil affiche ou masque le nouveau mot de passe. L’enregistrement d’un mot de passe demande le vôtre.</p>
+          <p class="text-secondary small mb-2"><?= e(password_policy_hint()) ?> Le mot de passe enregistré est chiffré et ne peut pas être relu. L’enregistrement d’un mot de passe demande le vôtre.</p>
           <button class="btn btn-primary" type="submit">Enregistrer</button>
           <a class="btn btn-outline-light" href="modifier_comptes.php?type=<?= urlencode($type) ?>&amp;embed=1">Annuler</a>
         </div>

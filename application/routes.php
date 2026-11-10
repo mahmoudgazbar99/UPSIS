@@ -18,6 +18,7 @@ return [
     'activer_comptes.php' => 'Comptes/activer_comptes.php',
     'ajouter_compte_stage.php' => 'Comptes/ajouter_compte_stage.php',
     'finance_users.php' => 'Comptes/finance_users.php',
+    'securite_session.php' => 'Comptes/securite_session.php',
 
     'index.php' => 'Dashboard/index.php',
     'dashboard.php' => 'Dashboard/dashboard.php',

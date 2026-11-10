@@ -9,6 +9,7 @@ if (logged_in() && $requestedRole === '' && $_SERVER['REQUEST_METHOD'] !== 'POST
 $error = match ((string) ($_GET['error'] ?? '')) {
     'stage_setup' => 'Le compte stage est temporairement indisponible. Contactez l’administrateur pour appliquer la migration des comptes stage.',
     'suspended' => 'Votre compte est suspendu. Contactez l’administrateur.',
+    'session_expired' => 'Session expirée pour inactivité. Veuillez vous reconnecter.',
     default => '',
 };
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

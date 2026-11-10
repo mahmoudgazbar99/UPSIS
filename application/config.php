@@ -187,6 +187,7 @@ function app_enter_role_session(string $role, array $values): void
     session_regenerate_id(true);
     $_SESSION = $values;
     $_SESSION['user_role'] = $role;
+    $_SESSION['last_activity'] = time();
     session_write_close();
 }
 
@@ -1514,7 +1515,9 @@ require_once __DIR__ . '/support/institution.php';
 require_once __DIR__ . '/support/academic_policy.php';
 require_once __DIR__ . '/support/certificate_config.php';
 require_once __DIR__ . '/support/inscription_policy.php';
+require_once __DIR__ . '/support/security_policy.php';
 require_once __DIR__ . '/support/course_library.php';
 if (!in_array(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')), ['account_status.php', 'etudiant_inbox.php'], true)) {
     validate_current_account_status();
 }
+app_enforce_session_idle();

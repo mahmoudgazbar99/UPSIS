@@ -19,10 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Indiquez le nom de la personne.';
     } elseif (!in_array($duty, ['officer', 'superviseur'], true)) {
         $error = 'Choisissez Responsable des stages ou Encadrant de stage.';
-    } elseif (strlen($password) < 8) {
-        $error = 'Le mot de passe doit contenir au moins 8 caractères.';
-    } elseif ($password !== $confirmation) {
-        $error = 'Les deux mots de passe ne correspondent pas.';
+    } elseif (($policyError = password_policy_check_new($password, $confirmation)) !== null) {
+        $error = $policyError;
     } elseif (!stage_accounts_table_exists()) {
         $error = 'La table des comptes stage est absente. Sauvegardez la base puis exécutez stage_accounts_migration.sql sur la base utilisée par cette application.';
     } else {
@@ -83,13 +81,14 @@ page_head('Ajouter compte du service des stages', 'stage-accounts');
         <input class="form-control" id="cin" name="cin" inputmode="numeric" autocomplete="off" minlength="8" maxlength="8" pattern="[0-9]{8}" required value="<?= e((string) ($_POST['cin'] ?? '')) ?>">
       </div>
       <div class="col-md-4">
-        <label class="form-label" for="password">Mot de passe * <span class="text-secondary">(8 caractères minimum)</span></label>
-        <input class="form-control" id="password" name="password" type="password" minlength="8" autocomplete="new-password" required>
+        <label class="form-label" for="password">Mot de passe *</label>
+        <input class="form-control" id="password" name="password" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" autocomplete="new-password" required>
       </div>
       <div class="col-md-4">
         <label class="form-label" for="password_confirm">Retaper le mot de passe *</label>
-        <input class="form-control" id="password_confirm" name="password_confirm" type="password" minlength="8" autocomplete="new-password" required>
+        <input class="form-control" id="password_confirm" name="password_confirm" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" autocomplete="new-password" required>
       </div>
+      <div class="col-12"><small class="text-secondary"><?= e(password_policy_hint()) ?></small></div>
       <div class="col-12 d-flex flex-wrap gap-2">
         <button class="btn btn-primary" type="submit">Créer le compte du service des stages</button>
         <a class="btn btn-outline-light" href="modifier_comptes.php">Gérer les comptes</a>

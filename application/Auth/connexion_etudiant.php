@@ -9,9 +9,11 @@ if (logged_in()) {
     exit;
 }
 
-$error = (($_GET['error'] ?? '') === 'suspended')
-    ? 'Votre compte est suspendu. Contactez l’administrateur.'
-    : '';
+$error = match ((string) ($_GET['error'] ?? '')) {
+    'suspended' => 'Votre compte est suspendu. Contactez l’administrateur.',
+    'session_expired' => 'Session expirée pour inactivité. Veuillez vous reconnecter.',
+    default => '',
+};
 $cin = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -38,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_role'] = 'etudiant';
                 $_SESSION['id_etudiant'] = (int) $row['id_etudiant'];
                 $_SESSION['student_auth_generation'] = (int) $account['auth_generation'];
+                $_SESSION['last_activity'] = time();
                 header('Location: dashboard');
                 exit;
             }

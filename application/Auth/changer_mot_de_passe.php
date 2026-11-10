@@ -12,12 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newPassword = (string) ($_POST['new_password'] ?? '');
     $confirmPassword = (string) ($_POST['confirm_password'] ?? '');
 
+    $policyError = password_policy_check_new($newPassword, $confirmPassword);
     if (!password_verify($currentPassword, admin_password_hash())) {
         $error = 'Le mot de passe actuel est incorrect.';
-    } elseif (strlen($newPassword) < 8) {
-        $error = 'Le nouveau mot de passe doit contenir au moins 8 caractères.';
-    } elseif ($newPassword !== $confirmPassword) {
-        $error = 'Les deux nouveaux mots de passe ne correspondent pas.';
+    } elseif ($policyError !== null) {
+        $error = $policyError;
     } elseif (password_verify($newPassword, admin_password_hash())) {
         $error = 'Le nouveau mot de passe doit être différent de l’ancien.';
     } else {
@@ -41,9 +40,9 @@ page_head('Changer le mot de passe', 'settings');
   <form method="post" class="row g-3" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
     <div class="col-12"><label class="form-label" for="current_password">Mot de passe actuel *</label><input class="form-control" id="current_password" name="current_password" type="password" required autocomplete="current-password"></div>
-    <div class="col-md-6"><label class="form-label" for="new_password">Nouveau mot de passe *</label><input class="form-control" id="new_password" name="new_password" type="password" minlength="8" required autocomplete="new-password"></div>
-    <div class="col-md-6"><label class="form-label" for="confirm_password">Confirmer le nouveau mot de passe *</label><input class="form-control" id="confirm_password" name="confirm_password" type="password" minlength="8" required autocomplete="new-password"></div>
-    <div class="col-12"><small class="text-secondary">Le nouveau mot de passe doit contenir au moins 8 caractères.</small></div>
+    <div class="col-md-6"><label class="form-label" for="new_password">Nouveau mot de passe *</label><input class="form-control" id="new_password" name="new_password" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" required autocomplete="new-password"></div>
+    <div class="col-md-6"><label class="form-label" for="confirm_password">Confirmer le nouveau mot de passe *</label><input class="form-control" id="confirm_password" name="confirm_password" type="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" required autocomplete="new-password"></div>
+    <div class="col-12"><small class="text-secondary"><?= e(password_policy_hint()) ?></small></div>
     <div class="col-12"><button class="btn btn-primary" type="submit">Modifier le mot de passe</button></div>
   </form>
 </div></div>

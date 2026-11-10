@@ -370,6 +370,7 @@ function dashboard_menu(): void {
           dashboard_menu_item('annee_periode.php?embed=1', 'Année / période active', 'Année scolaire courante et période ouverte', 'schedule', '');
           dashboard_menu_item('attestations_config.php?embed=1', 'Cachet et numérotation', 'Tampon et N° officiel des attestations', 'attestation', '');
           dashboard_menu_item('inscription_regles.php?embed=1', 'Règles d’inscription', 'Champs obligatoires, documents, dates d’ouverture', 'enroll', '');
+          dashboard_menu_item('securite_session.php?embed=1', 'Sécurité — session', 'Inactivité et règles de mot de passe', 'accounts', '');
           dashboard_menu_item('capacite_groupes.php?embed=1', 'Capacité maximale des groupes', 'Plafond Cours, TD et TP', 'groups', '');
           dashboard_menu_item('structure_academique.php?embed=1', 'Structure académique', 'Programmes, niveaux, périodes', 'groups', '');
           dashboard_menu_item('specialites.php?embed=1', 'Spécialités', 'Créer ou désactiver', 'enroll', '');

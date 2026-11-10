@@ -23,12 +23,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $password = (string) ($_POST['password'] ?? '');
     $confirm = (string) ($_POST['password_confirm'] ?? '');
+    $policyError = password_policy_check_new($password, $confirm);
     try {
         if ($type === 'etudiant') {
             ensure_etudiant_compte_table(db());
             $cin = student_normalize_cin((string) ($_POST['cin'] ?? ''));
-            if ($cin === '' || mb_strlen($cin) > 40 || strlen($password) < 8 || strlen($password) > 72 || $password !== $confirm) {
-                throw new RuntimeException('Indiquez le CIN ou le passeport d’un étudiant inscrit et un mot de passe de 8 à 72 caractères.');
+            if ($cin === '' || mb_strlen($cin) > 40 || $policyError !== null) {
+                throw new RuntimeException(
+                    $cin === '' || mb_strlen($cin) > 40
+                        ? 'Indiquez le CIN ou le passeport d’un étudiant inscrit.'
+                        : (string) $policyError
+                );
             }
             $student = student_find_by_cin($cin);
             if (!$student) {
@@ -63,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
                 throw new RuntimeException('Veuillez saisir une adresse e-mail valide.');
             }
-            if (strlen($password) < 8 || $password !== $confirm) {
-                throw new RuntimeException('Le mot de passe doit contenir au moins 8 caractères et être confirmé.');
+            if ($policyError !== null) {
+                throw new RuntimeException($policyError);
             }
             $data['password'] = password_hash($password, PASSWORD_DEFAULT);
             db()->prepare('INSERT INTO enseignant (cin, nom, prenom, num_tel, email, adresse, password) VALUES (:cin, :nom, :prenom, :num_tel, :email, :adresse, :password)')->execute($data);
@@ -72,16 +77,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $message = 'Compte enseignant créé.';
         } elseif ($type === 'finance') {
             $username = trim((string) ($_POST['username'] ?? ''));
-            if ($username === '' || strlen($password) < 8 || $password !== $confirm) {
-                throw new RuntimeException('Saisissez un identifiant et un mot de passe d’au moins 8 caractères.');
+            if ($username === '' || $policyError !== null) {
+                throw new RuntimeException($username === '' ? 'Saisissez un identifiant.' : (string) $policyError);
             }
             db()->prepare('INSERT INTO finance_user (username, password) VALUES (?, ?)')->execute([$username, password_hash($password, PASSWORD_DEFAULT)]);
             audit_record('compte', 'creer', 'Compte finance ' . $username);
             $message = 'Compte finance créé.';
         } elseif ($type === 'stage') {
             $cin = trim((string) ($_POST['cin'] ?? ''));
-            if (!identity_matches('cin', $cin) || strlen($password) < 8 || $password !== $confirm) {
-                throw new RuntimeException(identity_error('cin') . ' Le mot de passe doit contenir au moins 8 caractères.');
+            if (!identity_matches('cin', $cin) || $policyError !== null) {
+                throw new RuntimeException(!identity_matches('cin', $cin) ? identity_error('cin') : (string) $policyError);
             }
             if (!stage_accounts_table_exists()) {
                 throw new RuntimeException('La table des comptes stage est absente.');
@@ -98,8 +103,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             access_ensure();
             $username = trim((string) ($_POST['username'] ?? ''));
             $nom = trim((string) ($_POST['nom'] ?? ''));
-            if ($username === '' || $nom === '' || strlen($password) < 8 || $password !== $confirm) {
-                throw new RuntimeException('Saisissez le nom, l’identifiant et un mot de passe d’au moins 8 caractères.');
+            if ($username === '' || $nom === '' || $policyError !== null) {
+                throw new RuntimeException(
+                    ($username === '' || $nom === '')
+                        ? 'Saisissez le nom et l’identifiant.'
+                        : (string) $policyError
+                );
             }
             db()->prepare('INSERT INTO scolarite_user (username, nom, password) VALUES (?, ?, ?)')->execute([$username, $nom, password_hash($password, PASSWORD_DEFAULT)]);
             audit_record('compte', 'creer', 'Compte scolarité ' . $username);
@@ -152,8 +161,9 @@ page_head('Créer des comptes', 'accounts');
       <div class="col-md-4"><label class="form-label">Nom</label><input class="form-control" name="nom"></div>
       <div class="col-md-4"><label class="form-label">Responsabilité</label><select class="form-select" name="responsabilite"><option value="officer">Responsable des stages</option><option value="coordinateur">Coordinateur des affectations</option><option value="superviseur">Superviseur</option></select></div>
     <?php endif; ?>
-    <div class="col-md-4"><label class="form-label">Mot de passe *</label><input class="form-control" type="password" name="password" minlength="8" required></div>
-    <div class="col-md-4"><label class="form-label">Confirmation *</label><input class="form-control" type="password" name="password_confirm" minlength="8" required></div>
+    <div class="col-md-4"><label class="form-label">Mot de passe *</label><input class="form-control" type="password" name="password" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" required></div>
+    <div class="col-md-4"><label class="form-label">Confirmation *</label><input class="form-control" type="password" name="password_confirm" minlength="<?= (int) password_policy_min_length() ?>" maxlength="72" required></div>
+    <div class="col-12"><small class="text-secondary"><?= e(password_policy_hint()) ?></small></div>
     <div class="col-12"><button class="btn btn-primary">Créer le compte</button></div>
   </form>
 </div></div>
