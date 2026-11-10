@@ -124,19 +124,16 @@ page_head('Règles d’inscription', 'enroll');
         <div id="docs-list" class="d-flex flex-column gap-2">
           <?php foreach ($policy['documents'] as $index => $doc): ?>
             <div class="border rounded p-2 doc-row">
-              <div class="row g-2 align-items-center">
-                <div class="col-md-3">
-                  <input class="form-control form-control-sm" name="doc_code[]" value="<?= e($doc['code']) ?>" placeholder="code" maxlength="32">
-                </div>
-                <div class="col-md-6">
-                  <input class="form-control form-control-sm" name="doc_label[]" value="<?= e($doc['label']) ?>" placeholder="Libellé" maxlength="120" required>
-                </div>
-                <div class="col-md-3">
-                  <label class="small mb-0 d-flex align-items-center gap-1">
-                    <input type="checkbox" name="doc_required[<?= (int) $index ?>]" value="1" <?= !empty($doc['required']) ? 'checked' : '' ?>>
-                    Obligatoire
-                  </label>
-                </div>
+              <div class="d-flex flex-wrap gap-2 align-items-center">
+                <input class="form-control form-control-sm" style="max-width:7.5rem" name="doc_code[]" value="<?= e($doc['code']) ?>" placeholder="code" maxlength="32" aria-label="Code">
+                <input class="form-control form-control-sm flex-grow-1" name="doc_label[]" value="<?= e($doc['label']) ?>" placeholder="Libellé" maxlength="120" required aria-label="Libellé">
+                <label class="small mb-0 d-flex align-items-center gap-1 text-nowrap">
+                  <input type="checkbox" name="doc_required[<?= (int) $index ?>]" value="1" <?= !empty($doc['required']) ? 'checked' : '' ?>>
+                  Obligatoire
+                </label>
+                <button type="button" class="btn btn-outline-danger btn-sm doc-remove" aria-label="Supprimer cette pièce" title="Supprimer">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M8 7l1 13h6l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                </button>
               </div>
             </div>
           <?php endforeach; ?>
@@ -156,17 +153,57 @@ page_head('Règles d’inscription', 'enroll');
   const list = document.getElementById('docs-list');
   const addBtn = document.getElementById('add-doc');
   if (!list || !addBtn) return;
-  addBtn.addEventListener('click', function () {
-    const index = list.querySelectorAll('.doc-row').length;
+
+  const trashSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M8 7l1 13h6l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+
+  function reindexDocs() {
+    const rows = list.querySelectorAll('.doc-row');
+    rows.forEach(function (row, index) {
+      const checkbox = row.querySelector('input[type="checkbox"]');
+      if (checkbox) checkbox.name = 'doc_required[' + index + ']';
+    });
+    const onlyOne = rows.length <= 1;
+    rows.forEach(function (row) {
+      const btn = row.querySelector('.doc-remove');
+      if (!btn) return;
+      btn.disabled = onlyOne;
+      btn.title = onlyOne ? 'Au moins une pièce est requise' : 'Supprimer';
+      btn.setAttribute('aria-label', onlyOne ? 'Impossible de supprimer la dernière pièce' : 'Supprimer cette pièce');
+    });
+  }
+
+  function buildRow(index) {
     const row = document.createElement('div');
     row.className = 'border rounded p-2 doc-row';
-    row.innerHTML = '<div class="row g-2 align-items-center">'
-      + '<div class="col-md-3"><input class="form-control form-control-sm" name="doc_code[]" placeholder="code" maxlength="32"></div>'
-      + '<div class="col-md-6"><input class="form-control form-control-sm" name="doc_label[]" placeholder="Libellé" maxlength="120" required></div>'
-      + '<div class="col-md-3"><label class="small mb-0 d-flex align-items-center gap-1"><input type="checkbox" name="doc_required[' + index + ']" value="1"> Obligatoire</label></div>'
+    row.innerHTML = '<div class="d-flex flex-wrap gap-2 align-items-center">'
+      + '<input class="form-control form-control-sm" style="max-width:7.5rem" name="doc_code[]" placeholder="code" maxlength="32" aria-label="Code">'
+      + '<input class="form-control form-control-sm flex-grow-1" name="doc_label[]" placeholder="Libellé" maxlength="120" required aria-label="Libellé">'
+      + '<label class="small mb-0 d-flex align-items-center gap-1 text-nowrap"><input type="checkbox" name="doc_required[' + index + ']" value="1"> Obligatoire</label>'
+      + '<button type="button" class="btn btn-outline-danger btn-sm doc-remove" aria-label="Supprimer cette pièce" title="Supprimer">' + trashSvg + '</button>'
       + '</div>';
-    list.appendChild(row);
+    return row;
+  }
+
+  addBtn.addEventListener('click', function () {
+    list.appendChild(buildRow(list.querySelectorAll('.doc-row').length));
+    reindexDocs();
   });
+
+  list.addEventListener('click', function (event) {
+    const btn = event.target.closest('.doc-remove');
+    if (!btn || !list.contains(btn) || btn.disabled) return;
+    const row = btn.closest('.doc-row');
+    if (!row) return;
+    if (list.querySelectorAll('.doc-row').length <= 1) {
+      reindexDocs();
+      return;
+    }
+    if (!window.confirm('Retirer cette pièce de la liste ?')) return;
+    row.remove();
+    reindexDocs();
+  });
+
+  reindexDocs();
 })();
 </script>
 <?php page_foot();
