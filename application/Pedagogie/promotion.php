@@ -4,7 +4,7 @@ require_once app_path('layout.php');
 require_admin();
 
 $pdo = db();
-$defaultYear = ((int) date('Y') - 1) . '-' . date('Y');
+$defaultYear = academic_active_year_label();
 $year = trim((string) ($_GET['year'] ?? ($_POST['year'] ?? $defaultYear)));
 $search = trim((string) ($_GET['search'] ?? ($_POST['search'] ?? '')));
 $groupId = max(0, (int) ($_GET['group_id'] ?? ($_POST['group_id'] ?? 0)));

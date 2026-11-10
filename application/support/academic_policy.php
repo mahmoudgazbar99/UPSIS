@@ -211,6 +211,7 @@ function academic_policy_seed(PDO $pdo): void
         'institution_phone' => '',
         'institution_email' => '',
         'institution_website' => '',
+        'active_period_code' => 'S1',
         'currency_code' => 'DT',
     ] as $key => $value) {
         $insert->execute([$key, $value]);
@@ -490,6 +491,146 @@ function academic_period_codes(): array
 function academic_period_valid(string $code): bool
 {
     return in_array($code, academic_period_codes(), true);
+}
+
+function academic_years(): array
+{
+    academic_policy_ensure();
+    try {
+        return db()->query(
+            'SELECT * FROM academic_year ORDER BY label DESC, id_year DESC'
+        )->fetchAll();
+    } catch (Throwable $exception) {
+        return [];
+    }
+}
+
+function academic_year_active(): ?array
+{
+    academic_policy_ensure();
+    try {
+        $row = db()->query(
+            "SELECT * FROM academic_year WHERE status = 'active' ORDER BY label DESC, id_year DESC LIMIT 1"
+        )->fetch();
+        if ($row) {
+            return $row;
+        }
+        $fallback = db()->query(
+            'SELECT * FROM academic_year ORDER BY label DESC, id_year DESC LIMIT 1'
+        )->fetch();
+        return $fallback ?: null;
+    } catch (Throwable $exception) {
+        return null;
+    }
+}
+
+function academic_active_year_label(): string
+{
+    $row = academic_year_active();
+    if ($row && trim((string) ($row['label'] ?? '')) !== '') {
+        return (string) $row['label'];
+    }
+    return ((int) date('Y') - 1) . '-' . date('Y');
+}
+
+function academic_active_period_code(): string
+{
+    academic_policy_ensure();
+    $code = strtoupper(trim(institution_setting('active_period_code')));
+    if ($code !== '' && academic_period_valid($code)) {
+        return $code;
+    }
+    $periods = academic_periods();
+    return $periods ? strtoupper((string) $periods[0]['code']) : 'S1';
+}
+
+function academic_active_period(): ?array
+{
+    $code = academic_active_period_code();
+    foreach (academic_periods() as $period) {
+        if (strtoupper((string) $period['code']) === $code) {
+            return $period;
+        }
+    }
+    return null;
+}
+
+function academic_add_year(string $label, string $dateDebut = '', string $dateFin = ''): int
+{
+    academic_policy_ensure();
+    $label = trim(preg_replace('/\s+/u', '', $label) ?? '');
+    if (!preg_match('/^\d{4}-\d{4}$/', $label)) {
+        throw new InvalidArgumentException('L’année doit être au format AAAA-AAAA (ex. 2025-2026).');
+    }
+    [$start, $end] = array_map('intval', explode('-', $label));
+    if ($end !== $start + 1) {
+        throw new InvalidArgumentException('La seconde année doit être la suivante (ex. 2025-2026).');
+    }
+    $dateDebut = trim($dateDebut);
+    $dateFin = trim($dateFin);
+    if ($dateDebut !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateDebut)) {
+        throw new InvalidArgumentException('Date de début invalide.');
+    }
+    if ($dateFin !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFin)) {
+        throw new InvalidArgumentException('Date de fin invalide.');
+    }
+    if ($dateDebut !== '' && $dateFin !== '' && $dateFin < $dateDebut) {
+        throw new InvalidArgumentException('La date de fin doit être après la date de début.');
+    }
+    $exists = db()->prepare('SELECT id_year FROM academic_year WHERE label = ? LIMIT 1');
+    $exists->execute([$label]);
+    if ($exists->fetchColumn()) {
+        throw new InvalidArgumentException('Cette année scolaire existe déjà.');
+    }
+    db()->prepare(
+        'INSERT INTO academic_year (label, date_debut, date_fin, status) VALUES (?, ?, ?, ?)'
+    )->execute([
+        $label,
+        $dateDebut !== '' ? $dateDebut : null,
+        $dateFin !== '' ? $dateFin : null,
+        'draft',
+    ]);
+    $id = (int) db()->lastInsertId();
+    academic_policy_note('annee', 'Année ' . $label . ' créée');
+    return $id;
+}
+
+function academic_set_active_year(int $yearId): void
+{
+    academic_policy_ensure();
+    if ($yearId < 1) {
+        throw new InvalidArgumentException('Année invalide.');
+    }
+    $pdo = db();
+    $find = $pdo->prepare('SELECT id_year, label FROM academic_year WHERE id_year = ? LIMIT 1');
+    $find->execute([$yearId]);
+    $year = $find->fetch();
+    if (!$year) {
+        throw new InvalidArgumentException('Année introuvable.');
+    }
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec("UPDATE academic_year SET status = 'closed' WHERE status = 'active'");
+        $pdo->prepare("UPDATE academic_year SET status = 'active' WHERE id_year = ?")->execute([$yearId]);
+        $pdo->commit();
+    } catch (Throwable $exception) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $exception;
+    }
+    academic_policy_note('annee', 'Année active : ' . $year['label']);
+}
+
+function academic_set_active_period(string $code): void
+{
+    academic_policy_ensure();
+    $code = strtoupper(trim($code));
+    if (!academic_period_valid($code)) {
+        throw new InvalidArgumentException('Choisissez une période existante dans la structure académique.');
+    }
+    institution_setting_put('active_period_code', $code);
+    academic_policy_note('periode_active', 'Période active : ' . $code);
 }
 
 function study_levels(?int $programId = null): array

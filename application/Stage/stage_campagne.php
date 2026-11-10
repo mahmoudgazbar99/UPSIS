@@ -166,8 +166,8 @@ page_head('Campagnes de stage', 'presence');
   <h2 class="h5">Nouvelle campagne</h2>
   <form method="post" class="row g-3">
     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="creer">
-    <div class="col-md-3"><label class="form-label">Année *</label><input class="form-control" name="annee_label" placeholder="2026-2027" required></div>
-    <div class="col-md-2"><label class="form-label">Période</label><select class="form-select" name="periode_code"><option value="">—</option><?php foreach (academic_periods() as $period): ?><option value="<?= e((string) $period['code']) ?>"><?= e((string) $period['code']) ?></option><?php endforeach; ?></select></div>
+    <div class="col-md-3"><label class="form-label">Année *</label><input class="form-control" name="annee_label" value="<?= e(academic_active_year_label()) ?>" placeholder="2026-2027" required></div>
+    <div class="col-md-2"><label class="form-label">Période</label><select class="form-select" name="periode_code"><option value="">—</option><?php foreach (academic_periods() as $period): ?><option value="<?= e((string) $period['code']) ?>" <?= strtoupper((string) $period['code']) === academic_active_period_code() ? 'selected' : '' ?>><?= e((string) $period['code']) ?></option><?php endforeach; ?></select></div>
     <div class="col-md-2"><label class="form-label">Début *</label><input class="form-control" type="date" name="date_debut" required></div>
     <div class="col-md-2"><label class="form-label">Fin *</label><input class="form-control" type="date" name="date_fin" required></div>
     <div class="col-md-3"><label class="form-label">Spécialité</label><select class="form-select" name="id_spec"><option value="">Toutes</option><?php foreach ($specialties as $specialty): ?><option value="<?= (int) $specialty['id_spec'] ?>"><?= e($specialty['nom_spec']) ?></option><?php endforeach; ?></select></div>
