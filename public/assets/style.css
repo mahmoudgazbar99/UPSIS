@@ -1833,27 +1833,32 @@ body.theme-light .theme-toggle-knob {
 
 .dashboard-menu-title-scroll {
   display: inline-block;
+  max-width: none;
   white-space: nowrap;
   will-change: transform;
-  transform: translateX(0);
+  transform: translate3d(0, 0, 0);
 }
 
 .dashboard-menu-item:is(:hover, :focus-visible, :active) .dashboard-menu-title-text.can-marquee .dashboard-menu-title-scroll,
 .dashboard-menu-item.is-title-marquee .dashboard-menu-title-text.can-marquee .dashboard-menu-title-scroll {
-  animation: dashboard-menu-title-marquee var(--marquee-duration, 4.5s) ease-in-out infinite;
+  animation-name: dashboard-menu-title-marquee !important;
+  animation-duration: var(--marquee-duration, 4.5s) !important;
+  animation-timing-function: ease-in-out !important;
+  animation-iteration-count: infinite !important;
+  animation-delay: 0.15s !important;
 }
 
 @keyframes dashboard-menu-title-marquee {
-  0%, 12% { transform: translateX(0); }
-  48%, 62% { transform: translateX(var(--shift, 0px)); }
-  100% { transform: translateX(0); }
+  0%, 12% { transform: translate3d(0, 0, 0); }
+  48%, 62% { transform: translate3d(var(--shift, 0px), 0, 0); }
+  100% { transform: translate3d(0, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dashboard-menu-item:is(:hover, :focus-visible, :active) .dashboard-menu-title-text.can-marquee .dashboard-menu-title-scroll,
   .dashboard-menu-item.is-title-marquee .dashboard-menu-title-text.can-marquee .dashboard-menu-title-scroll {
-    animation: none;
-    transform: translateX(0);
+    animation: none !important;
+    transform: translate3d(0, 0, 0) !important;
   }
 }
 
@@ -3613,6 +3618,16 @@ body.theme-light .table, body.theme-light .table-dark {
   display: contents;
 }
 
+/* Sidebar rail: keep accordion groups as real flex stacks so opening
+   Configuration cannot reflow sibling items like Gestion des comptes. */
+.dashboard-menu-rail .dashboard-menu-group {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
 button.dashboard-menu-item {
   width: 100%;
   font: inherit;
@@ -3633,6 +3648,16 @@ button.dashboard-menu-item {
   margin-top: .2rem;
   margin-inline-start: 1.45rem;
   gap: .35rem;
+}
+
+.dashboard-menu-rail .dashboard-menu-group.is-open > .dashboard-menu-sub:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  grid-column: auto;
+  grid-template-columns: none;
+  gap: 0.15rem;
+  margin-top: 0.15rem;
+  margin-inline-start: 0.7rem;
 }
 
 .dashboard-menu-sub[hidden] {

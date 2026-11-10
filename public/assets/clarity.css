@@ -1050,12 +1050,44 @@ body.theme-clarity .dashboard-menu {
 }
 
 body.theme-clarity .dashboard-menu-list {
+  display: flex !important;
+  flex-direction: column !important;
   flex: 1 1 0;
+  grid-template-columns: none !important;
+  gap: 2px !important;
   min-height: 0;
+  min-width: 0;
+  padding: 6px 8px 10px !important;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  scrollbar-gutter: stable;
+}
+
+body.theme-clarity .dashboard-menu-group {
+  display: flex !important;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  gap: 2px;
+}
+
+body.theme-clarity .dashboard-menu-sub {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  width: auto;
+  margin: 0 0 4px 12px !important;
+  margin-inline-start: 12px !important;
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--desk-accent) 35%, var(--desk-line));
+  grid-column: auto !important;
+  grid-template-columns: none !important;
+}
+
+body.theme-clarity .dashboard-menu-group.is-open > .dashboard-menu-sub:not([hidden]) {
+  display: flex !important;
 }
 
 body.theme-clarity .dashboard-menu-item .dashboard-menu-icon::before {
@@ -1067,6 +1099,10 @@ body.theme-clarity .dashboard-menu-item .dashboard-menu-icon::before {
 }
 
 body.theme-clarity .dashboard-menu-item {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
   min-height: 34px !important;
   padding: 4px 8px !important;
   border-color: transparent !important;
@@ -1075,6 +1111,34 @@ body.theme-clarity .dashboard-menu-item {
   opacity: 1 !important;
   transform: none !important;
   animation: none !important;
+}
+
+body.theme-clarity .dashboard-menu-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+body.theme-clarity .dashboard-menu-item strong,
+body.theme-clarity .dashboard-menu-item strong.dashboard-menu-title-row {
+  display: flex !important;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+body.theme-clarity .dashboard-menu-title-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+body.theme-clarity .dashboard-menu-sub .dashboard-menu-item {
+  padding-inline-start: 8px !important;
 }
 
 body.theme-clarity .dashboard-menu-item.is-active,

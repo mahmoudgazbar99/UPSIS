@@ -833,15 +833,35 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
   }
 
   body.theme-original .dashboard-menu-group {
-    display: flex;
+    display: flex !important;
     flex-direction: column;
+    width: 100%;
+    min-width: 0;
     gap: 0.15rem;
   }
 
+  body.theme-original .dashboard-menu-item {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
   body.theme-original .dashboard-menu-sub {
-    margin: 0 0 0.25rem 0.55rem;
+    display: none;
+    flex-direction: column;
+    gap: 0.1rem;
+    width: auto;
+    margin: 0 0 0.25rem 0.55rem !important;
+    margin-inline-start: 0.55rem !important;
     padding-left: 0.55rem;
     border-left: 1px solid color-mix(in srgb, var(--lw-primary) 28%, var(--app-border));
+    grid-column: auto !important;
+    grid-template-columns: none !important;
+  }
+
+  body.theme-original .dashboard-menu-group.is-open > .dashboard-menu-sub:not([hidden]) {
+    display: flex !important;
   }
 
   body.theme-original .dashboard-content-panel {

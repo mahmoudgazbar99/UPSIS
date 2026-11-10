@@ -915,32 +915,35 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
 })();
 (function () {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const items = document.querySelectorAll('.dashboard-menu-item');
+  const items = Array.prototype.slice.call(document.querySelectorAll('.dashboard-menu-item'));
   let touchTimer = 0;
 
   function measure(item) {
     const clip = item.querySelector('.dashboard-menu-title-text');
     const scroll = item.querySelector('.dashboard-menu-title-scroll');
-    if (!clip || !scroll) return;
+    if (!clip || !scroll) return false;
+    const keepPlaying = item.classList.contains('is-title-marquee');
     clip.classList.remove('can-marquee');
     scroll.style.removeProperty('--shift');
     scroll.style.removeProperty('--marquee-duration');
-    item.classList.remove('is-title-marquee');
-    const overflow = scroll.scrollWidth - clip.clientWidth;
-    if (overflow > 4 && !reduceMotion.matches) {
-      scroll.style.setProperty('--shift', (-overflow - 10) + 'px');
-      scroll.style.setProperty('--marquee-duration', Math.max(3.2, Math.min(8, 2.4 + overflow / 28)) + 's');
+    if (!keepPlaying) item.classList.remove('is-title-marquee');
+    if (clip.clientWidth < 8) return false;
+    const overflow = Math.ceil(scroll.scrollWidth - clip.clientWidth);
+    if (overflow > 2 && !reduceMotion.matches) {
+      scroll.style.setProperty('--shift', (-overflow - 12) + 'px');
+      scroll.style.setProperty('--marquee-duration', Math.max(3.4, Math.min(9, 2.6 + overflow / 24)) + 's');
       clip.classList.add('can-marquee');
+      return true;
     }
+    return false;
   }
 
   function measureAll() {
     items.forEach(measure);
   }
 
-  function startTouchMarquee(item) {
-    measure(item);
-    if (!item.querySelector('.dashboard-menu-title-text.can-marquee')) return;
+  function startMarquee(item) {
+    if (!measure(item)) return;
     items.forEach(function (other) {
       if (other !== item) other.classList.remove('is-title-marquee');
     });
@@ -948,7 +951,7 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
     window.clearTimeout(touchTimer);
   }
 
-  function stopTouchMarquee(item, delay) {
+  function stopMarquee(item, delay) {
     window.clearTimeout(touchTimer);
     touchTimer = window.setTimeout(function () {
       item.classList.remove('is-title-marquee');
@@ -957,11 +960,13 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
 
   items.forEach(function (item) {
     measure(item);
-    item.addEventListener('mouseenter', function () { measure(item); });
-    item.addEventListener('focusin', function () { measure(item); });
-    item.addEventListener('touchstart', function () { startTouchMarquee(item); }, { passive: true });
-    item.addEventListener('touchend', function () { stopTouchMarquee(item, 1600); }, { passive: true });
-    item.addEventListener('touchcancel', function () { stopTouchMarquee(item, 0); }, { passive: true });
+    item.addEventListener('pointerenter', function () { startMarquee(item); });
+    item.addEventListener('pointerleave', function () { stopMarquee(item, 0); });
+    item.addEventListener('focusin', function () { startMarquee(item); });
+    item.addEventListener('focusout', function () { stopMarquee(item, 0); });
+    item.addEventListener('touchstart', function () { startMarquee(item); }, { passive: true });
+    item.addEventListener('touchend', function () { stopMarquee(item, 1800); }, { passive: true });
+    item.addEventListener('touchcancel', function () { stopMarquee(item, 0); }, { passive: true });
   });
 
   window.addEventListener('resize', measureAll);
@@ -972,15 +977,24 @@ if (is_admin() || is_teacher() || is_finance() || is_scolarite()): ?>
   if (reduceMotion.addEventListener) {
     reduceMotion.addEventListener('change', measureAll);
   }
-  requestAnimationFrame(measureAll);
+  window.dashboardMenuMeasureTitles = measureAll;
+  requestAnimationFrame(function () {
+    requestAnimationFrame(measureAll);
+  });
 })();
 document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   button.addEventListener('click', function () {
     const group = button.closest('[data-accounts-group]');
+    if (!group) return;
     const sub = group.querySelector('.dashboard-menu-sub');
     const open = group.classList.toggle('is-open');
     button.setAttribute('aria-expanded', open ? 'true' : 'false');
-    sub.hidden = !open;
+    if (sub) sub.hidden = !open;
+    requestAnimationFrame(function () {
+      if (typeof window.dashboardMenuMeasureTitles === 'function') {
+        window.dashboardMenuMeasureTitles();
+      }
+    });
   });
 });
 </script>
