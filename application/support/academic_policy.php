@@ -208,6 +208,9 @@ function academic_policy_seed(PDO $pdo): void
         'institution_city_ar' => 'قابس',
         'institution_address' => '',
         'institution_country' => 'Tunisie',
+        'institution_phone' => '',
+        'institution_email' => '',
+        'institution_website' => '',
         'currency_code' => 'DT',
     ] as $key => $value) {
         $insert->execute([$key, $value]);
@@ -318,6 +321,24 @@ function institution_address(): string
     return trim(institution_setting('institution_address'));
 }
 
+function institution_phone(): string
+{
+    academic_policy_ensure();
+    return trim(institution_setting('institution_phone'));
+}
+
+function institution_email(): string
+{
+    academic_policy_ensure();
+    return trim(institution_setting('institution_email'));
+}
+
+function institution_website(): string
+{
+    academic_policy_ensure();
+    return trim(institution_setting('institution_website'));
+}
+
 function institution_place_fr(?string $date = null): string
 {
     $date = $date ?: date('d/m/Y');
@@ -364,6 +385,43 @@ function institution_save_place(string $city, string $cityAr, string $address, s
     institution_setting_put('institution_country', $country);
     institution_setting_put('institution_address', $address);
     academic_policy_note('lieu', 'Ville ' . $city . ' / ' . $cityAr . ' · ' . $country);
+}
+
+function institution_save_contact(string $phone, string $email, string $website): void
+{
+    $phone = trim(preg_replace('/\s+/u', ' ', $phone) ?? '');
+    $email = trim($email);
+    $website = trim($website);
+    if (mb_strlen($phone) > 40) {
+        throw new InvalidArgumentException('Le téléphone est trop long (40 caractères maximum).');
+    }
+    if ($phone !== '' && !preg_match('/^[0-9+\s().\-]{6,40}$/u', $phone)) {
+        throw new InvalidArgumentException('Saisissez un numéro de téléphone valide.');
+    }
+    if (mb_strlen($email) > 120) {
+        throw new InvalidArgumentException('L’e-mail est trop long.');
+    }
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new InvalidArgumentException('Saisissez une adresse e-mail valide.');
+    }
+    if (mb_strlen($website) > 180) {
+        throw new InvalidArgumentException('Le site web est trop long.');
+    }
+    if ($website !== '') {
+        if (!preg_match('#^https?://#i', $website)) {
+            $website = 'https://' . $website;
+        }
+        if (!filter_var($website, FILTER_VALIDATE_URL)) {
+            throw new InvalidArgumentException('Saisissez une URL de site web valide.');
+        }
+    }
+    institution_setting_put('institution_phone', $phone);
+    institution_setting_put('institution_email', $email);
+    institution_setting_put('institution_website', $website);
+    academic_policy_note(
+        'contact',
+        'Contact ' . ($phone !== '' ? $phone : '—') . ' · ' . ($email !== '' ? $email : '—') . ' · ' . ($website !== '' ? $website : '—')
+    );
 }
 
 function default_program_id(): int

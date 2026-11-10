@@ -17,6 +17,9 @@ $lines = ($lang === 'ar' && $schoolAr !== '') ? [$schoolAr] : institution_name_l
 $city = $lang === 'ar' && institution_city_ar() !== '' ? institution_city_ar() : institution_city();
 $country = landing_country(institution_country(), $lang);
 $address = institution_address();
+$phone = institution_phone();
+$email = institution_email();
+$website = institution_website();
 $awardFr = institution_award_title();
 $awardAr = institution_award_title_ar();
 $award = ($lang === 'ar' && $awardAr !== '') ? $awardAr : $awardFr;
@@ -564,7 +567,25 @@ $navItems['contact'] = 'nav_contact';
             <dt><?= landing_icon('pin') ?><?= t('contact_place') ?></dt>
             <dd><?php if ($address !== ''): ?><span lang="fr"><?= e($address) ?></span><br><?php endif; ?><?= e($city) ?>, <?= e($country) ?></dd>
           </div>
+          <?php if ($phone !== ''): ?>
           <div class="reveal from-top-end" data-delay="1">
+            <dt><?= landing_icon('building') ?><?= t('contact_phone') ?></dt>
+            <dd><a href="tel:<?= e(preg_replace('/[^\d+]/', '', $phone) ?: $phone) ?>"><?= e($phone) ?></a></dd>
+          </div>
+          <?php endif; ?>
+          <?php if ($email !== ''): ?>
+          <div class="reveal from-top-start" data-delay="2">
+            <dt><?= landing_icon('building') ?><?= t('contact_email') ?></dt>
+            <dd><a href="mailto:<?= e($email) ?>"><?= e($email) ?></a></dd>
+          </div>
+          <?php endif; ?>
+          <?php if ($website !== ''): ?>
+          <div class="reveal from-top-end" data-delay="3">
+            <dt><?= landing_icon('building') ?><?= t('contact_website') ?></dt>
+            <dd><a href="<?= e($website) ?>" rel="noopener noreferrer" target="_blank"><?= e(preg_replace('#^https?://#i', '', $website) ?: $website) ?></a></dd>
+          </div>
+          <?php endif; ?>
+          <div class="reveal from-top-end" data-delay="<?= $phone !== '' || $email !== '' || $website !== '' ? '4' : '1' ?>">
             <dt><?= landing_icon('building') ?><?= t('contact_office') ?></dt>
             <dd><?= t('contact_office_d') ?></dd>
           </div>
