@@ -1,0 +1,102 @@
+[
+  {
+    "id": "mod-inscription",
+    "audience": ["staff"],
+    "roles": ["admin", "scolarite"],
+    "title": "Inscription étudiants",
+    "tags": ["inscription", "étudiant", "dossier", "scolarité"],
+    "summary": "Créer et mettre à jour les dossiers étudiants.",
+    "body": "Module Inscription (`inscription.php`). Remplir identité, coordonnées, niveau et spécialité. La scolarité et l’admin peuvent créer/éditer. Après inscription, l’affectation aux groupes tronc commun peut être automatique selon les règles académiques.",
+    "links": [{"label": "Inscription", "href": "/inscription.php"}, {"label": "Import étudiants", "href": "/etudiants_import.php"}]
+  },
+  {
+    "id": "mod-groupes",
+    "audience": ["staff"],
+    "roles": ["admin", "scolarite"],
+    "title": "Groupes et affectation",
+    "tags": ["groupe", "td", "cours", "affectation", "changement"],
+    "summary": "Gérer les groupes Cours/TD et déplacer un étudiant.",
+    "body": "Module Groupes (`groupes.php`). Les groupes Cours ont des sous-groupes TD. Pour changer manuellement le groupe d’un étudiant : ouvrir Groupes → section « Modifier manuellement un groupe » → choisir l’étudiant et le groupe cible → Affecter. Respecter les capacités. Les demandes étudiantes de permutation/changement sont traitées dans Demandes étudiants.",
+    "links": [{"label": "Groupes", "href": "/groupes.php"}, {"label": "Capacité groupes", "href": "/capacite_groupes.php"}, {"label": "Demandes", "href": "/demandes_etudiants.php"}]
+  },
+  {
+    "id": "mod-notes",
+    "audience": ["staff"],
+    "roles": ["admin", "enseignant"],
+    "title": "Notes et grilles",
+    "tags": ["notes", "matière", "grille", "relevé", "cc", "examen"],
+    "summary": "Saisir et consulter les notes par matière et groupe.",
+    "body": "Module Notes (`gestion_notes.php`). Choisir matière et groupe via les listes recherchables, puis Afficher. La grille permet la saisie CC/Examen/TP. Les enseignants ne voient que leurs affectations. Les relevés étudiants passent par `releve_etudiant.php` / publication des résultats selon la politique.",
+    "links": [{"label": "Gestion notes", "href": "/gestion_notes.php"}, {"label": "Relevé", "href": "/releve_notes.php"}, {"label": "Envoyer résultats", "href": "/envoyer_resultats.php"}]
+  },
+  {
+    "id": "mod-presence",
+    "audience": ["staff"],
+    "roles": ["admin", "enseignant"],
+    "title": "Présence et élimination",
+    "tags": ["présence", "absence", "feuille", "élimination", "rapport"],
+    "summary": "Pointer la présence et suivre les alertes d’élimination.",
+    "body": "Modules `presence_etudiants.php` et `feuille_presence.php`. Sélectionner enseignant (admin), matière et groupe affectés, puis enregistrer. Les alertes d’élimination sont dans `alertes_elimination.php` selon la politique de présence.",
+    "links": [{"label": "Présence", "href": "/presence_etudiants.php"}, {"label": "Feuille", "href": "/feuille_presence.php"}, {"label": "Alertes", "href": "/alertes_elimination.php"}]
+  },
+  {
+    "id": "mod-emploi",
+    "audience": ["staff"],
+    "roles": ["admin", "enseignant"],
+    "title": "Emploi du temps",
+    "tags": ["emploi", "timetable", "générateur", "séance", "pdf"],
+    "summary": "Générer, éditer et publier les emplois du temps.",
+    "body": "Générateur intelligent (`emploi_generateur.php`), éditeur (`emploi_editeur.php`), PDF par groupe (`emploi_temps.php`). Les enseignants consultent leur emploi via `emploi_enseignant.php`.",
+    "links": [{"label": "Générateur", "href": "/emploi_generateur.php"}, {"label": "Éditeur", "href": "/emploi_editeur.php"}, {"label": "PDF groupes", "href": "/emploi_temps.php"}]
+  },
+  {
+    "id": "mod-enseignants",
+    "audience": ["staff"],
+    "roles": ["admin"],
+    "title": "Enseignants et affectations",
+    "tags": ["enseignant", "affectation", "matière", "groupe"],
+    "summary": "Gérer les enseignants et les lier aux matières/groupes.",
+    "body": "Fiches enseignants (`enseignants.php`). Affectation matière+groupe (`affecter_enseignant.php`) : choisir enseignant, ECUE et groupe puis valider. Les droits notes/présence découlent de ces affectations.",
+    "links": [{"label": "Enseignants", "href": "/enseignants.php"}, {"label": "Affecter", "href": "/affecter_enseignant.php"}]
+  },
+  {
+    "id": "mod-stage",
+    "audience": ["staff"],
+    "roles": ["admin", "stage"],
+    "title": "Stages cliniques",
+    "tags": ["stage", "campagne", "organisme", "placement", "dossier"],
+    "summary": "Campagnes, organismes d’accueil et placements étudiants.",
+    "body": "Bureau stage (`stage_bureau.php`), campagnes (`stage_campagne.php`), organismes (`stage_organismes.php`), placements (`stage_placements.php`), dossiers et documents. Les permissions dépendent du devoir stage (officer / coordinateur / superviseur).",
+    "links": [{"label": "Bureau stage", "href": "/stage_bureau.php"}, {"label": "Campagnes", "href": "/stage_campagne.php"}, {"label": "Placements", "href": "/stage_placements.php"}]
+  },
+  {
+    "id": "mod-finance",
+    "audience": ["staff"],
+    "roles": ["admin", "finance"],
+    "title": "Finance et frais",
+    "tags": ["finance", "paiement", "frais", "reçu"],
+    "summary": "Suivre frais de scolarité et paiements.",
+    "body": "Modules `finance.php`, `frais_scolarite.php`, reçus `recu_paiement.php`. Réservé aux comptes finance et admin.",
+    "links": [{"label": "Finance", "href": "/finance.php"}, {"label": "Frais", "href": "/frais_scolarite.php"}]
+  },
+  {
+    "id": "mod-structure",
+    "audience": ["staff"],
+    "roles": ["admin"],
+    "title": "Structure académique et semestres",
+    "tags": ["semestre", "période", "année", "structure", "programme"],
+    "summary": "Configurer programmes, périodes et année active.",
+    "body": "Structure académique (`structure_academique.php`), année/période (`annee_periode.php`), spécialités, matières et unités. Pour gérer les semestres : ouvrir Année / période, choisir le code de période actif, puis enregistrer. Les matières portent un semestre S1–S6.",
+    "links": [{"label": "Structure", "href": "/structure_academique.php"}, {"label": "Année / période", "href": "/annee_periode.php"}, {"label": "Matières", "href": "/ajouter_matiere.php"}]
+  },
+  {
+    "id": "mod-documents",
+    "audience": ["staff"],
+    "roles": ["admin", "scolarite"],
+    "title": "Attestations et documents",
+    "tags": ["attestation", "document", "inscription", "présence"],
+    "summary": "Émettre attestations et exports.",
+    "body": "Attestations d’inscription/présence/réussite, file d’attente des demandes étudiantes, exports. Config via `attestations_config.php`.",
+    "links": [{"label": "Attestation inscription", "href": "/attestation_inscription.php"}, {"label": "Config attestations", "href": "/attestations_config.php"}]
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "public-platform",
+    "audience": ["public", "staff"],
+    "title": "Plateforme UPSIS",
+    "tags": ["plateforme", "université", "école", "santé", "gabès", "upsis"],
+    "summary": "UPSIS est la plateforme de gestion de l’École de Santé de Gabès pour la scolarité, la pédagogie, les notes, la présence, les stages et la finance.",
+    "body": "La plateforme UPSIS (École de Santé Gabès) centralise les services numériques : inscription et dossiers étudiants, groupes et emplois du temps, notes et relevés, présence, stages cliniques, finance et documents officiels. Les visiteurs publics peuvent découvrir les programmes et services. Les comptes staff (admin, scolarité, enseignant, stage, finance) accèdent aux modules autorisés après connexion.",
+    "links": [{"label": "Accueil", "href": "/accueil.php"}, {"label": "Connexion staff", "href": "/login.php"}, {"label": "Espace étudiant", "href": "/connexion_etudiant.php"}]
+  },
+  {
+    "id": "public-programs",
+    "audience": ["public", "staff"],
+    "title": "Programmes et spécialités",
+    "tags": ["programme", "spécialité", "niveau", "formation"],
+    "summary": "Les programmes et spécialités actives sont présentés sur la page d’accueil publique.",
+    "body": "Les programmes académiques et spécialités (y compris le tronc commun) sont gérés dans Structure académique. La page d’accueil affiche les formations actives, le nombre d’années et les périodes. Pour une inscription, l’étudiant ou la scolarité utilise le parcours d’inscription prévu par l’établissement.",
+    "links": [{"label": "Accueil", "href": "/accueil.php"}, {"label": "Inscription", "href": "/inscription.php"}]
+  },
+  {
+    "id": "public-student-services",
+    "audience": ["public", "staff"],
+    "title": "Services étudiants (vue générale)",
+    "tags": ["étudiant", "services", "relevé", "attestation", "emploi"],
+    "summary": "Les étudiants connectés consultent emploi, notes, absences, demandes et attestations dans leur espace.",
+    "body": "Après création d’espace étudiant (CIN + date de naissance) et connexion, l’étudiant accède à son tableau de bord : profil, emploi du temps, cours, notes, absences, demandes de groupe, consultation psychologique, réclamations et attestations selon les modules activés. Aucune donnée privée n’est exposée au chatbot public.",
+    "links": [{"label": "Créer un espace", "href": "/creer_espace_etudiant.php"}, {"label": "Connexion étudiant", "href": "/connexion_etudiant.php"}]
+  },
+  {
+    "id": "public-privacy",
+    "audience": ["public", "staff"],
+    "title": "Confidentialité du chatbot public",
+    "tags": ["confidentialité", "privé", "sécurité", "données"],
+    "summary": "Le chatbot public ne lit pas les dossiers étudiants ni les tableaux de bord internes.",
+    "body": "Le chatbot de la page publique répond uniquement à des questions générales sur la plateforme et les informations institutionnelles approuvées. Il ne peut pas accéder aux notes, présences, paiements, dossiers de stage, comptes staff ou documents privés.",
+    "links": []
+  }
+]

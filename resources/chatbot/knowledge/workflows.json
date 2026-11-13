@@ -1,0 +1,52 @@
+[
+  {
+    "id": "wf-register-student",
+    "audience": ["staff"],
+    "roles": ["admin", "scolarite"],
+    "title": "Inscrire un nouvel étudiant",
+    "tags": ["inscrire", "créer étudiant", "nouveau"],
+    "summary": "Étapes pour enregistrer un étudiant.",
+    "body": "1) Ouvrir Inscription. 2) Saisir identité et contacts. 3) Choisir niveau et spécialité. 4) Enregistrer. 5) Vérifier l’affectation de groupe si applicable. 6) Optionnel : créer l’espace étudiant / activer le compte.",
+    "links": [{"label": "Inscription", "href": "/inscription.php"}]
+  },
+  {
+    "id": "wf-change-group",
+    "audience": ["staff"],
+    "roles": ["admin", "scolarite"],
+    "title": "Changer le groupe d’un étudiant",
+    "tags": ["changer groupe", "déplacer", "td"],
+    "summary": "Déplacer un étudiant vers un autre groupe.",
+    "body": "1) Aller dans Groupes. 2) Section modification manuelle. 3) Sélectionner l’étudiant. 4) Choisir le groupe Cours ou TD cible. 5) Affecter. Un déplacement vers Cours attribue automatiquement un TD associé selon les règles.",
+    "links": [{"label": "Groupes", "href": "/groupes.php"}]
+  },
+  {
+    "id": "wf-attendance-report",
+    "audience": ["staff"],
+    "roles": ["admin", "enseignant"],
+    "title": "Générer / consulter la présence",
+    "tags": ["rapport présence", "feuille présence", "absence"],
+    "summary": "Produire une feuille ou consulter les absences.",
+    "body": "1) Ouvrir Présence étudiants ou Feuille de présence. 2) Choisir enseignant (si admin), matière et groupe. 3) Pointer ou générer la feuille. 4) Pour les seuils d’élimination, consulter Alertes élimination.",
+    "links": [{"label": "Présence", "href": "/presence_etudiants.php"}, {"label": "Feuille", "href": "/feuille_presence.php"}]
+  },
+  {
+    "id": "wf-manage-teachers",
+    "audience": ["staff"],
+    "roles": ["admin"],
+    "title": "Gérer les enseignants",
+    "tags": ["enseignants", "affecter", "matière"],
+    "summary": "Créer/éditer un enseignant et l’affecter.",
+    "body": "1) Enseignants pour la fiche. 2) Affecter enseignant pour lier matière + groupe. 3) L’enseignant pourra alors saisir notes et présence sur ces affectations.",
+    "links": [{"label": "Enseignants", "href": "/enseignants.php"}, {"label": "Affecter", "href": "/affecter_enseignant.php"}]
+  },
+  {
+    "id": "wf-semester",
+    "audience": ["staff"],
+    "roles": ["admin"],
+    "title": "Gérer semestre / période",
+    "tags": ["semestre", "période", "année scolaire"],
+    "summary": "Activer la période académique courante.",
+    "body": "1) Ouvrir Année / période. 2) Sélectionner le code de période. 3) Enregistrer. 4) Vérifier Structure académique et les matières du semestre concerné.",
+    "links": [{"label": "Année / période", "href": "/annee_periode.php"}, {"label": "Structure", "href": "/structure_academique.php"}]
+  }
+]

@@ -873,5 +873,6 @@ $navItems['contact'] = 'nav_contact';
   </script>
 <script type="module" src="assets/landing-intro-lottie.js?v=4"></script>
 <script src="assets/motion.js?v=3" defer></script>
+<?php require app_path('Chatbot/widget.php'); ?>
 </body>
 </html>

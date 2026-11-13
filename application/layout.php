@@ -1882,6 +1882,7 @@ function page_foot(): void {
             }, true);
         })();
         </script>
+        <?php require app_path('Chatbot/widget.php'); ?>
     </body>
     </html>
     <?php 

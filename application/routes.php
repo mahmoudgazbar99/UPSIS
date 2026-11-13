@@ -102,4 +102,6 @@ return [
     'fix_utf8.php' => 'Admin/fix_utf8.php',
 
     'brand_logo.php' => 'support/brand_logo.php',
+
+    'chatbot_api.php' => 'Chatbot/api.php',
 ];
