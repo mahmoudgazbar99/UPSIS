@@ -32,9 +32,9 @@ $chatbotConfig = [
     ]),
 ];
 ?>
-<link rel="stylesheet" href="assets/chatbot.css?v=2">
+<link rel="stylesheet" href="assets/chatbot.css?v=3">
 <div id="upsisChatbotRoot" data-chatbot-root hidden></div>
 <script>
 window.UPSIS_CHATBOT = <?= json_encode($chatbotConfig, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
-<script src="assets/chatbot.js?v=2" defer></script>
+<script src="assets/chatbot.js?v=3" defer></script>
