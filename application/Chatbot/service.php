@@ -149,8 +149,9 @@ function chatbot_handle_chat(array $input): array
 
     $completion = chatbot_complete($chatMessages, false, null);
     if (!$completion['ok']) {
-        $answer = chatbot_offline_answer($message, $docs, $audience);
-        $mode = ($completion['error'] ?? '') === 'provider_not_configured' ? 'offline' : 'fallback';
+        $error = (string) ($completion['error'] ?? '');
+        $answer = chatbot_offline_answer($message, $docs, $audience, $error);
+        $mode = $error === 'provider_not_configured' ? 'offline' : 'fallback';
     } else {
         $answer = (string) $completion['content'];
         $mode = 'live';

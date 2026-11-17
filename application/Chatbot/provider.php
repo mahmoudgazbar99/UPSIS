@@ -24,13 +24,16 @@ function chatbot_provider_config(): array
         $defaultBase = 'https://generativelanguage.googleapis.com/v1beta/openai';
     }
     $base = rtrim(chatbot_env('CHATBOT_BASE_URL', chatbot_env('NEON_AI_GATEWAY_BASE_URL', $defaultBase)), '/');
-    $defaultModel = str_contains($base, 'generativelanguage.googleapis.com') ? 'gemini-3.6-flash' : 'gpt-4o-mini';
+    $defaultModel = str_contains($base, 'generativelanguage.googleapis.com')
+        ? 'gemini-3.1-flash-lite-preview'
+        : 'gpt-4o-mini';
     $model = chatbot_env('CHATBOT_MODEL', $defaultModel);
     return [
         'api_key' => $apiKey,
         'base_url' => $base,
         'model' => $model,
         'configured' => $apiKey !== '',
+        'is_gemini' => str_contains($base, 'generativelanguage.googleapis.com'),
     ];
 }
 
@@ -55,7 +58,39 @@ function chatbot_system_prompt(string $audience, string $role, array $pageContex
 }
 
 /**
- * @return array{ok:bool,content?:string,error?:string,provider?:string}
+ * @return list<string>
+ */
+function chatbot_model_candidates(string $primary, bool $isGemini = false): array
+{
+    $fallbackRaw = chatbot_env('CHATBOT_MODEL_FALLBACKS');
+    $fallbacks = [];
+    if ($fallbackRaw !== '') {
+        foreach (explode(',', $fallbackRaw) as $part) {
+            $name = trim($part);
+            if ($name !== '') {
+                $fallbacks[] = $name;
+            }
+        }
+    } elseif ($isGemini) {
+        // gemini-3.6-flash / flash-latest often 503 under load; lite preview is more available.
+        $fallbacks = [
+            'gemini-3.1-flash-lite-preview',
+            'gemini-3-flash-preview',
+            'gemini-3.6-flash',
+            'gemini-flash-latest',
+        ];
+    }
+    $out = [];
+    foreach (array_merge([$primary], $fallbacks) as $model) {
+        if ($model !== '' && !in_array($model, $out, true)) {
+            $out[] = $model;
+        }
+    }
+    return $out;
+}
+
+/**
+ * @return array{ok:bool,content?:string,error?:string,provider?:string,http_status?:int,model?:string}
  */
 function chatbot_complete(array $messages, bool $stream = false, $streamWriter = null): array
 {
@@ -64,80 +99,110 @@ function chatbot_complete(array $messages, bool $stream = false, $streamWriter =
         return ['ok' => false, 'error' => 'provider_not_configured', 'provider' => 'none'];
     }
 
-    $payload = [
-        'model' => $config['model'],
-        'messages' => $messages,
-        'temperature' => 0.3,
-        'stream' => $stream,
-        'max_tokens' => 2048,
-    ];
-
-    $ch = curl_init($config['base_url'] . '/chat/completions');
-    if ($ch === false) {
-        return ['ok' => false, 'error' => 'curl_init_failed'];
-    }
-
     $headers = [
         'Content-Type: application/json',
         'Authorization: Bearer ' . $config['api_key'],
     ];
+    $last = ['ok' => false, 'error' => 'provider_empty', 'provider' => 'openai_compatible'];
 
-    $buffer = '';
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_RETURNTRANSFER => !$stream,
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_CONNECTTIMEOUT => 10,
-    ]);
+    foreach (chatbot_model_candidates($config['model'], (bool) ($config['is_gemini'] ?? false)) as $modelIndex => $model) {
+        $attempts = $modelIndex === 0 ? 3 : 1;
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $payload = [
+                'model' => $model,
+                'messages' => $messages,
+                'temperature' => 0.3,
+                'stream' => $stream,
+                'max_tokens' => 2048,
+            ];
 
-    if ($stream && is_callable($streamWriter)) {
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, static function ($ch, string $chunk) use (&$buffer, $streamWriter): int {
-            $buffer .= $chunk;
-            $streamWriter($chunk);
-            return strlen($chunk);
-        });
-    }
+            $ch = curl_init($config['base_url'] . '/chat/completions');
+            if ($ch === false) {
+                return ['ok' => false, 'error' => 'curl_init_failed'];
+            }
 
-    $raw = curl_exec($ch);
-    $errno = curl_errno($ch);
-    $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+            $buffer = '';
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+                CURLOPT_RETURNTRANSFER => !$stream,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_CONNECTTIMEOUT => 10,
+            ]);
 
-    if ($errno !== 0) {
-        return ['ok' => false, 'error' => 'provider_network', 'provider' => 'openai_compatible'];
-    }
+            if ($stream && is_callable($streamWriter)) {
+                curl_setopt($ch, CURLOPT_WRITEFUNCTION, static function ($ch, string $chunk) use (&$buffer, $streamWriter): int {
+                    $buffer .= $chunk;
+                    $streamWriter($chunk);
+                    return strlen($chunk);
+                });
+            }
 
-    if ($stream) {
-        $content = chatbot_parse_sse_content($buffer);
-        if ($content === '' && $status >= 400) {
-            return ['ok' => false, 'error' => 'provider_http_' . $status];
-        }
-        return ['ok' => true, 'content' => chatbot_safe_markdown($content), 'provider' => 'openai_compatible'];
-    }
+            $raw = curl_exec($ch);
+            $errno = curl_errno($ch);
+            $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-    if (!is_string($raw) || $status >= 400) {
-        return ['ok' => false, 'error' => 'provider_http_' . $status];
-    }
-    $decoded = json_decode($raw, true);
-    $message = $decoded['choices'][0]['message'] ?? [];
-    $content = '';
-    if (is_array($message)) {
-        $content = (string) ($message['content'] ?? '');
-        // Some Gemini OpenAI-compat payloads nest text parts.
-        if ($content === '' && isset($message['parts']) && is_array($message['parts'])) {
-            foreach ($message['parts'] as $part) {
-                if (is_array($part) && isset($part['text'])) {
-                    $content .= (string) $part['text'];
+            if ($errno !== 0) {
+                $last = ['ok' => false, 'error' => 'provider_network', 'provider' => 'openai_compatible', 'model' => $model];
+                if ($attempt < $attempts) {
+                    usleep(250000 * $attempt);
+                    continue;
+                }
+                break;
+            }
+
+            if ($stream) {
+                $content = chatbot_parse_sse_content($buffer);
+                if ($content === '' && $status >= 400) {
+                    $last = ['ok' => false, 'error' => 'provider_http_' . $status, 'provider' => 'openai_compatible', 'http_status' => $status, 'model' => $model];
+                    if (in_array($status, [429, 500, 502, 503, 504], true) && $attempt < $attempts) {
+                        usleep(350000 * $attempt);
+                        continue;
+                    }
+                    break;
+                }
+                return ['ok' => true, 'content' => chatbot_safe_markdown($content), 'provider' => 'openai_compatible', 'model' => $model];
+            }
+
+            if (!is_string($raw) || $status >= 400) {
+                $last = ['ok' => false, 'error' => 'provider_http_' . $status, 'provider' => 'openai_compatible', 'http_status' => $status, 'model' => $model];
+                if (in_array($status, [429, 500, 502, 503, 504], true) && $attempt < $attempts) {
+                    usleep(350000 * $attempt);
+                    continue;
+                }
+                // Try next model on overload / not found.
+                if (in_array($status, [404, 429, 500, 502, 503, 504], true)) {
+                    break;
+                }
+                return $last;
+            }
+
+            $decoded = json_decode($raw, true);
+            $message = $decoded['choices'][0]['message'] ?? [];
+            $content = '';
+            if (is_array($message)) {
+                $content = (string) ($message['content'] ?? '');
+                // Some Gemini OpenAI-compat payloads nest text parts.
+                if ($content === '' && isset($message['parts']) && is_array($message['parts'])) {
+                    foreach ($message['parts'] as $part) {
+                        if (is_array($part) && isset($part['text'])) {
+                            $content .= (string) $part['text'];
+                        }
+                    }
                 }
             }
+            if ($content === '') {
+                $last = ['ok' => false, 'error' => 'provider_empty', 'provider' => 'openai_compatible', 'model' => $model];
+                // Empty success payloads: try next model instead of stopping.
+                break;
+            }
+            return ['ok' => true, 'content' => chatbot_safe_markdown($content), 'provider' => 'openai_compatible', 'model' => $model];
         }
     }
-    if ($content === '') {
-        return ['ok' => false, 'error' => 'provider_empty'];
-    }
-    return ['ok' => true, 'content' => chatbot_safe_markdown($content), 'provider' => 'openai_compatible'];
+
+    return $last;
 }
 
 function chatbot_parse_sse_content(string $buffer): string
@@ -164,16 +229,24 @@ function chatbot_parse_sse_content(string $buffer): string
     return $out;
 }
 
-function chatbot_offline_answer(string $message, array $docs, string $audience): string
+function chatbot_offline_answer(string $message, array $docs, string $audience, string $error = ''): string
 {
     if ($docs === []) {
+        $hint = match (true) {
+            $error === 'provider_not_configured' => 'L’assistant IA cloud n’est pas configuré (clé API manquante).',
+            str_starts_with($error, 'provider_http_503'),
+            str_starts_with($error, 'provider_http_429') => 'Le modèle IA est temporairement saturé. Réessayez dans un instant.',
+            str_starts_with($error, 'provider_http_') => 'Le fournisseur IA a renvoyé une erreur temporaire. Réessayez dans un instant.',
+            $error === 'provider_network' => 'Impossible de joindre le fournisseur IA pour le moment.',
+            default => 'L’assistant IA est temporairement indisponible.',
+        };
         if ($audience === 'public') {
             return "Je peux vous renseigner sur la plateforme UPSIS (École de Santé Gabès) de façon générale. "
                 . "Pour les dossiers personnels, connectez-vous à l’espace étudiant ou staff. "
-                . "L’assistant IA n’est pas encore configuré côté serveur (clé API manquante).";
+                . $hint;
         }
         return "Je n’ai pas trouvé d’article d’aide correspondant. Précisez le module (notes, groupes, présence, stages…). "
-            . "L’assistant IA cloud n’est pas configuré (CHATBOT_API_KEY manquante) — seules les fiches d’aide locales sont disponibles.";
+            . $hint;
     }
     $parts = ["Voici ce que je peux confirmer à partir de la documentation approuvée :\n"];
     foreach ($docs as $i => $doc) {
