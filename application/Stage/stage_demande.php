@@ -110,6 +110,7 @@ if ((int) ($_GET['piece'] ?? 0) <= 0) {
   <?php student_theme_head(); ?>
   <title>Stage d’été</title>
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/lenis.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-space.css?v=17" rel="stylesheet">
   <link href="assets/student-portal-shell.css?v=10" rel="stylesheet">
@@ -170,6 +171,8 @@ if ((int) ($_GET['piece'] ?? 0) <= 0) {
 </main>
 </div>
 </div>
+<script src="assets/lenis.min.js?v=1" defer></script>
+<script src="assets/lenis-init.js?v=1" defer></script>
 <script src="assets/motion.js?v=3" defer></script>
 <script type="module" src="assets/success-lottie.js?v=6"></script>
 </body>

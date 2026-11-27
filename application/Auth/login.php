@@ -125,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/lenis.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/style.css?v=96" rel="stylesheet">
   <link href="assets/institut.css?v=4" rel="stylesheet">
@@ -400,6 +401,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link href="assets/login-fail-lottie.css?v=5" rel="stylesheet">
 <script type="module" src="assets/login-fail-lottie.js?v=5"></script>
 <script src="assets/app-theme-wipe.js?v=7"></script>
+<script src="assets/lenis.min.js?v=1" defer></script>
+<script src="assets/lenis-init.js?v=1" defer></script>
 <script src="assets/motion.js?v=3" defer></script>
 </body>
 </html>

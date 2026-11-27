@@ -195,6 +195,7 @@ $navItems['contact'] = 'nav_contact';
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="<?= e(institution_logo_src()) ?>">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/lenis.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/landing.css?v=51" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -986,6 +987,8 @@ $navItems['contact'] = 'nav_contact';
     })();
   </script>
 <script type="module" src="assets/landing-intro-lottie.js?v=4"></script>
+<script src="assets/lenis.min.js?v=1" defer></script>
+<script src="assets/lenis-init.js?v=1" defer></script>
 <script src="assets/motion.js?v=3" defer></script>
 <?php require app_path('Chatbot/widget.php'); ?>
 </body>

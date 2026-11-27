@@ -381,6 +381,7 @@ if (!empty($explorerFragment)) {
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/lenis.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-space.css?v=31" rel="stylesheet">
   <link href="assets/student-portal-shell.css?v=16" rel="stylesheet">
@@ -1173,6 +1174,8 @@ if (!empty($explorerFragment)) {
   })();
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/lenis.min.js?v=1" defer></script>
+  <script src="assets/lenis-init.js?v=1" defer></script>
   <script src="assets/motion.js?v=3" defer></script>
   <script>
   (function () {

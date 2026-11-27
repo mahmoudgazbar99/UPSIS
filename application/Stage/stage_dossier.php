@@ -85,6 +85,7 @@ if ($studentView) {
   <title>Dossier documentaire du stage</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
+  <link href="assets/lenis.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
   <link href="assets/student-space.css?v=17" rel="stylesheet">
   <link href="assets/student-theme.css?v=15" rel="stylesheet">
@@ -266,7 +267,7 @@ if ($studentView) {
 </script>
 <?php
 if ($studentView) {
-    echo '<script src="assets/motion.js?v=3" defer></script></main></body></html>';
+    echo '<script src="assets/lenis.min.js?v=1" defer></script><script src="assets/lenis-init.js?v=1" defer></script><script src="assets/motion.js?v=3" defer></script></main></body></html>';
 } else {
     page_foot();
 }
