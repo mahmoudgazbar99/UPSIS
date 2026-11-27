@@ -937,7 +937,8 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    z-index: 1060;
+    /* Above swipe-edge so the hamburger stays tappable; drawer/backdrop sit higher when open */
+    z-index: 1088;
     margin: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
@@ -1159,6 +1160,8 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
   body.theme-original:has(.dashboard-workspace) .staff-phone-menu-btn {
     display: grid !important;
     place-items: center;
+    position: relative;
+    z-index: 2;
     width: 44px;
     height: 44px;
     margin-right: 0.35rem;
@@ -1167,13 +1170,14 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     border-radius: var(--lw-radius);
     background: color-mix(in srgb, var(--app-surface-strong) 88%, transparent);
     color: var(--app-text);
+    pointer-events: auto !important;
   }
 
   body.theme-original .staff-nav-backdrop {
     display: block;
     position: fixed;
     inset: 0;
-    z-index: 1070;
+    z-index: 1090;
     background: color-mix(in srgb, #020617 72%, transparent);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -1185,11 +1189,12 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
   body.theme-original .staff-nav-edge {
     display: block;
     position: fixed;
-    top: 0;
+    /* Start under the fixed top bar so it never eats hamburger taps */
+    top: var(--lw-topbar-h, 3.75rem);
     bottom: 0;
     left: 0;
-    z-index: 1065;
-    width: 22px;
+    z-index: 1075;
+    width: 18px;
     touch-action: none;
   }
 
@@ -1256,7 +1261,7 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     left: 0 !important;
     right: auto !important;
     bottom: 0 !important;
-    z-index: 1080;
+    z-index: 1100;
     display: flex !important;
     flex-direction: column !important;
     width: min(20rem, 88vw) !important;
