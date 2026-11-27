@@ -1159,6 +1159,9 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   }
   var lockedScrollY = 0;
   var scrollLockBound = false;
+  var drawerPortaled = false;
+  var backdropEl = document.querySelector('.staff-nav-backdrop');
+  var contentPanel = document.getElementById('dashboard-content');
   function allowDrawerTouch(event) {
     var target = event.target;
     if (!target || !target.closest) return false;
@@ -1169,12 +1172,39 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
     if (allowDrawerTouch(event)) return;
     event.preventDefault();
   }
+  /**
+   * Move sheet + backdrop to <body> on phone so position:fixed stays viewport-bound.
+   * Body scroll-lock via top:-scrollY was shifting the drawer off-screen after scroll.
+   */
+  function portalDrawer(enable) {
+    if (!menu || !workspace) return;
+    if (enable) {
+      if (drawerPortaled) return;
+      if (backdropEl) document.body.appendChild(backdropEl);
+      document.body.appendChild(menu);
+      if (phoneEdge) document.body.appendChild(phoneEdge);
+      drawerPortaled = true;
+      return;
+    }
+    if (!drawerPortaled) return;
+    var anchor = contentPanel && contentPanel.parentNode === workspace ? contentPanel : null;
+    if (anchor) {
+      workspace.insertBefore(menu, anchor);
+      if (backdropEl) workspace.insertBefore(backdropEl, anchor);
+      if (phoneEdge) workspace.insertBefore(phoneEdge, anchor);
+    } else {
+      workspace.appendChild(menu);
+      if (backdropEl) workspace.appendChild(backdropEl);
+      if (phoneEdge) workspace.appendChild(phoneEdge);
+    }
+    drawerPortaled = false;
+  }
   function lockPageScroll() {
     if (document.documentElement.classList.contains('is-staff-scroll-locked')) return;
     lockedScrollY = window.scrollY || window.pageYOffset || 0;
     document.documentElement.classList.add('is-staff-scroll-locked');
     document.body.classList.add('is-staff-scroll-locked');
-    document.body.style.top = '-' + lockedScrollY + 'px';
+    /* Do NOT position:fixed the body — that reparents fixed drawer off-screen on iOS after scroll. */
     if (!scrollLockBound) {
       document.addEventListener('touchmove', onLockedTouchMove, { passive: false, capture: true });
       scrollLockBound = true;
@@ -1195,6 +1225,7 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
     if (!isOriginal() || !isPhoneShell()) {
       document.body.classList.remove('is-staff-drawer-open');
       unlockPageScroll();
+      portalDrawer(false);
       if (phoneOpen) phoneOpen.setAttribute('aria-expanded', 'false');
       menu.style.transform = '';
       menu.style.transition = '';
@@ -1211,6 +1242,7 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
     document.body.classList.toggle('is-staff-drawer-open', next);
     /* Never keep a desktop scroll offset on the phone sheet — it looks like a crashed floating stub. */
     if (next) {
+      portalDrawer(true);
       menu.style.transform = '';
       menu.style.transition = '';
       menu.scrollTop = 0;
@@ -1219,6 +1251,9 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
       lockPageScroll();
     } else {
       unlockPageScroll();
+      portalDrawer(false);
+      menu.style.transform = '';
+      menu.style.transition = '';
     }
     phoneCloseButtons.forEach(function (el) {
       el.setAttribute('aria-hidden', next ? 'false' : 'true');

@@ -1214,21 +1214,14 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     touch-action: none;
   }
 
-  /* iOS-safe body scroll lock while the phone drawer is open */
+  /* Scroll lock without position:fixed on body (that hid the drawer after scroll on iOS) */
   html.is-staff-scroll-locked,
-  html.is-staff-scroll-locked body,
+  html.is-staff-scroll-locked body.theme-original,
   body.theme-original.is-staff-scroll-locked {
     overflow: hidden !important;
     overscroll-behavior: none !important;
+    height: 100% !important;
     touch-action: none;
-  }
-
-  body.theme-original.is-staff-scroll-locked {
-    position: fixed !important;
-    left: 0;
-    right: 0;
-    width: 100% !important;
-    max-width: 100% !important;
   }
 
   body.theme-original.is-staff-drawer-open .dashboard-workspace,
@@ -1239,18 +1232,21 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     overflow: hidden !important;
     overscroll-behavior: none !important;
     touch-action: none;
-    pointer-events: none;
   }
 
-  body.theme-original.is-staff-drawer-open .dashboard-menu,
-  body.theme-original.is-staff-drawer-open .staff-nav-backdrop,
+  /* Drawer is portaled to body on phone — keep hit targets alive */
+  body.theme-original.is-staff-drawer-open > .dashboard-menu,
+  body.theme-original.is-staff-drawer-open > .staff-nav-backdrop,
   body.theme-original.is-staff-drawer-open .staff-drawer-close {
     pointer-events: auto;
-    touch-action: manipulation;
   }
 
-  body.theme-original.is-staff-drawer-open .dashboard-menu {
+  body.theme-original.is-staff-drawer-open > .dashboard-menu {
     touch-action: pan-y;
+  }
+
+  body.theme-original.is-staff-drawer-open > .staff-nav-backdrop {
+    touch-action: none;
   }
 
   /* Lightswind phone sheet — full viewport, never a clipped desktop stub */
