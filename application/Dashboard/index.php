@@ -1264,10 +1264,17 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
     var chrome = document.querySelector('body > .app-chrome.navbar');
     if (!chrome) return;
     var h = Math.ceil(chrome.getBoundingClientRect().height);
-    if (h > 0) document.body.style.setProperty('--lw-topbar-h', h + 'px');
+    if (h > 0) {
+      document.body.style.setProperty('--lw-topbar-h', h + 'px');
+      document.documentElement.style.setProperty('--lw-topbar-h', h + 'px');
+    }
   }
   syncTopbarHeight();
   window.addEventListener('resize', syncTopbarHeight);
+  window.addEventListener('orientationchange', syncTopbarHeight);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', syncTopbarHeight);
+  }
 
   syncFromStorage();
   restoreScroll();
