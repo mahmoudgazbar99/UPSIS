@@ -1157,9 +1157,44 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   function drawerOpen() {
     return document.body.classList.contains('is-staff-drawer-open');
   }
+  var lockedScrollY = 0;
+  var scrollLockBound = false;
+  function allowDrawerTouch(event) {
+    var target = event.target;
+    if (!target || !target.closest) return false;
+    return !!target.closest('.dashboard-menu');
+  }
+  function onLockedTouchMove(event) {
+    if (!drawerOpen()) return;
+    if (allowDrawerTouch(event)) return;
+    event.preventDefault();
+  }
+  function lockPageScroll() {
+    if (document.documentElement.classList.contains('is-staff-scroll-locked')) return;
+    lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.classList.add('is-staff-scroll-locked');
+    document.body.classList.add('is-staff-scroll-locked');
+    document.body.style.top = '-' + lockedScrollY + 'px';
+    if (!scrollLockBound) {
+      document.addEventListener('touchmove', onLockedTouchMove, { passive: false, capture: true });
+      scrollLockBound = true;
+    }
+  }
+  function unlockPageScroll() {
+    if (!document.documentElement.classList.contains('is-staff-scroll-locked')
+      && !document.body.classList.contains('is-staff-scroll-locked')) {
+      return;
+    }
+    document.documentElement.classList.remove('is-staff-scroll-locked');
+    document.body.classList.remove('is-staff-scroll-locked');
+    document.body.style.top = '';
+    window.scrollTo(0, lockedScrollY || 0);
+    lockedScrollY = 0;
+  }
   function setDrawer(open) {
     if (!isOriginal() || !isPhoneShell()) {
       document.body.classList.remove('is-staff-drawer-open');
+      unlockPageScroll();
       if (phoneOpen) phoneOpen.setAttribute('aria-expanded', 'false');
       menu.style.transform = '';
       menu.style.transition = '';
@@ -1181,6 +1216,9 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
       menu.scrollTop = 0;
       if (list) list.scrollTop = 0;
       workspace.classList.remove('is-nav-collapsed');
+      lockPageScroll();
+    } else {
+      unlockPageScroll();
     }
     phoneCloseButtons.forEach(function (el) {
       el.setAttribute('aria-hidden', next ? 'false' : 'true');
