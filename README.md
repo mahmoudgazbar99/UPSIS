@@ -5,18 +5,18 @@ Structure actuelle : le document root HTTP est `public/` (accueil + assets). Tou
 ## Installation Docker (recommandée)
 
 1. Depuis ce dossier : `docker compose up -d --build`
-2. Ouvrez `https://192.168.10.11:8443/accueil` (landing) ou `https://192.168.10.11:8443/login`.
+2. Ouvrez `https://192.168.100.95:8443/accueil` (landing) ou `https://192.168.100.95:8443/login`.
    Les ports restent `8080` (HTTP) et `8443` (HTTPS). Le port `8443` redirige
    également les requêtes HTTP accidentelles vers HTTPS.
 3. PostgreSQL est la base applicative (`db` / port hôte `5433`). MySQL reste disponible pour rollback.
 4. Docker Desktop démarre à l’ouverture de session Windows et les conteneurs utilisent
    `restart: unless-stopped`, donc l’application et ses bases reviennent après un redémarrage du PC.
 5. Pour supprimer l’avertissement de certificat, chaque appareil doit approuver une seule fois
-   l’autorité locale : ouvrez `http://192.168.10.11:8080/certificates/upsis-lan-root-ca.mobileconfig`
+   l’autorité locale : ouvrez `http://192.168.100.95:8080/certificates/upsis-lan-root-ca.mobileconfig`
    sur iPhone, installez le profil téléchargé dans **Réglages > Général > VPN et gestion de
    l’appareil**, puis activez sa confiance complète dans **Réglages > Général > Informations >
    Réglages des certificats**. Sur Windows, téléchargez
-   `http://192.168.10.11:8080/certificates/upsis-lan-root-ca.crt`, ouvrez-le, puis installez-le
+   `http://192.168.100.95:8080/certificates/upsis-lan-root-ca.crt`, ouvrez-le, puis installez-le
    dans **Autorités de certification racines de confiance** pour l’utilisateur courant. Cette
    installation ne peut pas être effectuée silencieusement par un site web. Le certificat racine
    est public ; sa clé privée reste dans un volume Docker séparé, inaccessible à l’application web.

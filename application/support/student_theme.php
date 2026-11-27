@@ -85,6 +85,8 @@ function student_theme_select(): void
     try {
       localStorage.setItem(skinKey, 'nursing');
       localStorage.setItem(themeKey, theme);
+      localStorage.setItem('webapp-theme', theme);
+      localStorage.setItem('landing-theme', theme);
     } catch (error) {}
     paintButton();
   }

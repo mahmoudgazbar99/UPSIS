@@ -325,11 +325,49 @@ if ($gridGroupId && $gridSubjectId) {
         $error = 'Ce groupe ou cette matière n’est pas disponible pour votre compte.';
     }
 }
-$marksByGroupAndSubject = [];
-foreach ($recentMarks as $mark) {
-    $groupName = $mark['groupe_semestre'] ? $mark['groupe_semestre'] . ' · ' . $mark['type_groupe'] . ' ' . $mark['numero'] : 'Groupe non renseigné';
-    $subjectName = $mark['code_ecue'] . ' — ' . $mark['description_ecue'];
-    $marksByGroupAndSubject[$groupName][$subjectName][] = $mark;
+$listSubjectId = filter_input(INPUT_GET, 'list_subject', FILTER_VALIDATE_INT) ?: 0;
+$listGroupId = filter_input(INPUT_GET, 'list_group', FILTER_VALIDATE_INT) ?: 0;
+$listSubject = null;
+$listGroup = null;
+$listRows = [];
+if (is_admin() && $listSubjectId > 0 && $listGroupId > 0) {
+    foreach ($subjects as $subject) {
+        if ((int) $subject['id_mat'] === $listSubjectId) {
+            $listSubject = $subject;
+            break;
+        }
+    }
+    foreach ($groups as $group) {
+        if ((int) $group['id_groupe'] === $listGroupId) {
+            $listGroup = $group;
+            break;
+        }
+    }
+    if ($listSubject && $listGroup) {
+        $listNotesQuery = $pdo->prepare(
+            'SELECT n.id_note, n.semestre, n.note, n.note_cours, n.note_td, n.note_tp, n.note_rattrapage,
+                    e.id_etudiant, e.nom, e.prenom, e.cin_passeport
+             FROM note n
+             JOIN etudiant e ON e.id_etudiant = n.id_etudiant
+             WHERE n.id_mat = ? AND (n.id_groupe = ? OR (n.id_groupe IS NULL AND EXISTS (
+                 SELECT 1 FROM groupe_etudiant ge WHERE ge.id_groupe = ? AND ge.id_etudiant = n.id_etudiant
+             )))
+             ORDER BY e.nom, e.prenom'
+        );
+        $listNotesQuery->execute([$listSubjectId, $listGroupId, $listGroupId]);
+        $notesByStudent = [];
+        foreach ($listNotesQuery->fetchAll() as $row) {
+            $notesByStudent[(int) $row['id_etudiant']] = $row;
+        }
+        foreach ($groupMembers[$listGroupId] ?? [] as $member) {
+            $studentId = (int) $member['id_etudiant'];
+            $saved = $notesByStudent[$studentId] ?? null;
+            $listRows[] = [
+                'student' => $member,
+                'note' => $saved,
+            ];
+        }
+    }
 }
 
 if ($editSearch !== '') {
@@ -404,7 +442,7 @@ page_head('Gestion des notes', 'grades');
     <form method="get" class="row g-3 align-items-end">
       <div class="col-md-5">
         <label class="form-label" for="grid_group">Groupe</label>
-        <select class="form-select" id="grid_group" name="grid_group" required>
+        <select class="form-select" id="grid_group" name="grid_group" required data-app-list-prompt data-app-list-title="Choisir un groupe" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Choisir un groupe…">
           <option value="">Choisir un groupe</option>
           <?php foreach ($groups as $group): ?>
             <option value="<?= (int) $group['id_groupe'] ?>" data-semester="<?= e($group['semestre']) ?>" <?= $gridGroupId === (int) $group['id_groupe'] ? 'selected' : '' ?>><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']) ?></option>
@@ -413,11 +451,11 @@ page_head('Gestion des notes', 'grades');
       </div>
       <div class="col-md-5">
         <label class="form-label" for="grid_subject">Matière</label>
-        <select class="form-select" id="grid_subject" name="grid_subject" required>
+        <select class="form-select" id="grid_subject" name="grid_subject" required data-app-list-prompt data-app-list-title="Choisir une matière" data-app-list-search="Nom ou code ECUE…" data-app-list-placeholder="Choisir une matière…">
           <option value="">Choisir une matière</option>
           <?php foreach ($subjects as $subject): ?>
             <?php $subjectGroups = is_teacher() ? ($teacherSubjectGroups[(int) $subject['id_mat']] ?? []) : array_map(static fn (array $group): int => (int) $group['id_groupe'], $groups); ?>
-            <option value="<?= (int) $subject['id_mat'] ?>" data-semester="<?= e($subject['semestre']) ?>" data-groups="<?= e(implode(',', $subjectGroups)) ?>" <?= $gridSubjectId === (int) $subject['id_mat'] ? 'selected' : '' ?>><?= e($subject['semestre'] . ' · ' . $subject['code_ecue'] . ' — ' . $subject['description_ecue']) ?></option>
+            <option value="<?= (int) $subject['id_mat'] ?>" data-semester="<?= e($subject['semestre']) ?>" data-groups="<?= e(implode(',', $subjectGroups)) ?>" data-label="<?= e(mb_strtolower($subject['semestre'] . ' ' . $subject['code_ecue'] . ' ' . $subject['description_ecue'])) ?>" <?= $gridSubjectId === (int) $subject['id_mat'] ? 'selected' : '' ?>><?= e($subject['semestre'] . ' · ' . $subject['code_ecue'] . ' — ' . $subject['description_ecue']) ?></option>
           <?php endforeach; ?>
         </select>
       </div>
@@ -489,26 +527,152 @@ page_head('Gestion des notes', 'grades');
 <?php if (is_admin()): ?><div class="card app-card mb-4"><div class="card-body p-4"><h2 class="h4">Modifier une note par CIN / passeport</h2><form method="get" class="row g-3 align-items-end"><div class="col-md-9"><label class="form-label" for="edit_search">CIN / passeport</label><input class="form-control" id="edit_search" name="edit_search" value="<?= e($editSearch) ?>" placeholder="Rechercher l’étudiant avant de modifier une note"></div><div class="col-md-3"><button class="btn btn-outline-info w-100">Rechercher les notes</button></div></form><?php if ($editSearch !== '' && !$editStudent): ?><div class="alert alert-warning mt-3 mb-0">Aucun étudiant trouvé avec ce CIN / passeport.</div><?php elseif ($editStudent): ?><div class="table-responsive mt-3"><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Semestre</th><th>ECUE</th><th>Notes</th><th></th></tr></thead><tbody><?php foreach ($editStudentNotes as $studentNote): ?><tr><td><?= e($studentNote['semestre']) ?></td><td><?= e($studentNote['code_ecue'] . ' — ' . $studentNote['description_ecue']) ?></td><td>CC: <?= $studentNote['note_cours'] === null ? '—' : e((string) $studentNote['note_cours']) ?> · Examen: <?= $studentNote['note_td'] === null ? '—' : e((string) $studentNote['note_td']) ?> · TP: <?= $studentNote['note_tp'] === null ? '—' : e((string) $studentNote['note_tp']) ?></td><td class="text-end"><a class="btn btn-sm btn-outline-light" href="gestion_notes.php?edit=<?= (int) $studentNote['id_note'] ?>">Modifier</a></td></tr><?php endforeach; ?><?php if (!$editStudentNotes): ?><tr><td colspan="4" class="text-center text-secondary">Aucune note pour cet étudiant.</td></tr><?php endif; ?></tbody></table></div><?php endif; ?></div></div><?php endif; ?>
 <?php if (is_teacher()): ?><div class="card app-card mb-4"><div class="card-body p-4"><h2 class="h4">Rechercher les notes d’un étudiant</h2><form method="get" class="row g-3 align-items-end"><div class="col-md-9"><label class="form-label" for="teacher_search">CIN / passeport</label><input class="form-control" id="teacher_search" name="teacher_search" value="<?= e($teacherSearch) ?>" placeholder="Saisissez le CIN ou le passeport"></div><div class="col-md-3"><button class="btn btn-outline-info w-100">Rechercher</button></div></form><div class="d-flex flex-wrap gap-2 mt-3"><span class="align-self-center text-secondary small">Mes groupes :</span><?php foreach ($groups as $group): $groupName = $group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']; ?><a class="btn btn-sm <?= $teacherGroupId === (int) $group['id_groupe'] ? 'btn-info' : 'btn-outline-info' ?>" href="gestion_notes.php?teacher_group=<?= (int) $group['id_groupe'] ?>"><?= e($groupName) ?></a><?php endforeach; ?></div><?php if ($teacherSearch !== '' && !$teacherStudent): ?><div class="alert alert-warning mt-3 mb-0">Aucun étudiant trouvé avec ce CIN / passeport.</div><?php elseif ($teacherStudent): ?><a class="alert alert-info mt-3 mb-0 d-block text-decoration-none" href="#teacher-notes">Étudiant : <strong><?= e($teacherStudent['nom'] . ' ' . $teacherStudent['prenom']) ?></strong> — <?= e($teacherStudent['cin_passeport']) ?><span class="d-block small mt-1">Cliquer pour afficher ses notes</span></a><?php endif; ?></div></div><?php endif; ?>
 <div class="row g-4">
-  <div class="col-12"><div class="card app-card"><div class="card-body p-4"><h2 class="h4"><?= $editNote ? 'Modifier une note' : 'Saisir les notes manuellement' ?></h2><?php if (!$subjects): ?><div class="alert alert-warning mb-0">Aucune matière n’est disponible dans la base de données.</div><?php else: ?><form method="post" class="row g-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="save_note"><?php if ($editNote): ?><input type="hidden" name="id_note" value="<?= (int) $editNote['id_note'] ?>"><input type="hidden" name="id_etudiant" value="<?= (int) $editNote['id_etudiant'] ?>"><?php else: ?><div class="col-md-6"><label class="form-label">Groupe *</label><select class="form-select" id="id_groupe" name="id_groupe" required><option value="">Choisir un groupe</option><?php foreach ($groups as $group): ?><option value="<?= (int) $group['id_groupe'] ?>"><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']) ?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label">Étudiant *</label><select class="form-select" id="id_etudiant" name="id_etudiant" required><option value="">Choisir un groupe d’abord</option><?php foreach ($students as $student): ?><option value="<?= (int) $student['id_etudiant'] ?>"><?= e($student['nom'] . ' ' . $student['prenom'] . ' — ' . $student['cin_passeport']) ?></option><?php endforeach; ?></select></div><?php endif; ?><div class="col-md-6"><label class="form-label">Matière / ECUE *</label><select class="form-select" id="id_mat" name="id_mat" required><option value="">Choisir</option><?php foreach ($subjects as $subject): ?><option value="<?= (int) $subject['id_mat'] ?>" data-semester="<?= e($subject['semestre']) ?>" <?= $editNote && (int) $editNote['id_mat'] === (int) $subject['id_mat'] ? 'selected' : '' ?>><?= e($subject['semestre'] . ' · ' . $subject['code_ecue'] . ' — ' . $subject['description_ecue']) ?></option><?php endforeach; ?></select></div><div class="col-md-3"><label class="form-label">Semestre *</label><select class="form-select" name="semestre" required><?php foreach (['S1', 'S2', 'S3', 'S4', 'S5', 'S6'] as $semester): ?><option value="<?= $semester ?>" <?= ($editNote['semestre'] ?? 'S1') === $semester ? 'selected' : '' ?>><?= $semester ?></option><?php endforeach; ?></select>  </div><div class="col-md-3"><label class="form-label">CC /20</label><input class="form-control" name="note_cours" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_cours'] ?? '')) ?>"></div><div class="col-md-3"><label class="form-label">Examen /20</label><input class="form-control" name="note_td" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_td'] ?? '')) ?>"></div><div class="col-md-3"><label class="form-label">TP /20</label><input class="form-control" name="note_tp" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_tp'] ?? '')) ?>"></div><div class="col-md-3"><label class="form-label">Note finale manuelle</label><input class="form-control" name="note" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note'] ?? '')) ?>" placeholder="Calcul plus tard"></div><div class="col-md-3"><label class="form-label">Rattrapage</label><input class="form-control" name="note_rattrapage" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_rattrapage'] ?? '')) ?>" placeholder="Facultatif"></div><div class="col-12"><small class="text-secondary">Les notes CC, Examen et TP sont enregistrées séparément. Aucun calcul automatique n’est appliqué.</small></div><div class="col-12 d-flex justify-content-between gap-2"><?php if ($editNote): ?><a href="gestion_notes.php" class="btn btn-outline-light">Annuler</a><?php else: ?><span></span><?php endif; ?><button class="btn btn-primary"><?= $editNote ? 'Enregistrer les modifications' : 'Enregistrer les notes' ?></button></div></form><?php endif; ?></div></div></div>
+  <div class="col-12"><div class="card app-card"><div class="card-body p-4"><h2 class="h4"><?= $editNote ? 'Modifier une note' : 'Saisir les notes manuellement' ?></h2><?php if (!$subjects): ?><div class="alert alert-warning mb-0">Aucune matière n’est disponible dans la base de données.</div><?php else: ?><form method="post" class="row g-3"><input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="save_note"><?php if ($editNote): ?><input type="hidden" name="id_note" value="<?= (int) $editNote['id_note'] ?>"><input type="hidden" name="id_etudiant" value="<?= (int) $editNote['id_etudiant'] ?>"><?php else: ?><div class="col-md-6"><label class="form-label">Groupe *</label><select class="form-select" id="id_groupe" name="id_groupe" required data-app-list-prompt data-app-list-title="Choisir un groupe" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Choisir un groupe…"><option value="">Choisir un groupe</option><?php foreach ($groups as $group): ?><option value="<?= (int) $group['id_groupe'] ?>"><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']) ?></option><?php endforeach; ?></select></div><div class="col-md-6"><label class="form-label">Étudiant *</label><select class="form-select" id="id_etudiant" name="id_etudiant" required data-app-list-prompt data-app-list-title="Choisir un étudiant" data-app-list-search="Nom ou CIN…" data-app-list-placeholder="Choisir un étudiant…"><option value="">Choisir un groupe d’abord</option><?php foreach ($students as $student): ?><option value="<?= (int) $student['id_etudiant'] ?>"><?= e($student['nom'] . ' ' . $student['prenom'] . ' — ' . $student['cin_passeport']) ?></option><?php endforeach; ?></select></div><?php endif; ?><div class="col-md-6"><label class="form-label">Matière / ECUE *</label><select class="form-select" id="id_mat" name="id_mat" required data-app-list-prompt data-app-list-title="Choisir une matière" data-app-list-search="Nom ou code ECUE…" data-app-list-placeholder="Choisir une matière…"><option value="">Choisir</option><?php foreach ($subjects as $subject): ?><option value="<?= (int) $subject['id_mat'] ?>" data-semester="<?= e($subject['semestre']) ?>" <?= $editNote && (int) $editNote['id_mat'] === (int) $subject['id_mat'] ? 'selected' : '' ?>><?= e($subject['semestre'] . ' · ' . $subject['code_ecue'] . ' — ' . $subject['description_ecue']) ?></option><?php endforeach; ?></select></div><div class="col-md-3"><label class="form-label">Semestre *</label><select class="form-select" name="semestre" required><?php foreach (['S1', 'S2', 'S3', 'S4', 'S5', 'S6'] as $semester): ?><option value="<?= $semester ?>" <?= ($editNote['semestre'] ?? 'S1') === $semester ? 'selected' : '' ?>><?= $semester ?></option><?php endforeach; ?></select>  </div><div class="col-md-3"><label class="form-label">CC /20</label><input class="form-control" name="note_cours" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_cours'] ?? '')) ?>"></div><div class="col-md-3"><label class="form-label">Examen /20</label><input class="form-control" name="note_td" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_td'] ?? '')) ?>"></div><div class="col-md-3"><label class="form-label">TP /20</label><input class="form-control" name="note_tp" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_tp'] ?? '')) ?>"></div><div class="col-md-3"><label class="form-label">Note finale manuelle</label><input class="form-control" name="note" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note'] ?? '')) ?>" placeholder="Calcul plus tard"></div><div class="col-md-3"><label class="form-label">Rattrapage</label><input class="form-control" name="note_rattrapage" type="number" min="0" max="20" step="0.01" value="<?= e((string) ($editNote['note_rattrapage'] ?? '')) ?>" placeholder="Facultatif"></div><div class="col-12"><small class="text-secondary">Les notes CC, Examen et TP sont enregistrées séparément. Aucun calcul automatique n’est appliqué.</small></div><div class="col-12 d-flex justify-content-between gap-2"><?php if ($editNote): ?><a href="gestion_notes.php" class="btn btn-outline-light">Annuler</a><?php else: ?><span></span><?php endif; ?><button class="btn btn-primary"><?= $editNote ? 'Enregistrer les modifications' : 'Enregistrer les notes' ?></button></div></form><?php endif; ?></div></div></div>
 </div>
-<?php if (is_admin()): ?><?php foreach ($marksByGroupAndSubject as $groupName => $subjectsMarks): ?>
-  <?php foreach ($subjectsMarks as $subjectName => $marks): ?>
-    <div class="card app-card mt-4">
-      <div class="card-body p-0 table-responsive">
-        <div class="px-4 py-3 border-bottom"><h2 class="h5 mb-1"><?= e($groupName) ?></h2><p class="text-secondary mb-0"><?= e($subjectName) ?></p></div>
-        <table class="table table-dark table-hover align-middle mb-0">
-          <thead><tr><th>Étudiant</th><th>Semestre</th><th>Cours</th><th>TD</th><th>TP</th><th>Finale</th><?php if (is_admin()): ?><th class="text-end">Action</th><?php endif; ?></tr></thead>
-          <tbody>
-          <?php foreach ($marks as $mark): ?>
-            <tr><td><strong><?= e($mark['nom'] . ' ' . $mark['prenom']) ?></strong><br><small class="text-secondary"><?= e($mark['cin_passeport']) ?></small></td><td><?= e($mark['semestre']) ?></td><td><?= $mark['note_cours'] === null ? '—' : e((string) $mark['note_cours']) . '/20' ?></td><td><?= $mark['note_td'] === null ? '—' : e((string) $mark['note_td']) . '/20' ?></td><td><?= $mark['note_tp'] === null ? '—' : e((string) $mark['note_tp']) . '/20' ?></td><td><?= $mark['note'] === null ? '—' : e((string) $mark['note']) . '/20' ?></td><?php if (is_admin()): ?><td class="text-end"><a class="btn btn-sm btn-outline-light" href="gestion_notes.php?edit=<?= (int) $mark['id_note'] ?>">Modifier</a></td><?php endif; ?></tr>
+<?php if (is_admin()): ?>
+<div class="card app-card mt-4">
+  <div class="card-body p-4">
+    <h2 class="h4 mb-1">Consulter les notes par matière</h2>
+    <p class="text-secondary">Ouvrez la liste matière / groupe dans la fenêtre, cherchez, puis affichez.</p>
+    <form method="get" class="row g-3 align-items-end" id="notesListFilter">
+      <?php if (app_is_embedded()): ?><input type="hidden" name="embed" value="1"><?php endif; ?>
+      <div class="col-md-6">
+        <label class="form-label" for="list_subject">Matière</label>
+        <select
+          class="form-select"
+          id="list_subject"
+          name="list_subject"
+          required
+          data-app-list-prompt
+          data-app-list-title="Choisir une matière"
+          data-app-list-search="Nom ou code ECUE…"
+          data-app-list-placeholder="Choisir une matière…"
+        >
+          <option value="">Choisir une matière</option>
+          <?php foreach ($subjects as $subject): ?>
+            <?php $optionLabel = $subject['semestre'] . ' · ' . $subject['code_ecue'] . ' — ' . $subject['description_ecue']; ?>
+            <option
+              value="<?= (int) $subject['id_mat'] ?>"
+              data-semester="<?= e((string) $subject['semestre']) ?>"
+              data-label="<?= e(mb_strtolower($optionLabel)) ?>"
+              <?= $listSubjectId === (int) $subject['id_mat'] ? 'selected' : '' ?>
+            ><?= e($optionLabel) ?></option>
           <?php endforeach; ?>
-          </tbody>
-        </table>
+        </select>
       </div>
-    </div>
-  <?php endforeach; ?>
-<?php endforeach; ?>
-<?php if (!$recentMarks): ?><div class="card app-card mt-4"><div class="card-body text-center text-secondary py-5">Aucune note enregistrée.</div></div><?php endif; ?>
+      <div class="col-md-4">
+        <label class="form-label" for="list_group">Groupe</label>
+        <select
+          class="form-select"
+          id="list_group"
+          name="list_group"
+          required
+          data-app-list-prompt
+          data-app-list-title="Choisir un groupe"
+          data-app-list-search="Semestre ou numéro…"
+          data-app-list-placeholder="Choisir un groupe…"
+        >
+          <option value="">Choisir un groupe</option>
+          <?php foreach ($groups as $group): ?>
+            <option
+              value="<?= (int) $group['id_groupe'] ?>"
+              data-semester="<?= e((string) $group['semestre']) ?>"
+              <?= $listGroupId === (int) $group['id_groupe'] ? 'selected' : '' ?>
+            ><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <div class="col-12 col-md-auto">
+        <button class="btn btn-primary w-100" type="submit">Afficher</button>
+      </div>
+    </form>
+
+    <?php if ($listSubject && $listGroup): ?>
+      <div class="mt-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <div>
+            <strong><?= e($listSubject['code_ecue'] . ' — ' . $listSubject['description_ecue']) ?></strong>
+            <span class="d-block text-secondary small"><?= e($listGroup['semestre'] . ' · ' . $listGroup['type_groupe'] . ' ' . $listGroup['numero']) ?> · <?= count($listRows) ?> étudiant<?= count($listRows) > 1 ? 's' : '' ?></span>
+          </div>
+          <a class="btn btn-outline-light btn-sm" href="gestion_notes.php?embed=1&amp;grid_group=<?= (int) $listGroupId ?>&amp;grid_subject=<?= (int) $listSubjectId ?>">Ouvrir la grille</a>
+        </div>
+        <?php if ($listRows === []): ?>
+          <div class="alert alert-warning mb-0">Ce groupe ne contient aucun étudiant.</div>
+        <?php else: ?>
+          <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Étudiant</th>
+                  <th>Semestre</th>
+                  <th>Cours</th>
+                  <th>TD</th>
+                  <th>TP</th>
+                  <th>Finale</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($listRows as $row): ?>
+                  <?php $mark = $row['note']; ?>
+                  <tr>
+                    <td>
+                      <strong><?= e($row['student']['nom'] . ' ' . $row['student']['prenom']) ?></strong>
+                      <br><small class="text-secondary"><?= e((string) $row['student']['cin_passeport']) ?></small>
+                    </td>
+                    <td><?= e((string) ($mark['semestre'] ?? $listSubject['semestre'])) ?></td>
+                    <td><?= !$mark || $mark['note_cours'] === null || $mark['note_cours'] === '' ? '—' : e((string) $mark['note_cours']) . '/20' ?></td>
+                    <td><?= !$mark || $mark['note_td'] === null || $mark['note_td'] === '' ? '—' : e((string) $mark['note_td']) . '/20' ?></td>
+                    <td><?= !$mark || $mark['note_tp'] === null || $mark['note_tp'] === '' ? '—' : e((string) $mark['note_tp']) . '/20' ?></td>
+                    <td><?= !$mark || $mark['note'] === null || $mark['note'] === '' ? '—' : e((string) $mark['note']) . '/20' ?></td>
+                    <td class="text-end">
+                      <?php if ($mark): ?>
+                        <a class="btn btn-sm btn-outline-light" href="gestion_notes.php?embed=1&amp;edit=<?= (int) $mark['id_note'] ?>">Modifier</a>
+                      <?php else: ?>
+                        <span class="text-secondary small">Non saisie</span>
+                      <?php endif; ?>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+    <?php elseif ($listSubjectId || $listGroupId): ?>
+      <div class="alert alert-warning mt-3 mb-0">Choisissez une matière et un groupe valides.</div>
+    <?php else: ?>
+      <div class="text-secondary mt-3 mb-0">Aucune liste affichée — sélectionnez une matière et un groupe.</div>
+    <?php endif; ?>
+  </div>
+</div>
+<script>
+(() => {
+  const subject = document.getElementById('list_subject');
+  const group = document.getElementById('list_group');
+  if (!subject || !group) return;
+
+  const filterGroups = () => {
+    const selected = subject.selectedOptions[0];
+    const semester = selected && selected.value ? (selected.getAttribute('data-semester') || '') : '';
+    Array.from(group.options).forEach((option) => {
+      if (!option.value) {
+        option.hidden = false;
+        return;
+      }
+      const groupSemester = option.getAttribute('data-semester') || '';
+      option.hidden = semester !== '' && groupSemester !== semester;
+    });
+    if (group.selectedOptions[0] && group.selectedOptions[0].hidden) {
+      group.value = '';
+      group.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  };
+
+  subject.addEventListener('change', filterGroups);
+  filterGroups();
+})();
+</script>
 <?php else: ?>
   <?php if ($teacherStudent): ?><div id="teacher-notes" class="card app-card mt-4"><div class="card-body p-0 table-responsive"><div class="px-4 py-3 border-bottom"><h2 class="h5 mb-1">Notes autorisées pour cet étudiant</h2><p class="text-secondary mb-0"><?= e($teacherStudent['nom'] . ' ' . $teacherStudent['prenom']) ?></p></div><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Matière</th><th>Groupe</th><th>Semestre</th><th>CC</th><th>Examen</th><th>TP</th><th>Finale</th></tr></thead><tbody><?php foreach ($teacherStudentNotes as $mark): ?><tr><td><?= e($mark['code_ecue'] . ' — ' . $mark['description_ecue']) ?></td><td><?= e($mark['groupe_semestre'] . ' · ' . $mark['type_groupe'] . ' ' . $mark['numero']) ?></td><td><?= e($mark['semestre']) ?></td><td><?= $mark['note_cours'] === null ? '—' : e((string) $mark['note_cours']) . '/20' ?></td><td><?= $mark['note_td'] === null ? '—' : e((string) $mark['note_td']) . '/20' ?></td><td><?= $mark['note_tp'] === null ? '—' : e((string) $mark['note_tp']) . '/20' ?></td><td><?= $mark['note'] === null ? '—' : e((string) $mark['note']) . '/20' ?></td></tr><?php endforeach; ?><?php if (!$teacherStudentNotes): ?><tr><td colspan="7" class="text-center text-secondary py-4">Aucune note dans vos matières et groupes affectés.</td></tr><?php endif; ?></tbody></table></div></div><?php endif; ?>
   <?php if ($teacherGroupId): ?><div class="card app-card mt-4"><div class="card-body p-0 table-responsive"><div class="px-4 py-3 border-bottom"><h2 class="h5 mb-1">Étudiants notés dans le groupe sélectionné</h2><p class="text-secondary mb-0">Matières et groupe affectés uniquement</p></div><table class="table table-dark table-hover align-middle mb-0"><thead><tr><th>Étudiant</th><th>Matière</th><th>Semestre</th><th>CC</th><th>Examen</th><th>TP</th><th>Finale</th></tr></thead><tbody><?php foreach ($teacherGroupNotes as $mark): ?><tr><td><strong><?= e($mark['nom'] . ' ' . $mark['prenom']) ?></strong><br><small class="text-secondary"><?= e($mark['cin_passeport']) ?></small></td><td><?= e($mark['code_ecue'] . ' — ' . $mark['description_ecue']) ?></td><td><?= e($mark['semestre']) ?></td><td><?= $mark['note_cours'] === null ? '—' : e((string) $mark['note_cours']) . '/20' ?></td><td><?= $mark['note_td'] === null ? '—' : e((string) $mark['note_td']) . '/20' ?></td><td><?= $mark['note_tp'] === null ? '—' : e((string) $mark['note_tp']) . '/20' ?></td><td><?= $mark['note'] === null ? '—' : e((string) $mark['note']) . '/20' ?></td></tr><?php endforeach; ?><?php if (!$teacherGroupNotes): ?><tr><td colspan="7" class="text-center text-secondary py-4">Aucune note dans ce groupe pour vos affectations.</td></tr><?php endif; ?></tbody></table></div></div><?php endif; ?>
@@ -530,6 +694,7 @@ page_head('Gestion des notes', 'grades');
       if (String(student.id_etudiant) === selected) option.selected = true;
       studentSelect.add(option);
     });
+    studentSelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
   function refreshSubjects() {
     if (!subjectSelect) return;

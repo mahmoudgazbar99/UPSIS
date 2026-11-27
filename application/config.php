@@ -6,8 +6,28 @@ if (defined('APP_CONFIG_LOADED')) {
 }
 define('APP_CONFIG_LOADED', true);
 
+function app_is_candidate_request(): bool
+{
+    $script = app_normalized_script();
+    $candidatePages = [
+        'connexion_candidat.php',
+        'espace_candidat.php',
+        'admission_document_file.php',
+    ];
+    if (in_array($script, $candidatePages, true)) {
+        return true;
+    }
+    if ($script === 'logout.php' && ($_GET['espace'] ?? '') === 'candidat') {
+        return true;
+    }
+    return false;
+}
+
 function app_is_student_request(): bool
 {
+    if (app_is_candidate_request()) {
+        return false;
+    }
     $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
     if ($script === 'account_status.php') {
         return ($_GET['espace'] ?? '') === 'etudiant';
@@ -23,6 +43,7 @@ function app_is_student_request(): bool
         'creer_espace_etudiant.php',
         'etudiant_inbox.php',
         'student_photo.php',
+        'releve_etudiant.php',
     ];
     if (in_array($script, $studentPages, true)) {
         return true;
@@ -34,7 +55,7 @@ function app_is_student_request(): bool
         return true;
     }
     $refererPath = (string) (parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''), PHP_URL_PATH) ?: '');
-    return in_array(basename($refererPath), $studentPages, true);
+    return in_array(app_normalized_script($refererPath), $studentPages, true);
 }
 
 function app_normalized_script(?string $path = null): string
@@ -42,6 +63,11 @@ function app_normalized_script(?string $path = null): string
     $script = $path === null
         ? basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''))
         : basename($path);
+    // Front-controller internal rewrites can leave SCRIPT_NAME as index.php.
+    if ($path === null && ($script === 'index.php' || $script === '' || $script === '/' || $script === '.')) {
+        $requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+        $script = basename($requestPath);
+    }
     if ($script === '' || $script === '/' || $script === '.') {
         return '';
     }
@@ -66,6 +92,7 @@ function app_role_session_name(string $role): string
         'finance' => 'ESG_FINANCE',
         'scolarite' => 'ESG_SCOLARITE',
         'etudiant' => 'ESG_STUDENT',
+        'candidat' => 'ESG_CANDIDATE',
         default => 'PHPSESSID',
     };
 }
@@ -147,6 +174,10 @@ function app_staff_session_candidates(): array
 
 function app_open_request_session(): void
 {
+    if (app_is_candidate_request()) {
+        app_start_named_session('ESG_CANDIDATE');
+        return;
+    }
     if (app_is_student_request()) {
         app_start_named_session('ESG_STUDENT');
         return;
@@ -390,6 +421,7 @@ function is_teacher(): bool { return ($_SESSION['user_role'] ?? '') === 'enseign
 function is_finance(): bool { return ($_SESSION['user_role'] ?? '') === 'finance'; }
 function is_stage(): bool { return ($_SESSION['user_role'] ?? '') === 'stage'; }
 function is_student(): bool { return ($_SESSION['user_role'] ?? '') === 'etudiant'; }
+function is_candidate_role(): bool { return ($_SESSION['user_role'] ?? '') === 'candidat'; }
 function account_is_active_value(mixed $value): bool
 {
     return in_array($value, [true, 1, '1', 't', 'true'], true);
@@ -500,7 +532,11 @@ function require_finance(): void {
 }
 function app_logout_current(?bool $studentSpace = null): string
 {
-    $next = ($studentSpace ?? app_is_student_request()) ? 'connexion_etudiant.php' : 'login.php';
+    if (app_is_candidate_request() || (($_GET['espace'] ?? '') === 'candidat') || (($_SESSION['user_role'] ?? '') === 'candidat')) {
+        $next = 'connexion_candidat.php';
+    } else {
+        $next = ($studentSpace ?? app_is_student_request()) ? 'connexion_etudiant.php' : 'login.php';
+    }
     $_SESSION = [];
     if (session_status() === PHP_SESSION_ACTIVE) {
         if (ini_get('session.use_cookies')) {
@@ -583,6 +619,13 @@ function current_account_session_status(): string
         $accountId = (int) ($_SESSION['id_etudiant'] ?? 0);
         $generationKey = 'student_auth_generation';
         $query = 'SELECT active, auth_generation FROM etudiant_compte WHERE id_etudiant = ? LIMIT 1';
+    } elseif (function_exists('is_candidate') && is_candidate()) {
+        if (function_exists('admissions_ensure')) {
+            admissions_ensure();
+        }
+        $accountId = (int) ($_SESSION['candidate_id'] ?? 0);
+        $generationKey = 'candidate_auth_generation';
+        $query = 'SELECT active, auth_generation FROM admission_candidate WHERE id_candidate = ? LIMIT 1';
     } else {
         return 'revoked';
     }
@@ -766,14 +809,14 @@ function enforce_student_route_isolation(): void {
     if (!is_student() || app_public_entry()) {
         return;
     }
-    $script = basename((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+    $script = app_normalized_script();
     if ($script === 'account_status.php' && ($_GET['espace'] ?? '') === 'etudiant') {
         return;
     }
     if (in_array($script, ['dashboard.php', 'logout.php', 'etudiant_inbox.php', 'student_photo.php', 'stage_dossier.php', 'stage_document.php', 'stage_demande.php', 'emploi_pdf.php', 'cours_fichier.php', 'releve_etudiant.php'], true)) {
         return;
     }
-    header('Location: dashboard.php');
+    header('Location: /dashboard?panel=profil');
     exit;
 }
 enforce_student_route_isolation();
@@ -1465,7 +1508,7 @@ function ensure_teacher_active(PDO $pdo): void
 
 function audit_record(string $category, string $action, string $summary): void
 {
-    if (!in_array($category, ['note', 'paiement', 'presence', 'compte', 'reglage', 'stage', 'cours'], true)) {
+    if (!in_array($category, ['note', 'paiement', 'presence', 'compte', 'reglage', 'stage', 'cours', 'admission'], true)) {
         return;
     }
     try {
@@ -1518,6 +1561,8 @@ require_once __DIR__ . '/support/inscription_policy.php';
 require_once __DIR__ . '/support/security_policy.php';
 require_once __DIR__ . '/support/result_publication.php';
 require_once __DIR__ . '/support/course_library.php';
+require_once __DIR__ . '/support/admissions.php';
+require_once __DIR__ . '/support/preregistration.php';
 if (!in_array(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')), ['account_status.php', 'etudiant_inbox.php'], true)) {
     validate_current_account_status();
 }

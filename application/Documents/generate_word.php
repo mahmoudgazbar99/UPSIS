@@ -35,9 +35,9 @@ try {
     }
 
     // 3. Chemin vers le modèle Word
-    $templatePath = root_path('templates/template_inscription_3.docx');
+    $templatePath = root_path('templates/template_inscription_4.docx');
     if (!file_exists($templatePath)) {
-        exit('Erreur : Le modèle Word "templates/template_inscription_3.docx" est introuvable.');
+        exit('Erreur : Le modèle Word "templates/template_inscription_4.docx" est introuvable.');
     }
 
     // 4. Formate la date de naissance (au format jj/mm/aaaa si elle est stockée aaaa-mm-jj)
@@ -72,9 +72,9 @@ try {
         'sec_generale' => $institution['sec_generale'],
         'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
         'establishment_fr' => $institution['establishment_fr'],
-        'num_att' => $numero,
+        'num_att' => institution_ltr_text((string) $numero),
     ]);
-    // Number goes into ${num_att} in the Word template; extras = cachet only.
+    // ${num_att} filled above; extras = cachet only (avoid double number inject).
     certificate_docx_apply_extras($docxPath, null, $cachetFile['path'] ?? null);
     $asPdf = !$preview && certificate_wants_pdf();
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview, true);

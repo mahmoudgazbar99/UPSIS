@@ -716,13 +716,14 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
         <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
         <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
         <link href="assets/motion.css?v=3" rel="stylesheet">
-        <link href="assets/style.css?v=98" rel="stylesheet">
+        <link href="assets/style.css?v=99" rel="stylesheet">
         <link href="assets/institut.css?v=4" rel="stylesheet">
         <link href="assets/clarity.css?v=27" rel="stylesheet">
         <link href="assets/skeleton.css?v=3" rel="stylesheet">
+        <link href="assets/app-list-prompt.css?v=4" rel="stylesheet">
         <link href="assets/app-theme-wipe.css?v=2" rel="stylesheet">
         <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
-        <link href="assets/original-theme.css?v=20" rel="stylesheet">
+        <link href="assets/original-theme.css?v=22" rel="stylesheet">
         <link href="assets/course-finder.css?v=1" rel="stylesheet">
         <?php if ($pageStylesheet !== ''): ?><link href="<?= e($pageStylesheet) ?>" rel="stylesheet"><?php endif; ?>
         <script>
@@ -735,7 +736,11 @@ function page_head(string $title, string $active = '', string $pageStylesheet = 
                 var style = localStorage.getItem(styleKey);
                 var accountScope = themeScope.slice(0, Math.max(themeScope.lastIndexOf(':'), 0));
                 if (!theme) {
-                    theme = localStorage.getItem('app-theme:' + accountScope) || localStorage.getItem('app-theme') || 'dark';
+                    theme = localStorage.getItem('app-theme:' + accountScope)
+                        || localStorage.getItem('app-theme')
+                        || localStorage.getItem('webapp-theme')
+                        || localStorage.getItem('landing-theme')
+                        || 'dark';
                     localStorage.setItem(themeKey, theme);
                 }
                 if (!style) {
@@ -999,6 +1004,7 @@ function page_foot(): void {
         <link href="assets/success-lottie.css?v=3" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <script src="assets/app-theme-wipe.js?v=7"></script>
+        <script src="assets/app-list-prompt.js?v=4"></script>
         <script type="module" src="assets/success-lottie.js?v=6"></script>
         <script src="assets/motion.js?v=3" defer></script>
         <?php if (logged_in() && !is_admin() && !is_student()): ?>
@@ -1153,6 +1159,10 @@ function page_foot(): void {
                     const nextTheme = previous === 'light' ? 'dark' : 'light';
                     const applyNext = function () {
                         localStorage.setItem(themeKey, nextTheme);
+                        try {
+                            localStorage.setItem('webapp-theme', nextTheme);
+                            localStorage.setItem('landing-theme', nextTheme);
+                        } catch (error) {}
                         applyTheme(nextTheme);
                         broadcastAppearance();
                     };

@@ -100,7 +100,7 @@ try {
 
     // Étape 2 — Profil : le compte doit rester actif et lié à un dossier inscrit.
     $profileQuery = $pdo->prepare(
-        'SELECT e.nom, e.prenom, e.niveau, e.email, e.cin_passeport, e.id_spec, e.num_tel, e.adresse,
+        'SELECT e.nom, e.prenom, e.niveau, e.email, e.cin_passeport, e.num_inscription, e.id_spec, e.num_tel, e.adresse,
                 e.date_naissance, e.nationalite, e.lieu_naissance, s.nom_spec
          FROM etudiant e
          INNER JOIN specialite s ON s.id_spec = e.id_spec
@@ -279,6 +279,12 @@ try {
 
 $studentName = trim((string) (($profile['prenom'] ?? '') . ' ' . ($profile['nom'] ?? '')));
 $studentInitials = mb_strtoupper(mb_substr((string) ($profile['prenom'] ?? ''), 0, 1) . mb_substr((string) ($profile['nom'] ?? ''), 0, 1));
+$studentMatricule = trim((string) ($profile['num_inscription'] ?? ''));
+$studentNiveauLabel = $profile ? level_label((string) $profile['niveau']) : '';
+$studentSpecLabel = trim((string) ($profile['nom_spec'] ?? ''));
+$studentGroupLabel = $portalGroup
+    ? trim((string) ($portalGroup['type_groupe'] ?? '') . ' ' . (string) ($portalGroup['numero'] ?? ''))
+    : '';
 if ($studentInitials === '') {
     $studentInitials = 'ET';
 }
@@ -376,10 +382,11 @@ if (!empty($explorerFragment)) {
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=Outfit:wght@400;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/student-space.css?v=30" rel="stylesheet">
+  <link href="assets/student-space.css?v=31" rel="stylesheet">
   <link href="assets/student-portal-shell.css?v=16" rel="stylesheet">
-  <link href="assets/student-theme.css?v=18" rel="stylesheet">
-  <link href="assets/student-lightswind.css?v=3" rel="stylesheet">
+  <link href="assets/student-theme.css?v=19" rel="stylesheet">
+  <link href="assets/student-lightswind.css?v=4" rel="stylesheet">
+  <link href="assets/espace-etudiant-lw.css?v=1" rel="stylesheet">
   <link href="assets/lw-theme-toggle.css?v=1" rel="stylesheet">
   <link href="assets/skeleton.css?v=3" rel="stylesheet">
   <link href="assets/success-lottie.css?v=3" rel="stylesheet">
@@ -387,9 +394,14 @@ if (!empty($explorerFragment)) {
   <script src="assets/course-explorer.js?v=2" defer></script>
 </head>
 <body class="student-space">
+  <div class="student-ec-topline" aria-hidden="true"></div>
+  <div class="student-ec-atmosphere" aria-hidden="true">
+    <div class="page-grid"></div>
+    <div class="page-light" data-student-page-light></div>
+  </div>
   <div class="portal-stage">
   <div class="portal-phone">
-  <header class="student-space-bar">
+  <header class="student-space-bar student-ec-reveal">
     <button type="button" class="portal-menu-btn" data-portal-open aria-controls="portalDrawer" aria-expanded="false" aria-label="Ouvrir le menu">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
@@ -462,6 +474,7 @@ if (!empty($explorerFragment)) {
     <button type="button" data-panel="contacts"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="M4 7l8 6 8-6"/></svg><span>Contacts et e-mails</span></button>
     <?php if ($attestationOpen): ?>
     <button type="button" data-panel="attestation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-2.4L7 20z"/></svg><span>Demandes</span></button>
+    <a href="preregistration_etudiant.php"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h8v16H8z"/><path d="M10 9h4M10 13h4"/></svg><span>Préinscription</span></a>
     <?php endif; ?>
     <button type="button" data-panel="stage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9l7-4 7 4v10"/><path d="M9 19v-5h6v5"/></svg><span>Stage d’été</span></button>
     <a class="portal-logout" href="logout.php?espace=etudiant">Déconnexion</a>
@@ -470,72 +483,123 @@ if (!empty($explorerFragment)) {
   <main class="student-space-main">
     <?php if ($dbError !== ''): ?><div class="student-space-alert" role="alert"><?= e($dbError) ?></div><?php endif; ?>
     <?php flash_show(); ?>
+
+    <section class="student-ec-hero student-ec-reveal" data-glow data-tilt>
+      <span class="student-ec-beam" aria-hidden="true"></span>
+      <div class="student-ec-hero-shimmer" aria-hidden="true"></div>
+      <div class="student-ec-hero-inner">
+        <div class="student-ec-hero-row">
+          <div>
+            <p class="student-ec-kicker">Compte activé</p>
+            <h2 class="student-ec-name"><?= e($studentName !== '' ? $studentName : 'Étudiant') ?></h2>
+            <?php if ($studentMatricule !== ''): ?>
+              <div class="student-ec-ref"><?= e($studentMatricule) ?></div>
+            <?php endif; ?>
+            <p class="student-ec-meta">
+              <?= e($studentNiveauLabel !== '' ? $studentNiveauLabel . ' année' : 'Niveau') ?>
+              <?php if ($studentSpecLabel !== ''): ?> · <?= e($studentSpecLabel) ?><?php endif; ?>
+              <?php if ($studentGroupLabel !== ''): ?> · <?= e($studentGroupLabel) ?><?php endif; ?>
+            </p>
+          </div>
+          <div class="text-end">
+            <span class="student-ec-active" role="status">
+              <span class="student-ec-ripple" aria-hidden="true"></span>
+              Espace actif
+            </span>
+          </div>
+        </div>
+        <div class="student-ec-stats" aria-label="Aperçu rapide">
+          <div class="student-ec-stat">
+            <span>Cours</span>
+            <strong><?= (int) $courseCount ?></strong>
+          </div>
+          <div class="student-ec-stat">
+            <span>Notes</span>
+            <strong><?= count($grades) ?></strong>
+          </div>
+          <div class="student-ec-stat">
+            <span>Absences</span>
+            <strong><?= count($portalAbsences) ?></strong>
+          </div>
+          <div class="student-ec-stat">
+            <span>Messages</span>
+            <strong><?= (int) ($inbox['unread'] ?? 0) ?></strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="student-space-cards" role="tablist">
-      <button type="button" data-panel="profil" aria-pressed="<?= $openPanel === 'profil' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="profil" aria-pressed="<?= $openPanel === 'profil' ? 'true' : 'false' ?>">
         <span>01</span>
         <strong>Profil</strong>
         <small><?= $profile ? 'Niveau ' . e(level_label((string) $profile['niveau'])) : 'Identité' ?></small>
       </button>
-      <button type="button" data-panel="emploi" aria-pressed="<?= $openPanel === 'emploi' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="emploi" aria-pressed="<?= $openPanel === 'emploi' ? 'true' : 'false' ?>">
         <span>02</span>
         <strong>Emploi du temps</strong>
         <small><?= count($emploiPdfs) > 0 ? (count($emploiPdfs) . ' PDF') : (count($timetable) . ' séance' . (count($timetable) > 1 ? 's' : '')) ?></small>
       </button>
-      <button type="button" data-panel="cours" aria-pressed="<?= $openPanel === 'cours' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="cours" aria-pressed="<?= $openPanel === 'cours' ? 'true' : 'false' ?>">
         <span>03</span>
         <strong>Cours</strong>
         <small><?= $courseCount > 0 ? $courseCount . ' cours' : 'Aucun cours' ?></small>
       </button>
-      <button type="button" data-panel="notes" aria-pressed="<?= $openPanel === 'notes' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="notes" aria-pressed="<?= $openPanel === 'notes' ? 'true' : 'false' ?>">
         <span>04</span>
         <strong>Résultats et suivi</strong>
         <small><?= count($grades) ?> matière<?= count($grades) > 1 ? 's' : '' ?></small>
       </button>
-      <button type="button" data-panel="plan" aria-pressed="<?= $openPanel === 'plan' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="plan" aria-pressed="<?= $openPanel === 'plan' ? 'true' : 'false' ?>">
         <span>05</span>
         <strong>Plan d’étude</strong>
         <small><?= count($portalPlan) ?> matière<?= count($portalPlan) > 1 ? 's' : '' ?></small>
       </button>
-      <button type="button" data-panel="absences" aria-pressed="<?= $openPanel === 'absences' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="absences" aria-pressed="<?= $openPanel === 'absences' ? 'true' : 'false' ?>">
         <span>06</span>
         <strong>Absences</strong>
         <small><?php $portalMissed = 0.0; foreach ($portalAbsences as $portalAbsence) { $portalMissed += (float) $portalAbsence['duree_heures']; } ?><?= e(number_format($portalMissed, 1, ',', ' ')) ?> h</small>
       </button>
-      <button type="button" data-panel="groupe" aria-pressed="<?= $openPanel === 'groupe' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="groupe" aria-pressed="<?= $openPanel === 'groupe' ? 'true' : 'false' ?>">
         <span>07</span>
         <strong>Gestion des demandes</strong>
         <small><?= $portalGroup ? e($portalGroup['type_groupe'] . ' ' . $portalGroup['numero']) : 'Groupe' ?></small>
       </button>
-      <button type="button" data-panel="psy" aria-pressed="<?= $openPanel === 'psy' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="psy" aria-pressed="<?= $openPanel === 'psy' ? 'true' : 'false' ?>">
         <span>08</span>
         <strong>Psychologue</strong>
         <small>Rendez-vous</small>
       </button>
-      <button type="button" data-panel="reclamation" aria-pressed="<?= $openPanel === 'reclamation' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="reclamation" aria-pressed="<?= $openPanel === 'reclamation' ? 'true' : 'false' ?>">
         <span>09</span>
         <strong>Réclamation</strong>
         <small><?= count($portalMine['complaints']) ?> envoyée<?= count($portalMine['complaints']) > 1 ? 's' : '' ?></small>
       </button>
-      <button type="button" data-panel="contacts" aria-pressed="<?= $openPanel === 'contacts' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="contacts" aria-pressed="<?= $openPanel === 'contacts' ? 'true' : 'false' ?>">
         <span>10</span>
         <strong>Contacts et e-mails</strong>
         <small><?= count($portalContacts) ?> enseignant<?= count($portalContacts) > 1 ? 's' : '' ?></small>
       </button>
-      <button type="button" data-panel="stage" aria-pressed="<?= $openPanel === 'stage' ? 'true' : 'false' ?>">
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="stage" aria-pressed="<?= $openPanel === 'stage' ? 'true' : 'false' ?>">
         <span>11</span>
         <strong>Stage d’été</strong>
         <small><?= count($summerBoard['mine']) ?> demande<?= count($summerBoard['mine']) > 1 ? 's' : '' ?></small>
       </button>
-      <?php if ($attestationOpen): ?>
-      <button type="button" data-panel="attestation" aria-pressed="<?= $openPanel === 'attestation' ? 'true' : 'false' ?>">
+      <a href="preregistration_etudiant.php" data-glow data-tilt class="student-ec-reveal" style="text-decoration:none;color:inherit">
         <span>12</span>
+        <strong>Préinscription annuelle</strong>
+        <small>PA-SAE-01 · acompte 200 DT</small>
+      </a>
+      <?php if ($attestationOpen): ?>
+      <button type="button" data-glow data-tilt class="student-ec-reveal" data-panel="attestation" aria-pressed="<?= $openPanel === 'attestation' ? 'true' : 'false' ?>">
+        <span>13</span>
         <strong>Attestation</strong>
         <small>Demande de présence</small>
       </button>
       <?php endif; ?>
     </div>
 
-    <section class="student-space-sheet<?= $openPanel === 'profil' ? ' is-entering' : '' ?>" data-sheet="profil"<?= $openPanel === 'profil' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'profil' ? ' is-entering' : '' ?>" data-glow data-sheet="profil"<?= $openPanel === 'profil' ? '' : ' hidden' ?>>
       <h1>Profil</h1>
       <?php if ($profile !== null): ?>
         <?php
@@ -605,8 +669,11 @@ if (!empty($explorerFragment)) {
       <?php endif; ?>
     </section>
 
-    <section class="student-space-sheet<?= $openPanel === 'emploi' ? ' is-entering' : '' ?>" data-sheet="emploi"<?= $openPanel === 'emploi' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'emploi' ? ' is-entering' : '' ?>" data-glow data-sheet="emploi"<?= $openPanel === 'emploi' ? '' : ' hidden' ?>>
       <h1>Emploi du temps</h1>
+      <?php if ($emploiPdfs === [] && $timetableBySemester === []): ?>
+        <p class="student-space-lead">Aucun emploi du temps n’est encore publié pour vos groupes.</p>
+      <?php endif; ?>
       <?php if ($emploiPdfs !== []): ?>
         <p class="student-space-lead">PDF publié pour votre groupe. Vous pouvez l’ouvrir en aperçu ou le télécharger.</p>
         <?php foreach ($emploiPdfs as $pdf): ?>
@@ -620,10 +687,9 @@ if (!empty($explorerFragment)) {
             </div>
           </article>
         <?php endforeach; ?>
-      <?php elseif ($timetableBySemester === []): ?>
-        <p class="student-space-lead">Aucun emploi du temps PDF n’est encore publié pour vos groupes.</p>
-      <?php else: ?>
-        <p class="student-space-lead">Semaine type de votre niveau.</p>
+      <?php endif; ?>
+      <?php if ($timetableBySemester !== []): ?>
+        <p class="student-space-lead">Semaine type publiée pour votre niveau.</p>
         <?php foreach ($timetableBySemester as $semester => $days): ?>
           <h2><?= e($semester) ?></h2>
           <?php foreach ($days as $day => $sessions): ?>
@@ -649,7 +715,7 @@ if (!empty($explorerFragment)) {
       <?php endif; ?>
     </section>
 
-    <section class="student-space-sheet" data-sheet="plan"<?= $openPanel === 'plan' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet" data-glow data-sheet="plan"<?= $openPanel === 'plan' ? '' : ' hidden' ?>>
       <h1>Plan d’étude</h1>
       <p class="student-space-lead">Matières publiées dans l’emploi de vos groupes.</p>
       <?php if ($portalPlan === []): ?><p class="student-space-lead">Aucune matière n’est encore liée à vos groupes.</p><?php else: ?>
@@ -661,7 +727,7 @@ if (!empty($explorerFragment)) {
       <p class="student-space-lead">Charge totale <?= e(number_format($load, 1, ',', ' ')) ?> h · coefficient <?= e(number_format($coeff, 2, ',', ' ')) ?></p>
       <?php endif; ?>
     </section>
-    <section class="student-space-sheet" data-sheet="absences"<?= $openPanel === 'absences' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet" data-glow data-sheet="absences"<?= $openPanel === 'absences' ? '' : ' hidden' ?>>
       <h1>Absences</h1>
       <?php $missed = 0.0; $modules = []; foreach ($portalAbsences as $absence) { $missed += (float) $absence['duree_heures']; $modules[(string) ($absence['code_ue'] ?? '')] = true; } ?>
       <p class="student-space-lead"><?= count($portalAbsences) ?> absence<?= count($portalAbsences) > 1 ? 's' : '' ?> · <?= e(number_format($missed, 2, ',', ' ')) ?> h manquées · <?= count(array_filter(array_keys($modules))) ?> module<?= count($modules) > 1 ? 's' : '' ?></p>
@@ -671,14 +737,14 @@ if (!empty($explorerFragment)) {
       </tbody></table></div>
       <?php endif; ?>
     </section>
-    <section class="student-space-sheet" data-sheet="groupe"<?= $openPanel === 'groupe' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet" data-glow data-sheet="groupe"<?= $openPanel === 'groupe' ? '' : ' hidden' ?>>
       <h1>Groupe</h1>
       <p class="student-space-lead">Groupe actuel : <?= $portalGroup ? e($portalGroup['semestre'] . ' · ' . $portalGroup['type_groupe'] . ' ' . $portalGroup['numero']) : 'aucun' ?></p>
       <form method="post" class="student-space-form">
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
         <input type="hidden" name="action" value="portal_group">
         <label>Type<select name="request_type" data-group-type><option value="changement">Changement de groupe</option><option value="permutation">Permutation</option></select></label>
-        <label>Groupe souhaité<select name="id_groupe" data-group-target required><option value="">Choisir</option><?php
+        <label>Groupe souhaité<select name="id_groupe" data-group-target required data-app-list-prompt data-app-list-title="Groupe souhaité" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Choisir un groupe…"><option value="">Choisir</option><?php
           $portalGroupOptions = [];
           foreach ($portalTargets as $group) {
               $portalGroupOptions[(int) $group['id_groupe']] = $group + ['kind' => 'changement'];
@@ -694,7 +760,7 @@ if (!empty($explorerFragment)) {
           foreach ($portalGroupOptions as $group): ?>
           <option value="<?= (int) $group['id_groupe'] ?>" data-kind="<?= e((string) $group['kind']) ?>"><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero'] . ' · ' . $group['inscrits'] . '/' . $group['capacite']) ?></option>
         <?php endforeach; ?></select></label>
-        <label data-partner-field>Étudiant pour la permutation<select name="id_partenaire" data-group-partner><option value="">Choisir</option><?php foreach ($portalPartners as $person): ?><option value="<?= (int) $person['id_etudiant'] ?>" data-groupe="<?= (int) $person['id_groupe'] ?>"><?= e($person['prenom'] . ' ' . $person['nom']) ?></option><?php endforeach; ?></select></label>
+        <label data-partner-field>Étudiant pour la permutation<select name="id_partenaire" data-group-partner data-app-list-prompt data-app-list-title="Étudiant pour la permutation" data-app-list-search="Nom…" data-app-list-placeholder="Choisir un étudiant…"><option value="">Choisir</option><?php foreach ($portalPartners as $person): ?><option value="<?= (int) $person['id_etudiant'] ?>" data-groupe="<?= (int) $person['id_groupe'] ?>"><?= e($person['prenom'] . ' ' . $person['nom']) ?></option><?php endforeach; ?></select></label>
         <label>Commentaire<textarea name="commentaire" maxlength="1000"></textarea></label>
         <button type="submit">Soumettre la demande</button>
       </form>
@@ -707,7 +773,7 @@ if (!empty($explorerFragment)) {
         <?php endforeach; endif; ?>
       </ul>
     </section>
-    <section class="student-space-sheet" data-sheet="psy"<?= $openPanel === 'psy' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet" data-glow data-sheet="psy"<?= $openPanel === 'psy' ? '' : ' hidden' ?>>
       <h1>Consultation psychologique</h1>
       <p class="student-space-lead">Le motif n’est pas montré aux enseignants.</p>
       <form method="post" class="student-space-form">
@@ -733,7 +799,7 @@ if (!empty($explorerFragment)) {
         <?php endforeach; endif; ?>
       </ul>
     </section>
-    <section class="student-space-sheet" data-sheet="reclamation"<?= $openPanel === 'reclamation' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet" data-glow data-sheet="reclamation"<?= $openPanel === 'reclamation' ? '' : ' hidden' ?>>
       <h1>Réclamation</h1>
       <form method="post" class="student-space-form">
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
@@ -751,7 +817,7 @@ if (!empty($explorerFragment)) {
         <?php endforeach; endif; ?>
       </ul>
     </section>
-    <section class="student-space-sheet" data-sheet="contacts"<?= $openPanel === 'contacts' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet" data-glow data-sheet="contacts"<?= $openPanel === 'contacts' ? '' : ' hidden' ?>>
       <h1>Contacts</h1>
       <p class="student-space-lead">Enseignants affectés à vos groupes seulement.</p>
       <?php if ($portalContacts === []): ?>
@@ -775,7 +841,7 @@ if (!empty($explorerFragment)) {
         </ul>
       <?php endif; ?>
     </section>
-    <section class="student-space-sheet<?= $openPanel === 'stage' ? ' is-entering' : '' ?>" data-sheet="stage"<?= $openPanel === 'stage' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'stage' ? ' is-entering' : '' ?>" data-glow data-sheet="stage"<?= $openPanel === 'stage' ? '' : ' hidden' ?>>
       <h1>Stage d’été</h1>
       <?php if ($summerBoard['open']): ?>
       <form method="post" enctype="multipart/form-data" action="dashboard.php?panel=stage" class="student-space-form">
@@ -826,7 +892,7 @@ if (!empty($explorerFragment)) {
       <?php endif; ?>
     </section>
 
-    <section class="student-space-sheet<?= $openPanel === 'cours' ? ' is-entering' : '' ?>" data-sheet="cours"<?= $openPanel === 'cours' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'cours' ? ' is-entering' : '' ?>" data-glow data-sheet="cours"<?= $openPanel === 'cours' ? '' : ' hidden' ?>>
       <h1>Mes cours</h1>
       <p class="student-space-lead">Les cours publiés par vos enseignants pour vos matières.</p>
       <p class="student-space-alert" id="studentCourseFresh" role="status" hidden>
@@ -835,7 +901,7 @@ if (!empty($explorerFragment)) {
       <?php course_explorer_render($courses, 'student', $courseState); ?>
     </section>
 
-    <section class="student-space-sheet<?= $openPanel === 'notes' ? ' is-entering' : '' ?>" data-sheet="notes"<?= $openPanel === 'notes' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'notes' ? ' is-entering' : '' ?>" data-glow data-sheet="notes"<?= $openPanel === 'notes' ? '' : ' hidden' ?>>
       <h1>Résultats</h1>
       <?php if (!$resultsPublished): ?>
         <p class="student-space-lead">Les résultats n’ont pas encore été publiés par l’administration. Vous serez notifié dès qu’ils seront disponibles.</p>
@@ -846,10 +912,28 @@ if (!empty($explorerFragment)) {
             · Moyenne : <strong><?= e(number_format((float) $resultAverage, 2, ',', ' ')) ?></strong>/20
           <?php endif; ?>
         </p>
-        <p class="mb-3"><a class="student-space-link" href="releve_etudiant.php">Télécharger mon relevé de notes</a></p>
         <?php if ($gradesBySemester === []): ?>
           <p class="student-space-lead">Le relevé publié ne contient aucune ligne de note.</p>
         <?php else: ?>
+          <?php
+            $transcriptSemesters = array_keys($gradesBySemester);
+            usort($transcriptSemesters, static fn(string $a, string $b): int => ((int) substr($a, 1)) <=> ((int) substr($b, 1)));
+            $defaultTranscriptSemester = $transcriptSemesters[0];
+          ?>
+          <div class="student-space-download-wrap">
+            <label class="student-space-transcript-label" for="studentTranscriptSemester">Semestre</label>
+            <select id="studentTranscriptSemester" class="student-space-transcript-select" aria-label="Choisir le semestre du relevé">
+              <?php foreach ($transcriptSemesters as $transcriptSemester): ?>
+                <option value="<?= e($transcriptSemester) ?>"<?= $transcriptSemester === $defaultTranscriptSemester ? ' selected' : '' ?>>
+                  Semestre <?= e((string) (int) substr($transcriptSemester, 1)) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <a class="student-space-download" id="studentTranscriptDownload" href="/releve_etudiant?format=pdf&amp;semestre=<?= e(urlencode($defaultTranscriptSemester)) ?>">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 18h14"/></svg>
+              <span>Télécharger le relevé du semestre</span>
+            </a>
+          </div>
           <?php foreach ($gradesBySemester as $semester => $semesterGrades): ?>
             <h2><?= e($semester) ?></h2>
             <div class="student-space-table-wrap">
@@ -877,7 +961,7 @@ if (!empty($explorerFragment)) {
     </section>
 
     <?php if ($attestationOpen): ?>
-    <section class="student-space-sheet<?= $openPanel === 'attestation' ? ' is-entering' : '' ?>" data-sheet="attestation"<?= $openPanel === 'attestation' ? '' : ' hidden' ?>>
+    <section class="student-space-sheet<?= $openPanel === 'attestation' ? ' is-entering' : '' ?>" data-glow data-sheet="attestation"<?= $openPanel === 'attestation' ? '' : ' hidden' ?>>
       <h1>Demander une attestation de présence</h1>
       <div id="attestationBoard">
       <?php if ($attestationBoard['state'] === 'en_attente'): ?>
@@ -1546,6 +1630,61 @@ if (!empty($explorerFragment)) {
         }
       });
     }
+    var transcriptDownload = document.getElementById('studentTranscriptDownload');
+    var transcriptSemester = document.getElementById('studentTranscriptSemester');
+    function transcriptHref(semester) {
+      return '/releve_etudiant?format=pdf&semestre=' + encodeURIComponent(semester || '');
+    }
+    function syncTranscriptDownload() {
+      if (!transcriptDownload || !transcriptSemester) return;
+      transcriptDownload.setAttribute('href', transcriptHref(transcriptSemester.value));
+    }
+    if (transcriptSemester) {
+      transcriptSemester.addEventListener('change', syncTranscriptDownload);
+      syncTranscriptDownload();
+    }
+    if (transcriptDownload) {
+      transcriptDownload.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (transcriptDownload.getAttribute('aria-busy') === 'true') return;
+        syncTranscriptDownload();
+        var href = transcriptDownload.getAttribute('href') || transcriptHref(transcriptSemester ? transcriptSemester.value : '');
+        if (!transcriptSemester || !transcriptSemester.value) {
+          announce('Choisissez un semestre.');
+          return;
+        }
+        transcriptDownload.setAttribute('aria-busy', 'true');
+        fetch(href, {
+          credentials: 'same-origin',
+          headers: { 'Accept': 'application/pdf' },
+          cache: 'no-store'
+        }).then(function (response) {
+          if (!response.ok) throw new Error('download-failed');
+          var header = response.headers.get('Content-Disposition') || '';
+          var match = /filename=\"([^\"]+)\"/i.exec(header);
+          var fileName = match ? match[1] : 'releve_de_notes.pdf';
+          return response.blob().then(function (blob) {
+            return { blob: blob, fileName: fileName };
+          });
+        }).then(function (payload) {
+          var objectUrl = URL.createObjectURL(payload.blob);
+          var link = document.createElement('a');
+          link.href = objectUrl;
+          link.download = payload.fileName;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 1000);
+          announce('Relevé du semestre téléchargé.');
+        }).catch(function () {
+          announce('Impossible de télécharger le relevé.');
+          window.location.assign(href);
+        }).finally(function () {
+          transcriptDownload.removeAttribute('aria-busy');
+        });
+      });
+    }
 
     var csrf = <?= json_encode(csrf_token(), JSON_UNESCAPED_UNICODE) ?>;
     var inbox = <?= json_encode($inbox, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;
@@ -2051,5 +2190,6 @@ if (!empty($explorerFragment)) {
   })();
   </script>
 <script type="module" src="assets/success-lottie.js?v=6"></script>
+  <script src="assets/espace-etudiant-lw.js?v=1" defer></script>
 </body>
 </html>

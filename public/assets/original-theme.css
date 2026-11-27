@@ -468,7 +468,8 @@ body.theme-original .dashboard-menu.app-card, body.theme-original .dashboard-men
 body.theme-original .table-responsive {
   border: 1px solid var(--app-border);
   border-radius: var(--lw-radius-lg);
-  overflow: hidden;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--lw-card-tone, var(--app-surface-strong));
   box-shadow: var(--app-shadow);
 }
@@ -898,7 +899,7 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
 }
 
 /* ——— Phone / tablet shell (student-like drawer) ——— */
-.staff-phone-menu-btn, .staff-nav-backdrop, .staff-nav-edge {
+.staff-phone-menu-btn, .staff-nav-backdrop, .staff-nav-edge, .staff-drawer-close {
   display: none;
 }
 
@@ -1165,7 +1166,9 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
     position: fixed;
     inset: 0;
     z-index: 1070;
-    background: rgba(0, 0, 0, 0.55);
+    background: color-mix(in srgb, #020617 72%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1193,49 +1196,89 @@ body.theme-original .form-control:focus, body.theme-original .form-select:focus 
 
   body.theme-original.is-staff-drawer-open {
     overflow: hidden;
+    touch-action: none;
   }
 
-  body.theme-original .dashboard-menu {
+  /* Lightswind phone sheet — full viewport, never a clipped desktop stub */
+  body.theme-original .dashboard-menu,
+  body.theme-original .dashboard-workspace.is-nav-collapsed .dashboard-menu {
     position: fixed !important;
-    top: 0;
-    left: 0;
-    bottom: 0;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
     z-index: 1080;
-    display: block !important;
-    width: min(300px, 86vw) !important;
-    max-width: 86vw;
+    display: flex !important;
+    flex-direction: column !important;
+    width: min(20rem, 88vw) !important;
+    max-width: 88vw !important;
     height: 100dvh !important;
     max-height: 100dvh !important;
+    min-height: 100dvh !important;
     margin: 0 !important;
-    padding: max(1.1rem, env(safe-area-inset-top)) 0.85rem calc(1.25rem + env(safe-area-inset-bottom)) !important;
+    padding: max(0.85rem, env(safe-area-inset-top, 0px)) 0.75rem calc(1.1rem + env(safe-area-inset-bottom, 0px)) !important;
     border: 0 !important;
-    border-right: 1px solid var(--app-border) !important;
-    border-radius: 0 !important;
-    background: var(--app-surface-strong) !important;
-    box-shadow: 18px 0 48px -20px rgba(0, 0, 0, 0.55);
+    border-right: 1px solid color-mix(in srgb, var(--lw-primary) 28%, var(--app-border)) !important;
+    border-radius: 0 1.15rem 1.15rem 0 !important;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--lw-primary) 10%, transparent), transparent 7.5rem),
+      var(--app-surface-strong) !important;
+    box-shadow:
+      18px 0 48px -18px rgba(0, 0, 0, 0.62),
+      inset 0 1px 0 color-mix(in srgb, var(--lw-primary) 18%, transparent);
     overflow-x: hidden !important;
     overflow-y: auto !important;
-    transform: translateX(-105%);
-    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    /* No !important on transform — swipe drag sets inline translateX */
+    transform: translate3d(-105%, 0, 0);
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    visibility: visible !important;
+    pointer-events: auto !important;
   }
 
-  body.theme-original.is-staff-drawer-open .dashboard-menu {
-    transform: translateX(0);
+  body.theme-original.is-staff-drawer-open .dashboard-menu,
+  body.theme-original.is-staff-drawer-open .dashboard-workspace.is-nav-collapsed .dashboard-menu {
+    transform: translate3d(0, 0, 0);
   }
 
   body.theme-original .clarity-nav-toggle {
     display: none !important;
   }
 
+  body.theme-original .staff-drawer-close {
+    display: grid !important;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid var(--app-border);
+    border-radius: var(--lw-radius);
+    background: color-mix(in srgb, var(--app-surface-strong) 88%, transparent);
+    color: var(--app-text);
+    flex: 0 0 auto;
+  }
+
+  body.theme-original .staff-drawer-close:active {
+    transform: scale(0.96);
+    background: color-mix(in srgb, var(--lw-primary) 14%, var(--app-surface-strong));
+  }
+
   body.theme-original .dashboard-menu-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    margin: 0 0.15rem 1rem;
-    padding: 0.25rem 0.35rem 0.9rem;
+    margin: 0 0.1rem 0.85rem;
+    padding: 0.35rem 0.25rem 0.95rem;
     border-bottom: 1px solid color-mix(in srgb, var(--lw-primary) 40%, var(--app-border));
+    background: color-mix(in srgb, var(--app-surface-strong) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 
   body.theme-original .dashboard-menu-orbit, body.theme-original .dashboard-menu-title-macos {

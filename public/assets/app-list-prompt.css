@@ -1,0 +1,246 @@
+/* Shared searchable list prompt — matches group-roster / attestation dialog chrome across themes. */
+.app-list-prompt {
+  border: 0;
+  padding: 0;
+  max-width: min(36rem, calc(100vw - 1.5rem));
+  width: min(36rem, calc(100vw - 1.5rem));
+  background: transparent;
+  color: inherit;
+}
+
+.app-list-prompt::backdrop {
+  background: rgba(3, 7, 14, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.app-list-prompt-panel {
+  margin: 0;
+  overflow: hidden;
+  border-radius: 1.15rem;
+  border: 1px solid var(--app-border, rgba(255, 255, 255, 0.14));
+  background: var(--app-surface-strong, #1e1e1e);
+  box-shadow: var(--ux-elev-24, 0 24px 38px 3px rgba(0, 0, 0, 0.18));
+  color: var(--app-text, #e6e1e5);
+}
+
+.app-list-prompt-titlebar {
+  display: none;
+}
+
+.app-list-prompt-head {
+  display: block;
+  padding: 1.15rem 1.25rem 0.95rem;
+  border-bottom: 1px solid var(--app-border, rgba(255, 255, 255, 0.12));
+}
+
+.app-list-prompt-head .eyebrow {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted, #9aa3ad);
+}
+
+.app-list-prompt-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.app-list-prompt-meta {
+  margin: 0.35rem 0 0;
+  color: var(--app-muted, #9aa3ad);
+  font-size: 0.86rem;
+}
+
+.app-list-prompt-search {
+  padding: 0.85rem 1.15rem;
+  border-bottom: 1px solid var(--app-border, rgba(255, 255, 255, 0.12));
+}
+
+.app-list-prompt-search input {
+  width: 100%;
+  min-height: 2.65rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--app-border, rgba(255, 255, 255, 0.18));
+  background: color-mix(in srgb, var(--app-bg, #111) 55%, transparent);
+  color: inherit;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+}
+
+.app-list-prompt-search input:focus,
+.app-list-prompt-search input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--app-accent, #14b8a6) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.app-list-prompt-body {
+  max-height: min(52vh, 26rem);
+  overflow: auto;
+  padding: 0.4rem 0;
+}
+
+.app-list-prompt-item {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0.7rem 1.15rem;
+  min-height: 2.75rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-list-prompt-item:hover,
+.app-list-prompt-item.is-active,
+.app-list-prompt-item[aria-selected="true"] {
+  background: color-mix(in srgb, var(--app-accent, #14b8a6) 16%, transparent);
+}
+
+.app-list-prompt-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--app-accent, #14b8a6) 80%, transparent);
+  outline-offset: -2px;
+}
+
+.app-list-prompt-item-label {
+  display: block;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.app-list-prompt-item-meta {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--app-muted, #9aa3ad);
+}
+
+.app-list-prompt-empty {
+  padding: 1.4rem 1.15rem;
+  text-align: center;
+  color: var(--app-muted, #9aa3ad);
+}
+
+.app-list-prompt-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.85rem 1.15rem 1.1rem;
+  border-top: 1px solid var(--app-border, rgba(255, 255, 255, 0.12));
+}
+
+.app-list-prompt-field {
+  width: 100%;
+}
+
+.app-list-prompt-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.65rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app-list-prompt-trigger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--app-accent, #14b8a6) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.app-list-prompt-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.app-list-prompt-trigger-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-list-prompt-trigger-hint {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-accent, #2dd4bf);
+}
+
+body.theme-light .app-list-prompt::backdrop {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+body.theme-light .app-list-prompt-panel {
+  background: var(--app-surface-strong, #fff);
+  color: var(--app-text, #17324d);
+  border-color: var(--app-border, rgba(23, 50, 77, 0.14));
+}
+
+body.theme-light .app-list-prompt-search input {
+  background: #fff;
+  border-color: rgba(23, 50, 77, 0.16);
+  color: inherit;
+}
+
+body.theme-light .app-list-prompt-item:hover,
+body.theme-light .app-list-prompt-item.is-active,
+body.theme-light .app-list-prompt-item[aria-selected="true"] {
+  background: color-mix(in srgb, var(--app-accent, #0f766e) 12%, #fff);
+}
+
+/* Clarity: inherit Mac window chrome from .group-roster-* rules; refine list controls. */
+body.theme-clarity .app-list-prompt-search {
+  border-bottom-color: var(--desk-line, rgba(255, 255, 255, 0.12));
+}
+
+body.theme-clarity .app-list-prompt-search input {
+  border-radius: 10px;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+body.theme-clarity.theme-light .app-list-prompt-search input {
+  border-color: rgba(23, 50, 77, 0.14);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+body.theme-clarity .app-list-prompt-item:hover,
+body.theme-clarity .app-list-prompt-item.is-active,
+body.theme-clarity .app-list-prompt-item[aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.theme-clarity.theme-light .app-list-prompt-item:hover,
+body.theme-clarity.theme-light .app-list-prompt-item.is-active,
+body.theme-clarity.theme-light .app-list-prompt-item[aria-selected="true"] {
+  background: rgba(23, 50, 77, 0.08);
+}
+
+body.theme-clarity .app-list-prompt-footer {
+  display: none;
+}
+
+body.theme-clarity .app-list-prompt-trigger-hint {
+  color: var(--desk-accent, #5ac8fa);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .app-list-prompt::backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

@@ -265,7 +265,7 @@ page_head('Promotion et archivage', 'promotion');
       </div>
       <div class="col-md-4">
         <label class="form-label">Groupe à traiter</label>
-        <select class="form-select" name="group_id">
+        <select class="form-select" name="group_id" data-app-list-prompt data-app-list-title="Groupe à traiter" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Tous les groupes Cours">
           <option value="0">Tous les groupes Cours</option>
           <?php foreach ($promotionGroups as $group): ?>
             <option value="<?= (int) $group['id_groupe'] ?>" <?= $groupId === (int) $group['id_groupe'] ? 'selected' : '' ?>>

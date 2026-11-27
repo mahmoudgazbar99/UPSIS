@@ -4,7 +4,7 @@ set -euo pipefail
 a2enmod ssl rewrite headers >/dev/null
 mkdir -p /etc/apache2/ssl /etc/apache2/conf-available /etc/apache2/sites-available
 
-lan_ip="${LAN_IP:-192.168.10.11}"
+lan_ip="${LAN_IP:-192.168.100.95}"
 test -s /etc/apache2/ssl/lan.key && test -s /etc/apache2/ssl/lan.crt || {
   echo "TLS certificate is missing; certificate-init must run before Apache." >&2
   exit 1

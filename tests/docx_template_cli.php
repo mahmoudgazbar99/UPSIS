@@ -57,7 +57,7 @@ if (!is_file($logoPath)) {
     throw new RuntimeException('Fallback logo is unavailable for the DOCX test.');
 }
 $testCases = [
-    'templates/template_presence_2.docx' => [
+    'templates/template_presence_3.docx' => [
         'logo' => $logoPath,
         'establishment_ar' => $rightToLeft,
         'establishment_fr' => 'Establishment test',
@@ -73,8 +73,9 @@ $testCases = [
         'inscription' => institution_ltr_text('INS005/2026'),
         'date_du_jour' => institution_ltr_text('2026/10/29'),
         'sec_generale' => $rightToLeft,
+        'num_pres' => institution_ltr_text('ATT-PRE-1'),
     ],
-    'templates/template_inscription_3.docx' => [
+    'templates/template_inscription_4.docx' => [
         'logo' => $logoPath,
         'establishment_ar' => $rightToLeft,
         'establishment_fr' => 'Establishment test',
@@ -89,6 +90,7 @@ $testCases = [
         'inscription' => institution_ltr_text('INS005/2026'),
         'date_du_jour' => '29/10/2026',
         'sec_generale' => 'Secretary',
+        'num_att' => institution_ltr_text('ATT-INS-1'),
     ],
 ];
 
@@ -128,10 +130,12 @@ foreach ($testCases as $relativePath => $values) {
             if ($generatedPart['paragraphs'] !== $expectedParagraphs) {
                 throw new RuntimeException('Placeholder text or order changed in ' . $partName);
             }
-            if ($relativePath === 'templates/template_presence_2.docx'
-                && $partName === 'word/document.xml'
-                && !in_array('المرسم بالسنة الأولى من الإجازة في علوم التمريض', $generatedPart['paragraphs'], true)) {
-                throw new RuntimeException('Arabic enrollment phrase is not in the expected order.');
+            if ($relativePath === 'templates/template_presence_3.docx'
+                && $partName === 'word/document.xml') {
+                $joined = implode("\n", $generatedPart['paragraphs']);
+                if (!str_contains($joined, 'المرسم بالسنة الأولى من الإجازة في علوم التمريض')) {
+                    throw new RuntimeException('Arabic enrollment phrase is not in the expected order.');
+                }
             }
             foreach (['<w:pPr', '<w:rPr', '<w:rtl', '<w:rFonts', '<w:bidi'] as $property) {
                 $sourceCount = substr_count($sourcePart['xml'], $property);
@@ -141,7 +145,9 @@ foreach ($testCases as $relativePath => $values) {
                 }
             }
             foreach ($generatedPart['paragraphs'] as $paragraphText) {
-                if (preg_match('/(?:\$\{[^}]+\}|\{[\p{L}\p{N}_]+\})/u', $paragraphText)) {
+                // ${cachet}/{cachet} are filled later by certificate_docx_apply_extras.
+                $checkText = preg_replace('/\$?\{cachet\}/iu', '', $paragraphText) ?? $paragraphText;
+                if (preg_match('/(?:\$\{[^}]+\}|\{[\p{L}\p{N}_]+\})/u', $checkText)) {
                     throw new RuntimeException('Unreplaced text placeholder in ' . $relativePath . ' ' . $partName);
                 }
             }

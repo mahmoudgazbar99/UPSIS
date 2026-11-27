@@ -770,15 +770,22 @@ function institution_docx_add_logo_content_type(ZipArchive $archive, string $ext
     }
 }
 
-function institution_docx_logo_drawing(DOMDocument $document, string $relationshipId, string $extension, array $imageInfo, int $drawingId): DOMElement
-{
+function institution_docx_logo_drawing(
+    DOMDocument $document,
+    string $relationshipId,
+    string $extension,
+    array $imageInfo,
+    int $drawingId,
+    ?int $maxWidthEmus = null,
+    ?int $maxHeightEmus = null
+): DOMElement {
     $wordNs = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
     $wpNs = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
     $aNs = 'http://schemas.openxmlformats.org/drawingml/2006/main';
     $picNs = 'http://schemas.openxmlformats.org/drawingml/2006/picture';
     $relNs = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
-    $maxWidth = 1_371_600;
-    $maxHeight = 1_371_600;
+    $maxWidth = $maxWidthEmus ?? 1_371_600;
+    $maxHeight = $maxHeightEmus ?? 1_371_600;
     $ratio = min($maxWidth / max(1, (int) $imageInfo[0]), $maxHeight / max(1, (int) $imageInfo[1]));
     $width = max(1, (int) round((int) $imageInfo[0] * $ratio));
     $height = max(1, (int) round((int) $imageInfo[1] * $ratio));

@@ -24,7 +24,7 @@ if (!defined('INSCRIPTION_EXPORT_AS_LIBRARY')) {
 require_admin();
 set_time_limit(300);
 
-$templatePath = root_path('templates/template_inscription_3.docx');
+$templatePath = root_path('templates/template_inscription_4.docx');
 if (!is_file($templatePath)) {
     http_response_code(500);
     exit('Erreur : le modèle d’inscription est introuvable.');
@@ -87,8 +87,9 @@ try {
             'sec_generale' => $institution['sec_generale'],
             'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
             'establishment_fr' => $institution['establishment_fr'],
-            'num_att' => $numero,
+            'num_att' => institution_ltr_text((string) $numero),
         ]);
+        // ${num_att} filled above; extras = cachet only.
         certificate_docx_apply_extras($docPath, null, $cachetFile['path'] ?? null);
 
         prepare_certificate_page($docPath);

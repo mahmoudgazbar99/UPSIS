@@ -3179,7 +3179,13 @@ body.theme-light .table, body.theme-light .table-dark {
 
   .table-responsive {
     overflow: auto;
+    -webkit-overflow-scrolling: touch;
     max-height: min(68vh, calc(100vh - 15rem));
+  }
+
+  /* Keep long lists scrollable in every theme (Original had overflow:hidden). */
+  body:not(.theme-clarity) .table-responsive {
+    overflow: auto;
   }
 
   .table thead th {

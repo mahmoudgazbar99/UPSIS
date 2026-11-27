@@ -313,12 +313,17 @@ function dashboard_menu(): void {
       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M10 3.5 5.5 8 10 12.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="visually-hidden">Réduire la navigation</span>
     </button>
+    <button type="button" class="staff-drawer-close" data-staff-nav-close aria-label="Fermer le menu">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
     <span class="dashboard-menu-orbit" aria-hidden="true"></span>
   </div>
   <div class="dashboard-menu-list dashboard-menu-rail">
     <?php
     dashboard_menu_item('#dashboard-content', 'Tableau de bord', 'Vue générale des étudiants', 'home', $num());
     if (is_admin() || is_scolarite()) {
+      dashboard_menu_item('admissions.php?embed=1', 'Admissions', 'Nouveaux candidats — بلاغ / inscription finale', 'enroll', $num());
+      dashboard_menu_item('preregistration_suivi.php?embed=1', 'Préinscription annuelle', 'PA-SAE-01 · SA-01/02/03 · acompte 200 DT', 'enroll', $num());
       dashboard_menu_item('inscription.php?embed=1', 'Inscrire', 'Ajouter ou modifier un étudiant', 'enroll', $num());
       dashboard_menu_item('etudiants_import.php?embed=1', 'Importer des étudiants', 'Fichier Excel, lignes incomplètes signalées', 'archive', $num());
       dashboard_menu_item('groupes.php?embed=1', 'Groupes', 'Consulter et organiser les groupes', 'groups', $num());
@@ -412,7 +417,8 @@ function dashboard_menu(): void {
       <?php
       dashboard_menu_item('promotion.php?embed=1', 'Promotion / archivage', 'Valider la fin d\'année et le rollover finance', 'promo', $num(), true);
       dashboard_menu_item('archive_export.php?embed=1', 'Exporter les archives', 'Télécharger les données choisies en CSV ou PDF', 'archive', $num());
-      dashboard_menu_item('emploi_temps.php?embed=1', 'Emploi du temps', 'Choisir un groupe et télécharger son planning PDF', 'schedule', $num());
+      dashboard_menu_item('emploi_generateur.php?embed=1', 'Générateur d’emploi', 'Assistant intelligent et contraintes salles/enseignants', 'schedule', $num());
+      dashboard_menu_item('emploi_temps.php?embed=1', 'PDF emploi du temps', 'Publier un PDF par groupe pour les étudiants', 'schedule', $num());
     }
     if (is_admin() || is_teacher()) {
       dashboard_menu_item(
@@ -424,6 +430,7 @@ function dashboard_menu(): void {
       );
       dashboard_menu_item('feuille_presence.php?embed=1', 'Feuille de présence', 'Vos groupes et matières affectés', 'sheet', $num());
       if (is_teacher()) {
+        dashboard_menu_item('emploi_enseignant.php?embed=1', 'Mon emploi du temps', 'Séances publiées qui vous sont affectées', 'schedule', $num());
         dashboard_menu_item('mes_cours.php?embed=1', 'Mes cours', 'Dossiers et PDF pour vos étudiants', 'docs', $num());
       }
     }
@@ -1095,7 +1102,8 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   var menu = document.querySelector('.dashboard-menu') || (workspace ? workspace.querySelector('.dashboard-menu') : null);
   var list = menu ? menu.querySelector('.dashboard-menu-list') : null;
   var phoneOpen = document.querySelector('[data-staff-nav-open]');
-  var phoneClose = document.querySelector('[data-staff-nav-close]');
+  var phoneCloseButtons = Array.prototype.slice.call(document.querySelectorAll('[data-staff-nav-close]'));
+  var phoneClose = phoneCloseButtons[0] || null;
   var phoneEdge = document.querySelector('[data-staff-nav-edge]');
   if (!workspace || !menu) return;
 
@@ -1155,19 +1163,37 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
       if (phoneOpen) phoneOpen.setAttribute('aria-expanded', 'false');
       menu.style.transform = '';
       menu.style.transition = '';
-      if (phoneClose) {
-        phoneClose.style.opacity = '';
-        phoneClose.style.transition = '';
-        phoneClose.setAttribute('aria-hidden', 'true');
-      }
+      phoneCloseButtons.forEach(function (el) {
+        if (el.classList.contains('staff-nav-backdrop')) {
+          el.style.opacity = '';
+          el.style.transition = '';
+        }
+        el.setAttribute('aria-hidden', 'true');
+      });
       return;
     }
-    document.body.classList.toggle('is-staff-drawer-open', !!open);
-    if (phoneClose) phoneClose.setAttribute('aria-hidden', open ? 'false' : 'true');
-    if (phoneOpen) phoneOpen.setAttribute('aria-expanded', open ? 'true' : 'false');
+    var next = !!open;
+    document.body.classList.toggle('is-staff-drawer-open', next);
+    /* Never keep a desktop scroll offset on the phone sheet — it looks like a crashed floating stub. */
+    if (next) {
+      menu.style.transform = '';
+      menu.style.transition = '';
+      menu.scrollTop = 0;
+      if (list) list.scrollTop = 0;
+      workspace.classList.remove('is-nav-collapsed');
+    }
+    phoneCloseButtons.forEach(function (el) {
+      el.setAttribute('aria-hidden', next ? 'false' : 'true');
+    });
+    if (phoneOpen) phoneOpen.setAttribute('aria-expanded', next ? 'true' : 'false');
   }
   function syncFromStorage() {
     if (!sidebarTheme()) {
+      workspace.classList.remove('is-nav-collapsed', 'is-nav-toggling');
+      return;
+    }
+    /* Phone overlay drawer is always full width — ignore desktop collapse preference. */
+    if (isPhoneShell()) {
       workspace.classList.remove('is-nav-collapsed', 'is-nav-toggling');
       return;
     }
@@ -1183,7 +1209,7 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   }
   function restoreScroll() {
     var port = scrollPort();
-    if (!port || !sidebarTheme()) return;
+    if (!port || !sidebarTheme() || isPhoneShell()) return;
     try {
       var y = parseInt(localStorage.getItem(scrollKey()) || '0', 10);
       if (!isNaN(y) && y > 0) port.scrollTop = y;
@@ -1191,7 +1217,7 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   }
   function persistScroll() {
     var port = scrollPort();
-    if (!port || !sidebarTheme()) return;
+    if (!port || !sidebarTheme() || isPhoneShell()) return;
     try { localStorage.setItem(scrollKey(), String(port.scrollTop || 0)); } catch (error) {}
   }
 
@@ -1237,9 +1263,9 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
       setDrawer(!drawerOpen());
     });
   }
-  if (phoneClose) {
-    phoneClose.addEventListener('click', function () { setDrawer(false); });
-  }
+  phoneCloseButtons.forEach(function (el) {
+    el.addEventListener('click', function () { setDrawer(false); });
+  });
   document.addEventListener('click', function (event) {
     if (!isOriginal() || !isPhoneShell() || !drawerOpen()) return;
     var item = event.target.closest('.dashboard-menu-item');
@@ -1257,10 +1283,11 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
   function clearPhoneDrag() {
     menu.style.transition = '';
     menu.style.transform = '';
-    if (phoneClose) {
-      phoneClose.style.transition = '';
-      phoneClose.style.opacity = '';
-    }
+    phoneCloseButtons.forEach(function (el) {
+      if (!el.classList.contains('staff-nav-backdrop')) return;
+      el.style.transition = '';
+      el.style.opacity = '';
+    });
   }
   function beginPhoneDrag(event) {
     if (!isOriginal() || !isPhoneShell()) return;
@@ -1285,10 +1312,11 @@ document.querySelectorAll('[data-accounts-toggle]').forEach(function (button) {
       : Math.max(-width, Math.min(0, -width + Math.max(0, dx)));
     menu.style.transition = 'none';
     menu.style.transform = 'translateX(' + next + 'px)';
-    if (phoneClose) {
-      phoneClose.style.transition = 'none';
-      phoneClose.style.opacity = String(Math.max(0, Math.min(1, 1 + next / width)));
-    }
+    phoneCloseButtons.forEach(function (el) {
+      if (!el.classList.contains('staff-nav-backdrop')) return;
+      el.style.transition = 'none';
+      el.style.opacity = String(Math.max(0, Math.min(1, 1 + next / width)));
+    });
   }
   function endPhoneDrag(event) {
     if (!phoneDrag || event.pointerId !== phoneDrag.id) return;

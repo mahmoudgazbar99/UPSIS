@@ -1,0 +1,10 @@
+-- Applied automatically by admissions_ensure() on the next page load.
+-- Safe to inspect. Do not import this file over a database that the application
+-- has already migrated: the PHP migration is idempotent and records
+-- schema_migration.version = 2026_11_23_admissions_v1.
+--
+-- Creates admissions tables only. Does not alter etudiant.num_inscription,
+-- certificate ATT-* sequences, or existing student accounts.
+--
+-- Official enrollment still uses INS###/YYYY (same as Scolarite/inscription.php).
+-- Application references are new: CAND-YYYY-NNNNNN.

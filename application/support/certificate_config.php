@@ -183,6 +183,32 @@ function certificate_allocate_number(string $type, bool $commit): string
     return $label;
 }
 
+function certificate_docx_has_number_marker(string $docxPath): bool
+{
+    $archive = new ZipArchive();
+    if ($archive->open($docxPath) !== true) {
+        return false;
+    }
+    try {
+        $markers = ['${num_att}', '{num_att}', '${numero_attestation}', '{numero_attestation}'];
+        foreach (certificate_docx_word_parts($archive) as $entryName) {
+            $xml = $archive->getFromName($entryName);
+            if (!is_string($xml)) {
+                continue;
+            }
+            $plain = preg_replace('/<[^>]+>/', '', $xml) ?? $xml;
+            foreach ($markers as $marker) {
+                if (str_contains($plain, $marker)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    } finally {
+        $archive->close();
+    }
+}
+
 function certificate_docx_apply_extras(string $docxPath, ?string $numeroLabel, ?string $cachetPath): void
 {
     $archive = new ZipArchive();
@@ -195,12 +221,154 @@ function certificate_docx_apply_extras(string $docxPath, ?string $numeroLabel, ?
         }
         if (is_string($cachetPath) && $cachetPath !== '' && is_file($cachetPath)) {
             certificate_docx_inject_cachet($archive, $cachetPath);
+        } else {
+            // Avoid leaving a literal ${cachet} when no stamp is configured.
+            certificate_docx_clear_cachet_markers($archive);
         }
     } finally {
         if (!$archive->close()) {
             throw new RuntimeException('Impossible d’enregistrer le cachet / numéro.');
         }
     }
+}
+
+function certificate_docx_word_parts(ZipArchive $archive): array
+{
+    $parts = [];
+    for ($index = 0; $index < $archive->numFiles; $index++) {
+        $entryName = $archive->getNameIndex($index);
+        if (is_string($entryName) && preg_match('~^word/(?:document|header\d*|footer\d*|footnotes|endnotes)\.xml$~', $entryName)) {
+            $parts[] = $entryName;
+        }
+    }
+    return $parts;
+}
+
+function certificate_docx_clear_cachet_markers(ZipArchive $archive): void
+{
+    foreach (certificate_docx_word_parts($archive) as $entryName) {
+        $xml = $archive->getFromName($entryName);
+        if (!is_string($xml)) {
+            continue;
+        }
+        $document = new DOMDocument('1.0', 'UTF-8');
+        $document->preserveWhiteSpace = true;
+        if (!$document->loadXML($xml, LIBXML_NONET)) {
+            continue;
+        }
+        $xpath = new DOMXPath($document);
+        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+        $changed = false;
+        foreach ($xpath->query('//w:p') as $paragraph) {
+            while (certificate_docx_strip_cachet_marker_in_paragraph($document, $xpath, $paragraph)) {
+                $changed = true;
+            }
+        }
+        if (!$changed) {
+            continue;
+        }
+        $updated = $document->saveXML();
+        if (is_string($updated)) {
+            $archive->addFromString($entryName, $updated);
+        }
+    }
+}
+
+function certificate_docx_add_cachet_relationship(ZipArchive $archive, string $relationshipId, string $mediaName, string $relationshipsName): void
+{
+    $relationshipsXml = $archive->getFromName($relationshipsName);
+    $relationships = new DOMDocument('1.0', 'UTF-8');
+    if (!is_string($relationshipsXml)) {
+        $relationships->loadXML(
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>',
+            LIBXML_NONET
+        );
+    } elseif (!$relationships->loadXML($relationshipsXml, LIBXML_NONET)) {
+        throw new RuntimeException('Relations Word invalides pour le cachet.');
+    }
+    $root = $relationships->documentElement;
+    if (!$root instanceof DOMElement) {
+        throw new RuntimeException('Relations Word invalides pour le cachet.');
+    }
+    $relXpath = new DOMXPath($relationships);
+    $relXpath->registerNamespace('rel', 'http://schemas.openxmlformats.org/package/2006/relationships');
+    if ($relXpath->query('//rel:Relationship[@Id="' . $relationshipId . '"]')->length > 0) {
+        return;
+    }
+    $relationship = $relationships->createElementNS(
+        'http://schemas.openxmlformats.org/package/2006/relationships',
+        'Relationship'
+    );
+    $relationship->setAttribute('Id', $relationshipId);
+    $relationship->setAttribute('Type', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image');
+    $relationship->setAttribute('Target', 'media/' . $mediaName);
+    $root->appendChild($relationship);
+    $relXml = $relationships->saveXML();
+    if (!is_string($relXml) || !$archive->addFromString($relationshipsName, $relXml)) {
+        throw new RuntimeException('Impossible d’enregistrer la relation du cachet.');
+    }
+}
+
+/**
+ * Strip one ${cachet}/{cachet} occurrence from a paragraph (handles split w:t runs).
+ * Returns true when a marker was removed.
+ */
+function certificate_docx_strip_cachet_marker_in_paragraph(DOMDocument $document, DOMXPath $xpath, DOMNode $paragraph): bool
+{
+    $textNodes = $xpath->query('.//w:t', $paragraph);
+    $combinedText = '';
+    foreach ($textNodes as $textNode) {
+        $combinedText .= $textNode->nodeValue ?? '';
+    }
+    if (!preg_match('/\$?\{cachet\}/i', $combinedText, $match, PREG_OFFSET_CAPTURE)) {
+        return false;
+    }
+    $marker = $match[0][0];
+    $position = $match[0][1];
+    $offset = 0;
+    $startNode = null;
+    $endNode = null;
+    $startOffset = 0;
+    $endOffset = 0;
+    foreach ($textNodes as $textNode) {
+        $length = strlen($textNode->nodeValue ?? '');
+        if ($startNode === null && $position < $offset + $length) {
+            $startNode = $textNode;
+            $startOffset = $position - $offset;
+        }
+        if ($position + strlen($marker) <= $offset + $length) {
+            $endNode = $textNode;
+            $endOffset = $position + strlen($marker) - $offset;
+            break;
+        }
+        $offset += $length;
+    }
+    if (!$startNode instanceof DOMElement || !$endNode instanceof DOMElement) {
+        return false;
+    }
+    $startText = $startNode->nodeValue ?? '';
+    $endText = $endNode->nodeValue ?? '';
+    if ($startNode === $endNode) {
+        $startNode->nodeValue = substr($startText, 0, $startOffset) . substr($startText, $endOffset);
+    } else {
+        $startNode->nodeValue = substr($startText, 0, $startOffset);
+        $endNode->nodeValue = substr($endText, $endOffset);
+        $passedStart = false;
+        foreach ($textNodes as $textNode) {
+            if ($textNode === $startNode) {
+                $passedStart = true;
+                continue;
+            }
+            if ($textNode === $endNode) {
+                break;
+            }
+            if ($passedStart) {
+                $textNode->nodeValue = '';
+            }
+        }
+    }
+    return true;
 }
 
 function certificate_docx_inject_number(ZipArchive $archive, string $numeroLabel): void
@@ -318,93 +486,182 @@ function certificate_docx_inject_cachet(ZipArchive $archive, string $cachetPath)
         $extension = $formats[$mime][0];
         $mediaName = 'institution-cachet.' . $extension;
         $relationshipId = 'rIdInstitutionCachet1';
+        $cachetCount = 0;
+        $partsTouched = [];
 
-        $xml = $archive->getFromName('word/document.xml');
-        if (!is_string($xml)) {
-            throw new RuntimeException('document.xml introuvable.');
-        }
-        $document = new DOMDocument('1.0', 'UTF-8');
-        $document->preserveWhiteSpace = true;
-        if (!$document->loadXML($xml, LIBXML_NONET)) {
-            throw new RuntimeException('document.xml invalide.');
-        }
-        $xpath = new DOMXPath($document);
-        $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
-        $body = $xpath->query('//w:body')->item(0);
-        if (!$body instanceof DOMElement) {
-            throw new RuntimeException('Corps Word introuvable.');
-        }
-
-        // Soft replace ${cachet} markers if present (same approach as logo).
-        $markerFound = false;
-        foreach ($xpath->query('//w:p') as $paragraph) {
-            $textNodes = $xpath->query('.//w:t', $paragraph);
-            $combined = '';
-            foreach ($textNodes as $node) {
-                $combined .= $node->nodeValue ?? '';
+        foreach (certificate_docx_word_parts($archive) as $entryName) {
+            $xml = $archive->getFromName($entryName);
+            if (!is_string($xml)) {
+                continue;
             }
-            if (preg_match('/\$?\{cachet\}/i', $combined)) {
-                $markerFound = true;
-                break;
+            $document = new DOMDocument('1.0', 'UTF-8');
+            $document->preserveWhiteSpace = true;
+            if (!$document->loadXML($xml, LIBXML_NONET)) {
+                throw new RuntimeException('XML invalide: ' . $entryName);
             }
-        }
+            $xpath = new DOMXPath($document);
+            $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+            $partCount = 0;
 
-        if ($markerFound) {
-            foreach ($xpath->query('//w:t') as $textNode) {
-                $value = (string) ($textNode->nodeValue ?? '');
-                if (str_contains(strtolower($value), '{cachet}')) {
-                    $textNode->nodeValue = preg_replace('/\$?\{cachet\}/i', '', $value) ?? '';
+            foreach ($xpath->query('//w:p') as $paragraph) {
+                while (true) {
+                    $textNodes = $xpath->query('.//w:t', $paragraph);
+                    $combinedText = '';
+                    foreach ($textNodes as $textNode) {
+                        $combinedText .= $textNode->nodeValue ?? '';
+                    }
+                    if (!preg_match('/\$?\{cachet\}/i', $combinedText, $cachetMatch, PREG_OFFSET_CAPTURE)) {
+                        break;
+                    }
+                    $marker = $cachetMatch[0][0];
+                    $position = $cachetMatch[0][1];
+
+                    $offset = 0;
+                    $startNode = null;
+                    $endNode = null;
+                    $startOffset = 0;
+                    $endOffset = 0;
+                    foreach ($textNodes as $textNode) {
+                        $length = strlen($textNode->nodeValue ?? '');
+                        if ($startNode === null && $position < $offset + $length) {
+                            $startNode = $textNode;
+                            $startOffset = $position - $offset;
+                        }
+                        if ($position + strlen($marker) <= $offset + $length) {
+                            $endNode = $textNode;
+                            $endOffset = $position + strlen($marker) - $offset;
+                            break;
+                        }
+                        $offset += $length;
+                    }
+                    if (!$startNode instanceof DOMElement || !$endNode instanceof DOMElement) {
+                        throw new RuntimeException('Impossible de localiser le placeholder ${cachet}.');
+                    }
+                    $run = $startNode->parentNode;
+                    if (!$run instanceof DOMElement || $run->localName !== 'r') {
+                        throw new RuntimeException('Le placeholder ${cachet} ne se trouve pas dans un segment Word valide.');
+                    }
+
+                    $startText = $startNode->nodeValue ?? '';
+                    $endText = $endNode->nodeValue ?? '';
+                    $startNode->nodeValue = substr($startText, 0, $startOffset);
+                    $suffixNode = null;
+                    if ($startNode === $endNode) {
+                        $suffix = substr($startText, $endOffset);
+                        if ($suffix !== '') {
+                            $suffixNode = $document->createElementNS(
+                                'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
+                                'w:t'
+                            );
+                            $suffixNode->nodeValue = $suffix;
+                        }
+                    } else {
+                        $endNode->nodeValue = substr($endText, $endOffset);
+                        $passedStart = false;
+                        foreach ($textNodes as $textNode) {
+                            if ($textNode === $startNode) {
+                                $passedStart = true;
+                                continue;
+                            }
+                            if ($textNode === $endNode) {
+                                break;
+                            }
+                            if ($passedStart) {
+                                $textNode->nodeValue = '';
+                            }
+                        }
+                    }
+
+                    // ~2.05in × 1.1in — a bit larger than the shared logo cap.
+                    $drawing = institution_docx_logo_drawing(
+                        $document,
+                        $relationshipId,
+                        $extension,
+                        $imageInfo,
+                        9001 + $cachetCount,
+                        1_874_520,
+                        1_005_840
+                    );
+                    $cachetCount++;
+                    $partCount++;
+                    $run->parentNode?->insertBefore($drawing, $run->nextSibling);
+                    if ($suffixNode instanceof DOMElement) {
+                        $startNode->parentNode?->insertBefore($suffixNode, $startNode->nextSibling);
+                    }
                 }
             }
+
+            if ($partCount === 0) {
+                continue;
+            }
+
+            $updated = $document->saveXML();
+            if (!is_string($updated) || !$archive->addFromString($entryName, $updated)) {
+                throw new RuntimeException('Impossible d’écrire le cachet dans ' . $entryName . '.');
+            }
+            $partsTouched[] = $entryName;
+            certificate_docx_add_cachet_relationship(
+                $archive,
+                $relationshipId,
+                $mediaName,
+                'word/_rels/' . basename($entryName) . '.rels'
+            );
         }
 
-        $drawing = institution_docx_logo_drawing($document, $relationshipId, $extension, $imageInfo, 9001);
-        $wNs = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
-        $paragraph = $document->createElementNS($wNs, 'w:p');
-        $pPr = $document->createElementNS($wNs, 'w:pPr');
-        $jc = $document->createElementNS($wNs, 'w:jc');
-        $jc->setAttribute('w:val', 'right');
-        $pPr->appendChild($jc);
-        $paragraph->appendChild($pPr);
-        $paragraph->appendChild($drawing);
-
-        $sectPr = $xpath->query('./w:sectPr', $body)->item(0);
-        if ($sectPr) {
-            $body->insertBefore($paragraph, $sectPr);
-        } else {
-            $body->appendChild($paragraph);
+        // Backward-compatible fallback when the template has no ${cachet} marker.
+        if ($cachetCount === 0) {
+            $xml = $archive->getFromName('word/document.xml');
+            if (!is_string($xml)) {
+                throw new RuntimeException('document.xml introuvable.');
+            }
+            $document = new DOMDocument('1.0', 'UTF-8');
+            $document->preserveWhiteSpace = true;
+            if (!$document->loadXML($xml, LIBXML_NONET)) {
+                throw new RuntimeException('document.xml invalide.');
+            }
+            $xpath = new DOMXPath($document);
+            $xpath->registerNamespace('w', 'http://schemas.openxmlformats.org/wordprocessingml/2006/main');
+            $body = $xpath->query('//w:body')->item(0);
+            if (!$body instanceof DOMElement) {
+                throw new RuntimeException('Corps Word introuvable.');
+            }
+            $drawing = institution_docx_logo_drawing(
+                $document,
+                $relationshipId,
+                $extension,
+                $imageInfo,
+                9001,
+                1_874_520,
+                1_005_840
+            );
+            $wNs = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+            $paragraph = $document->createElementNS($wNs, 'w:p');
+            $pPr = $document->createElementNS($wNs, 'w:pPr');
+            $jc = $document->createElementNS($wNs, 'w:jc');
+            $jc->setAttribute('w:val', 'right');
+            $pPr->appendChild($jc);
+            $paragraph->appendChild($pPr);
+            $paragraph->appendChild($drawing);
+            $sectPr = $xpath->query('./w:sectPr', $body)->item(0);
+            if ($sectPr) {
+                $body->insertBefore($paragraph, $sectPr);
+            } else {
+                $body->appendChild($paragraph);
+            }
+            $updated = $document->saveXML();
+            if (!is_string($updated) || !$archive->addFromString('word/document.xml', $updated)) {
+                throw new RuntimeException('Impossible d’écrire le cachet.');
+            }
+            certificate_docx_add_cachet_relationship(
+                $archive,
+                $relationshipId,
+                $mediaName,
+                'word/_rels/document.xml.rels'
+            );
         }
 
-        $updated = $document->saveXML();
-        if (!is_string($updated) || !$archive->addFromString('word/document.xml', $updated)) {
-            throw new RuntimeException('Impossible d’écrire le cachet.');
-        }
         if (!$archive->addFromString('word/media/' . $mediaName, $imageContent)) {
             throw new RuntimeException('Impossible d’ajouter le fichier cachet.');
-        }
-        // Relationship targeting cachet media (not logo filename helper).
-        $relationshipsName = 'word/_rels/document.xml.rels';
-        $relationshipsXml = $archive->getFromName($relationshipsName);
-        $relationships = new DOMDocument('1.0', 'UTF-8');
-        if (!is_string($relationshipsXml) || !$relationships->loadXML($relationshipsXml, LIBXML_NONET)) {
-            throw new RuntimeException('Relations Word invalides.');
-        }
-        $root = $relationships->documentElement;
-        $relXpath = new DOMXPath($relationships);
-        $relXpath->registerNamespace('rel', 'http://schemas.openxmlformats.org/package/2006/relationships');
-        if ($relXpath->query('//rel:Relationship[@Id="' . $relationshipId . '"]')->length === 0) {
-            $relationship = $relationships->createElementNS(
-                'http://schemas.openxmlformats.org/package/2006/relationships',
-                'Relationship'
-            );
-            $relationship->setAttribute('Id', $relationshipId);
-            $relationship->setAttribute('Type', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image');
-            $relationship->setAttribute('Target', 'media/' . $mediaName);
-            $root->appendChild($relationship);
-            $relXml = $relationships->saveXML();
-            if (!is_string($relXml) || !$archive->addFromString($relationshipsName, $relXml)) {
-                throw new RuntimeException('Impossible d’enregistrer la relation du cachet.');
-            }
         }
         institution_docx_add_logo_content_type($archive, $extension, $formats[$mime][1]);
     } finally {

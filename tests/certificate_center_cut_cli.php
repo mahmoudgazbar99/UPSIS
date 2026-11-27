@@ -61,7 +61,7 @@ function center_cut_metrics(string $path): array
 }
 
 $failed = 0;
-foreach (['template_inscription_3.docx', 'template_presence_2.docx'] as $name) {
+foreach (['template_inscription_4.docx', 'template_presence_3.docx'] as $name) {
     $source = dirname(__DIR__) . '/templates/' . $name;
     $sourceHash = hash_file('sha256', $source);
     $copy = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'center-cut-' . $name;

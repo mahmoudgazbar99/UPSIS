@@ -186,16 +186,34 @@ html[data-student-skin="nursing"] .student-space-form input:-webkit-autofill {
 }
 
 html[data-student-skin="nursing"] .student-space-form button,
-html[data-student-skin="nursing"] .student-space-bar-actions > a {
+html[data-student-skin="nursing"] .student-space-bar-actions > a,
+html[data-student-skin="nursing"] .student-space-download {
   border-radius: 0.85rem;
   background: var(--accent);
   color: var(--accent-ink);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+html[data-student-skin="nursing"] .student-space-transcript-select {
+  border-radius: 0.85rem;
+  border-color: var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+html[data-student-skin="nursing"] .student-space-transcript-select:focus-visible {
+  outline-color: var(--accent);
 }
 
 html[data-student-skin="nursing"] .student-space-form button:hover,
-html[data-student-skin="nursing"] .student-space-bar-actions > a:hover {
+html[data-student-skin="nursing"] .student-space-bar-actions > a:hover,
+html[data-student-skin="nursing"] .student-space-download:hover {
   background: var(--accent-hover);
   color: var(--accent-ink);
+}
+
+html[data-student-skin="nursing"] .student-space-download:focus-visible {
+  outline-color: var(--accent);
 }
 
 html[data-student-skin="nursing"] .student-skin-select select {
@@ -358,7 +376,8 @@ html[data-student-skin="nursing"] .student-space-cards button,
 html[data-student-skin="nursing"] .student-inbox-item,
 html[data-student-skin="nursing"] .student-inbox-toggle,
 html[data-student-skin="nursing"] .student-space-form button,
-html[data-student-skin="nursing"] .student-space-bar-actions > a {
+html[data-student-skin="nursing"] .student-space-bar-actions > a,
+html[data-student-skin="nursing"] .student-space-download {
   transition:
     transform 0.64s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.4s cubic-bezier(0.22, 1, 0.36, 1),

@@ -172,7 +172,7 @@ page_head('Campagnes de stage', 'presence');
     <div class="col-md-2"><label class="form-label">Fin *</label><input class="form-control" type="date" name="date_fin" required></div>
     <div class="col-md-3"><label class="form-label">Spécialité</label><select class="form-select" name="id_spec"><option value="">Toutes</option><?php foreach ($specialties as $specialty): ?><option value="<?= (int) $specialty['id_spec'] ?>"><?= e($specialty['nom_spec']) ?></option><?php endforeach; ?></select></div>
     <div class="col-md-2"><label class="form-label">Niveau</label><input class="form-control" name="niveau" placeholder="1, 2 ou 3"></div>
-    <div class="col-md-4"><label class="form-label">Groupe</label><select class="form-select" name="id_groupe"><option value="">Tous</option><?php foreach ($groups as $group): ?><option value="<?= (int) $group['id_groupe'] ?>"><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']) ?></option><?php endforeach; ?></select></div>
+    <div class="col-md-4"><label class="form-label">Groupe</label><select class="form-select" name="id_groupe" data-app-list-prompt data-app-list-title="Groupe" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Tous les groupes"><option value="">Tous</option><?php foreach ($groups as $group): ?><option value="<?= (int) $group['id_groupe'] ?>"><?= e($group['semestre'] . ' · ' . $group['type_groupe'] . ' ' . $group['numero']) ?></option><?php endforeach; ?></select></div>
     <div class="col-12"><button class="btn btn-primary" type="submit">Créer la campagne</button></div>
   </form>
 </div></div>
@@ -203,7 +203,7 @@ page_head('Campagnes de stage', 'presence');
         <span class="d-block text-secondary small mb-2">Plafond de l’établissement : <?= (int) $service['capacite'] ?></span>
         <div class="row g-2">
           <div class="col-4"><label class="form-label">Places</label><input class="form-control" type="number" min="0" name="places[<?= (int) $service['id_service'] ?>]" value="<?= (int) ($current['places'] ?? 0) ?>"></div>
-          <div class="col-8"><label class="form-label">Encadrant</label><select class="form-select" name="superviseur[<?= (int) $service['id_service'] ?>]"><option value="">Aucun</option><?php foreach ($supervisors as $supervisor): ?><option value="<?= (int) $supervisor['id_stage'] ?>" <?= (int) ($current['id_stage_superviseur'] ?? 0) === (int) $supervisor['id_stage'] ? 'selected' : '' ?>><?= e(trim($supervisor['nom'] . ' ' . $supervisor['cin'])) ?></option><?php endforeach; ?></select></div>
+          <div class="col-8"><label class="form-label">Encadrant</label><select class="form-select" name="superviseur[<?= (int) $service['id_service'] ?>]" data-app-list-prompt data-app-list-title="Encadrant" data-app-list-search="Nom ou CIN…" data-app-list-placeholder="Aucun"><option value="">Aucun</option><?php foreach ($supervisors as $supervisor): ?><option value="<?= (int) $supervisor['id_stage'] ?>" <?= (int) ($current['id_stage_superviseur'] ?? 0) === (int) $supervisor['id_stage'] ? 'selected' : '' ?>><?= e(trim($supervisor['nom'] . ' ' . $supervisor['cin'])) ?></option><?php endforeach; ?></select></div>
         </div>
       </div></div>
     <?php endforeach; ?>
@@ -215,7 +215,7 @@ page_head('Campagnes de stage', 'presence');
   <h2 class="h5">Éligibilité d’un service</h2>
   <form method="post" class="row g-2 align-items-end">
     <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="regle"><input type="hidden" name="id_campagne" value="<?= (int) $campaign['id_campagne'] ?>">
-    <div class="col-md-4"><label class="form-label">Service</label><select class="form-select" name="id_service"><?php foreach ($services as $service): ?><option value="<?= (int) $service['id_service'] ?>"><?= e($service['organisme'] . ' · ' . $service['nom']) ?></option><?php endforeach; ?></select></div>
+    <div class="col-md-4"><label class="form-label">Service</label><select class="form-select" name="id_service" data-app-list-prompt data-app-list-title="Service" data-app-list-search="Organisme…" data-app-list-placeholder="Choisir un service…"><?php foreach ($services as $service): ?><option value="<?= (int) $service['id_service'] ?>"><?= e($service['organisme'] . ' · ' . $service['nom']) ?></option><?php endforeach; ?></select></div>
     <div class="col-md-3"><label class="form-label">Spécialité</label><select class="form-select" name="id_spec"><option value="">Toutes</option><?php foreach ($specialties as $specialty): ?><option value="<?= (int) $specialty['id_spec'] ?>"><?= e($specialty['nom_spec']) ?></option><?php endforeach; ?></select></div>
     <div class="col-md-2"><label class="form-label">Niveau</label><input class="form-control" name="niveau" placeholder="Tous si vide"></div>
     <div class="col-md-3"><button class="btn btn-outline-light" type="submit">Ajouter la règle</button></div>

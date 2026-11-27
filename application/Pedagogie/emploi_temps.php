@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 require_once app_path('layout.php');
-require_once app_path('Pedagogie/tronc_commun.php');
 require_once app_path('support/emploi_pdf.php');
 require_admin();
 
@@ -23,41 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Throwable $error) {
         flash('danger', $error->getMessage());
     }
-    header('Location: emploi_temps.php?group=' . urlencode((string) ($_GET['group'] ?? 'G1')) . '&id_groupe=' . $uploadGroupId);
+    header('Location: emploi_temps.php?id_groupe=' . $uploadGroupId);
     exit;
-}
-
-if (($_GET['build'] ?? '') === '1') {
-    tc_build($pdo);
-    flash('success', 'L’emploi du temps du tronc commun a été enregistré pour G1, G2, G3 et G4.');
-    header('Location: emploi_temps.php?group=G1');
-    exit;
-}
-$report = tc_load_report($pdo);
-$groupLabel = (string) ($_GET['group'] ?? 'G1');
-if (!in_array($groupLabel, ['G1', 'G2', 'G3', 'G4'], true)) {
-    $groupLabel = 'G1';
-}
-$groupId = (int) ($report['groups'][$groupLabel] ?? 0);
-$sessions = [];
-$extras = [];
-if ($groupId) {
-    $query = $pdo->prepare(
-        'SELECT e.jour, e.heure_debut, e.heure_fin, e.type_seance, e.salle,
-                m.code_ecue, m.description_ecue, en.prenom, en.nom,
-                COUNT(DISTINCT e.semaine) AS weeks,
-                GROUP_CONCAT(DISTINCT e.semaine ORDER BY e.semaine) AS week_list
-         FROM emploi_temps e
-         JOIN matiere m ON m.id_mat = e.id_mat
-         JOIN enseignant en ON en.id_enseignant = e.id_enseignant
-         WHERE e.id_groupe = ?
-         GROUP BY e.jour, e.heure_debut, e.heure_fin, e.type_seance, e.salle,
-                  m.code_ecue, m.description_ecue, en.prenom, en.nom'
-    );
-    $query->execute([$groupId]);
-    foreach ($query as $row) {
-        $sessions[$row['jour']][] = $row;
-    }
 }
 
 $pdfGroups = emploi_pdf_groups();
@@ -73,7 +39,10 @@ page_head('Emploi du temps', 'schedule');
   <div>
     <p class="eyebrow">Administration</p>
     <h1 class="display-6 fw-bold mb-1">Emploi du temps</h1>
-    <p class="text-secondary mb-0">Publiez un PDF par groupe. Les étudiants du groupe le voient dans leur espace (aperçu et téléchargement).</p>
+    <p class="text-secondary mb-0">Publiez un PDF par groupe. Les étudiants du groupe le voient dans leur espace (aperçu et téléchargement). Pour générer un planning, utilisez le générateur intelligent.</p>
+  </div>
+  <div>
+    <a class="btn btn-outline-light" href="emploi_generateur.php">Générateur intelligent</a>
   </div>
 </div>
 
@@ -85,7 +54,7 @@ page_head('Emploi du temps', 'schedule');
       <input type="hidden" name="action" value="upload_pdf">
       <div class="col-md-5">
         <label class="form-label" for="id_groupe">Groupe</label>
-        <select class="form-select" id="id_groupe" name="id_groupe" required>
+        <select class="form-select" id="id_groupe" name="id_groupe" required data-app-list-prompt data-app-list-title="Choisir un groupe" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Choisir un groupe…">
           <option value="">Choisir un groupe</option>
           <?php foreach ($pdfGroups as $group): ?>
             <?php
@@ -146,39 +115,4 @@ page_head('Emploi du temps', 'schedule');
     <?php endif; ?>
   </div>
 </div>
-
-<?php if ($report): ?>
-<div class="card app-card mb-4"><div class="card-body p-4">
-  <h2 class="h5">Tronc commun (planning généré)</h2>
-  <ul class="mb-3">
-    <?php foreach (tc_notes() as $note): ?><li><?= e($note) ?></li><?php endforeach; ?>
-  </ul>
-  <div class="d-flex flex-wrap gap-3">
-    <?php foreach ($report['overlap'] as $pair => $info): ?>
-      <div><strong><?= e($pair) ?></strong> <?= e((string) $info['pct']) ?> % commun</div>
-    <?php endforeach; ?>
-    <div><?= (int) $report['early'] ?> journées avant 17:00</div>
-    <div><?= (int) $report['until18'] ?> journées à 18:00</div>
-    <div><?= (int) $report['late_start'] ?> débuts après 08:15</div>
-  </div>
-</div></div>
-<form method="get" class="card app-card mb-4"><div class="card-body p-4 row g-3 align-items-end">
-  <div class="col-md-8"><label class="form-label">Groupe TD</label><select class="form-select" name="group"><?php foreach (['G1','G2','G3','G4'] as $label): ?><option value="<?= $label ?>" <?= $groupLabel === $label ? 'selected' : '' ?>><?= $label ?> · 25 étudiants<?= $label === 'G1' || $label === 'G2' ? ' · cours A' : ' · cours B' ?></option><?php endforeach; ?></select></div>
-  <div class="col-md-4"><button class="btn btn-primary w-100">Afficher</button></div>
-</div></form>
-<div class="card app-card"><div class="card-body p-4">
-  <h2 class="h4 mb-3"><?= e($groupLabel) ?> — semaines 1 à 14</h2>
-  <?= tc_render_timetable($sessions) ?>
-  <?php if ($extras): ?>
-    <h3 class="h6 mt-4">Séances qui ne tombent pas chaque semaine</h3>
-    <ul class="mb-0">
-      <?php foreach ($extras as $extra): ?>
-        <li><?= e($extra['jour'] . ' ' . substr($extra['heure_debut'], 0, 5) . '–' . substr($extra['heure_fin'], 0, 5)) ?> · <?= e($extra['code_ecue'] . ' ' . $extra['type_seance']) ?> · semaines <?= e((string) $extra['week_list']) ?></li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
-</div></div>
-<?php else: ?>
-<div class="alert alert-warning">Le planning du tronc commun n'est pas encore enregistré. <a href="emploi_temps.php?build=1">Le générer</a></div>
-<?php endif; ?>
 <?php page_foot();

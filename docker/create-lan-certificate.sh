@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-lan_ip="${LAN_IP:-192.168.10.11}"
+lan_ip="${LAN_IP:-192.168.100.95}"
 
 mkdir -p /tls /ca /public
 

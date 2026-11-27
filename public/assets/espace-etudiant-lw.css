@@ -1,0 +1,397 @@
+/**
+ * Espace étudiant (activated accounts) — Lightswind motion layer.
+ * Ports: border-beam, glowing-cards cursor, magic tilt, shine, reveal, status hero.
+ * Scoped to nursing student portal; keeps existing shell / drawer.
+ */
+
+html[data-student-skin="nursing"] body.student-space {
+  --ec-beam-from: var(--lw-primary-2, #34d399);
+  --ec-beam-to: #6ee7b7;
+  --ec-glow: color-mix(in srgb, var(--lw-primary, #10b981) 45%, transparent);
+  --lw-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+
+html[data-student-skin="nursing"][data-theme="light"] body.student-space {
+  --ec-beam-from: var(--lw-primary, #059669);
+  --ec-beam-to: #10b981;
+  --ec-glow: color-mix(in srgb, var(--lw-primary) 30%, transparent);
+}
+
+/* Atmosphere grid overlay (candidat-style, soft) */
+.student-ec-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.student-ec-atmosphere .page-grid {
+  position: absolute;
+  inset: -2px;
+  background-image:
+    linear-gradient(rgba(52, 211, 153, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(52, 211, 153, 0.07) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  opacity: 0.55;
+}
+html[data-theme="light"] .student-ec-atmosphere .page-grid {
+  background-image:
+    linear-gradient(rgba(5, 150, 105, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(5, 150, 105, 0.06) 1px, transparent 1px);
+  opacity: 0.7;
+}
+.student-ec-atmosphere .page-light {
+  position: absolute;
+  width: min(42rem, 72vw);
+  height: min(42rem, 72vw);
+  left: 72%;
+  top: 18%;
+  translate: -50% -50%;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.18) 0%, rgba(16, 185, 129, 0.06) 46%, transparent 72%);
+}
+html[data-theme="light"] .student-ec-atmosphere .page-light {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.07) 46%, transparent 72%);
+}
+
+html[data-student-skin="nursing"] .portal-stage,
+html[data-student-skin="nursing"] .portal-phone,
+html[data-student-skin="nursing"] .student-space-main,
+html[data-student-skin="nursing"] .student-space-bar {
+  position: relative;
+  z-index: 1;
+}
+
+/* Top loader */
+.student-ec-topline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 80;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--ec-beam-from), var(--ec-beam-to), transparent);
+  background-size: 200% 100%;
+  animation: student-ec-topline 2.8s linear infinite;
+  opacity: 0.8;
+}
+@keyframes student-ec-topline {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* Status hero — activated account */
+.student-ec-hero {
+  --pointer-x: 50%;
+  --pointer-y: 40%;
+  position: relative;
+  margin: 0 0 1.15rem;
+  padding: 1.35rem 1.4rem 1.45rem;
+  border-radius: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--lw-primary, #10b981) 35%, var(--line, rgba(255,255,255,.2)));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--lw-primary, #10b981) 16%, var(--surface, #12171f)), color-mix(in srgb, var(--surface, #12171f) 88%, transparent));
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  overflow: hidden;
+  color: var(--ink, #ecfdf5);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lw-primary) 18%, transparent),
+    0 18px 40px -22px var(--ec-glow);
+  animation: student-ec-hero-glow 3.2s ease-in-out infinite;
+  container-type: size;
+}
+@keyframes student-ec-hero-glow {
+  0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--lw-primary) 20%, transparent), 0 16px 36px -20px var(--ec-glow); }
+  50% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--lw-primary) 48%, transparent), 0 22px 48px -14px var(--ec-glow); }
+}
+.student-ec-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    420px circle at var(--pointer-x) var(--pointer-y),
+    color-mix(in srgb, var(--lw-primary) 20%, transparent),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.35s var(--lw-ease);
+  pointer-events: none;
+  z-index: 0;
+}
+.student-ec-hero.is-hot::before { opacity: 1; }
+.student-ec-hero-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 25%, color-mix(in srgb, var(--lw-primary) 14%, transparent) 48%, transparent 70%);
+  background-size: 220% 100%;
+  animation: student-ec-shimmer 2.2s linear infinite;
+  pointer-events: none;
+}
+@keyframes student-ec-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.student-ec-hero-inner { position: relative; z-index: 1; }
+
+.student-ec-beam {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 2;
+}
+.student-ec-beam::before {
+  content: "";
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ec-beam-from), var(--ec-beam-to) 45%, transparent 70%);
+  opacity: 0.9;
+  offset-path: border-box;
+  offset-anchor: center;
+  animation: student-ec-beam-run 5.5s linear infinite;
+}
+.student-ec-beam::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, transparent 30%, color-mix(in srgb, var(--ec-beam-from) 55%, transparent), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+}
+@keyframes student-ec-beam-run {
+  0% { offset-distance: 0%; }
+  100% { offset-distance: 100%; }
+}
+
+.student-ec-hero-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.85rem;
+}
+.student-ec-kicker {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--lw-primary-2, #34d399);
+}
+.student-ec-name {
+  margin: 0.2rem 0 0;
+  font-family: "Newsreader", "Fraunces", Georgia, serif;
+  font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+  letter-spacing: -0.03em;
+  font-weight: 600;
+}
+.student-ec-ref {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  color: var(--lw-primary-2, #34d399);
+  margin-top: 0.35rem;
+}
+.student-ec-meta {
+  margin: 0.45rem 0 0;
+  color: var(--muted, #9aada3);
+  font-size: 0.92rem;
+}
+.student-ec-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem 0.4rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--lw-primary) 16%, var(--surface));
+  color: var(--lw-primary-2, #34d399);
+  border: 1px solid color-mix(in srgb, var(--lw-primary) 40%, transparent);
+}
+.student-ec-ripple {
+  position: relative;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--lw-primary-2, #34d399);
+  flex-shrink: 0;
+}
+.student-ec-ripple::before,
+.student-ec-ripple::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 1.5px solid currentColor;
+  animation: student-ec-ripple 1.8s ease-out infinite;
+}
+.student-ec-ripple::after { animation-delay: 0.55s; }
+@keyframes student-ec-ripple {
+  0% { transform: scale(0.6); opacity: 0.75; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.student-ec-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.95rem;
+}
+.student-ec-stat {
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--lw-primary) 22%, var(--line, transparent));
+  background: color-mix(in srgb, var(--surface-2, #1a212b) 75%, transparent);
+  transition: transform 0.25s var(--lw-ease), border-color 0.25s var(--lw-ease);
+}
+.student-ec-stat:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lw-primary) 45%, transparent);
+}
+.student-ec-stat strong {
+  display: block;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--ink, #ecfdf5);
+}
+.student-ec-stat span {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #9aada3);
+  font-weight: 650;
+}
+
+/* Reveal */
+.student-ec-reveal {
+  opacity: 0;
+  transform: translateY(16px) scale(0.985);
+  transition: opacity 0.55s var(--lw-ease), transform 0.55s var(--lw-ease);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+.student-ec-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* Shine buttons inside portal */
+html[data-student-skin="nursing"] .student-space .btn-shine,
+html[data-student-skin="nursing"] .student-space a.btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background-image: linear-gradient(120deg, var(--lw-primary) 0%, var(--lw-primary-2) 45%, var(--lw-primary) 90%);
+  background-size: 220% auto;
+  color: var(--lw-primary-ink, #022c22);
+  border: 0;
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--lw-primary) 32%, transparent),
+    inset 2px 2px 6px color-mix(in srgb, #fff 25%, transparent);
+  transition: background-position 0.7s var(--lw-ease), transform 0.25s var(--lw-ease);
+}
+html[data-student-skin="nursing"] .student-space .btn-shine:hover {
+  background-position: right center;
+  transform: translateY(-2px);
+}
+html[data-student-skin="nursing"] .student-space .btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  left: -75%;
+  width: 50%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transform: skewX(-18deg);
+  animation: student-ec-shine 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes student-ec-shine {
+  0%, 55% { left: -75%; opacity: 0; }
+  60% { opacity: 1; }
+  85%, 100% { left: 130%; opacity: 0; }
+}
+
+/* Glow + tilt on nav cards & sheets */
+html[data-student-skin="nursing"] .student-space-cards button[data-glow],
+html[data-student-skin="nursing"] .student-space-sheet[data-glow] {
+  --pointer-x: 50%;
+  --pointer-y: 40%;
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition:
+    transform 0.35s var(--lw-ease),
+    border-color 0.35s var(--lw-ease),
+    box-shadow 0.35s var(--lw-ease);
+}
+html[data-student-skin="nursing"] .student-space-cards button[data-glow]::before,
+html[data-student-skin="nursing"] .student-space-sheet[data-glow]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    380px circle at var(--pointer-x) var(--pointer-y),
+    color-mix(in srgb, var(--lw-primary) 22%, transparent),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 0.35s var(--lw-ease);
+  pointer-events: none;
+  z-index: 0;
+}
+html[data-student-skin="nursing"] .student-space-cards button[data-glow].is-hot::before,
+html[data-student-skin="nursing"] .student-space-sheet[data-glow].is-hot::before,
+html[data-student-skin="nursing"] .student-space-cards button[data-glow]:hover::before {
+  opacity: 1;
+}
+html[data-student-skin="nursing"] .student-space-cards button[data-glow] > *,
+html[data-student-skin="nursing"] .student-space-sheet[data-glow] > * {
+  position: relative;
+  z-index: 1;
+}
+html[data-student-skin="nursing"] .student-space-cards button[data-glow]:hover {
+  border-color: color-mix(in srgb, var(--lw-primary) 45%, var(--line));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--lw-primary) 22%, transparent),
+    0 18px 40px -18px color-mix(in srgb, var(--lw-primary) 45%, transparent);
+}
+
+/* Sheet entrance polish */
+html[data-student-skin="nursing"] .student-space-sheet.is-entering {
+  animation: student-ec-sheet-in 0.45s var(--lw-ease) both;
+}
+@keyframes student-ec-sheet-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .student-ec-topline,
+  .student-ec-hero,
+  .student-ec-hero-shimmer,
+  .student-ec-beam::before,
+  .student-ec-ripple::before,
+  .student-ec-ripple::after,
+  html[data-student-skin="nursing"] .student-space .btn-shine::after,
+  html[data-student-skin="nursing"] .student-space-sheet.is-entering {
+    animation: none !important;
+  }
+  .student-ec-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  html[data-student-skin="nursing"] .student-space .btn-shine:hover,
+  .student-ec-stat:hover {
+    transform: none;
+  }
+}

@@ -260,7 +260,7 @@ $courseGroups = db()->query(
       <input type="hidden" name="action" value="change_group">
       <div class="col-md-5">
         <label class="form-label" for="id_etudiant">Étudiant</label>
-        <select class="form-select" id="id_etudiant" name="id_etudiant" required>
+        <select class="form-select" id="id_etudiant" name="id_etudiant" required data-app-list-prompt data-app-list-title="Choisir un étudiant" data-app-list-search="Nom ou CIN…" data-app-list-placeholder="Choisir un étudiant…">
           <option value="">Choisir un étudiant</option>
           <?php foreach (db()->query('SELECT id_etudiant, nom, prenom, cin_passeport FROM etudiant ORDER BY nom, prenom') as $option): ?>
             <option value="<?= (int) $option['id_etudiant'] ?>"><?= e($option['nom'] . ' ' . $option['prenom'] . ' — ' . $option['cin_passeport']) ?></option>
@@ -269,7 +269,7 @@ $courseGroups = db()->query(
       </div>
       <div class="col-md-5">
         <label class="form-label" for="id_groupe">Groupe</label>
-        <select class="form-select" id="id_groupe" name="id_groupe" required>
+        <select class="form-select" id="id_groupe" name="id_groupe" required data-app-list-prompt data-app-list-title="Choisir un groupe" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Choisir un groupe…">
           <option value="">Choisir un groupe</option>
           <?php foreach ($availableGroups as $option): ?>
             <option value="<?= (int) $option['id_groupe'] ?>">

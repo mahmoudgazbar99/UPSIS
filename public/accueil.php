@@ -142,6 +142,7 @@ $announcements = [];
 $navItems = [
     'accueil' => 'nav_home',
     'institut' => 'nav_institute',
+    'preinscription' => 'nav_preinsc',
     'formations' => 'nav_programs',
     'stages' => 'nav_clinical',
     'vie' => 'nav_life',
@@ -160,7 +161,7 @@ $navItems['contact'] = 'nav_contact';
     (function () {
       var theme = 'dark';
       try {
-        var saved = localStorage.getItem('landing-theme');
+        var saved = localStorage.getItem('landing-theme') || localStorage.getItem('webapp-theme');
         if (saved === 'light' || saved === 'dark') theme = saved;
       } catch (error) {}
       document.documentElement.setAttribute('data-theme', theme);
@@ -195,7 +196,7 @@ $navItems['contact'] = 'nav_contact';
   <link rel="icon" href="<?= e(institution_logo_src()) ?>">
   <link href="assets/theme-tokens.css?v=1" rel="stylesheet">
   <link href="assets/motion.css?v=3" rel="stylesheet">
-  <link href="assets/landing.css?v=48" rel="stylesheet">
+  <link href="assets/landing.css?v=51" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
@@ -295,7 +296,8 @@ $navItems['contact'] = 'nav_contact';
           <h1 id="hero-title"><?= t('hero_title') ?></h1>
           <p class="hero-text"><?= t('hero_text') ?></p>
           <div class="cta-row">
-            <a class="btn btn-primary btn-lg" href="#formations"><span><?= t('hero_cta_programs') ?></span><?= landing_icon('arrow') ?></a>
+            <a class="btn btn-primary btn-lg" href="#preinscription"><span><?= t('preinsc_cta') ?></span><?= landing_icon('arrow') ?></a>
+            <a class="btn btn-ghost btn-lg" href="#formations"><span><?= t('hero_cta_programs') ?></span><?= landing_icon('arrow') ?></a>
           </div>
         </div>
 
@@ -344,6 +346,62 @@ $navItems['contact'] = 'nav_contact';
               </li>
             <?php $pillarIndex++; endforeach; ?>
           </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section preinsc-lw" id="preinscription" aria-labelledby="preinsc-title">
+      <div class="preinsc-lw-glow" aria-hidden="true"></div>
+      <div class="container preinsc-lw-grid">
+        <div class="preinsc-lw-copy reveal from-top-start">
+          <p class="kicker"><?= t('preinsc_kicker') ?></p>
+          <h2 id="preinsc-title"><?= t('preinsc_title') ?></h2>
+          <p class="lead"><?= t('preinsc_lead') ?></p>
+          <p class="preinsc-lw-text"><?= t('preinsc_text') ?></p>
+          <ul class="preinsc-lw-points">
+            <li><?= landing_icon('clipboard') ?><span><?= t('preinsc_point_1') ?></span></li>
+            <li><?= landing_icon('activity') ?><span><?= t('preinsc_point_2') ?></span></li>
+            <li><?= landing_icon('cap') ?><span><?= t('preinsc_point_3') ?></span></li>
+          </ul>
+          <div class="cta-row preinsc-lw-cta">
+            <a class="btn btn-primary btn-lg" href="preinscription.php"><span><?= t('preinsc_cta') ?></span><?= landing_icon('arrow') ?></a>
+            <a class="btn btn-ghost btn-lg" href="connexion_candidat.php"><span><?= t('preinsc_portal') ?></span><?= landing_icon('arrow') ?></a>
+          </div>
+        </div>
+
+        <?php
+        $preinscSlides = [
+            ['adm-step-prereg.jpg', 'preinsc_slide_1', 'preinsc_slide_1_d'],
+            ['adm-step-docs.jpg', 'preinsc_slide_2', 'preinsc_slide_2_d'],
+            ['adm-step-test.jpg', 'preinsc_slide_3', 'preinsc_slide_3_d'],
+            ['adm-step-decision.jpg', 'preinsc_slide_4', 'preinsc_slide_4_d'],
+            ['adm-step-enroll.jpg', 'preinsc_slide_5', 'preinsc_slide_5_d'],
+        ];
+        ?>
+        <div class="preinsc-lw-slider reveal from-top-end" data-preinsc-slider data-delay="1">
+          <div class="preinsc-lw-foil" aria-hidden="true"></div>
+          <div class="preinsc-lw-viewport" tabindex="0" aria-roledescription="carousel" aria-label="<?= t('preinsc_title') ?>">
+            <div class="preinsc-lw-track" data-preinsc-track>
+              <?php foreach ($preinscSlides as $index => [$file, $captionKey, $descKey]): ?>
+                <figure class="preinsc-lw-slide<?= $index === 0 ? ' is-active' : '' ?>" data-preinsc-slide="<?= $index ?>"<?= $index === 0 ? '' : ' aria-hidden="true"' ?>>
+                  <img src="images/admissions/<?= e($file) ?>" alt="<?= t($captionKey) ?>" width="1152" height="864" loading="<?= $index === 0 ? 'eager' : 'lazy' ?>" decoding="async">
+                  <figcaption>
+                    <strong><?= t($captionKey) ?></strong>
+                    <span><?= t($descKey) ?></span>
+                  </figcaption>
+                </figure>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <div class="preinsc-lw-controls">
+            <button type="button" class="preinsc-lw-nav" data-preinsc-prev aria-label="<?= e($lang === 'ar' ? 'السابق' : ($lang === 'en' ? 'Previous' : 'Précédent')) ?>"><?= landing_icon('arrow') ?></button>
+            <div class="preinsc-lw-dots" data-preinsc-dots role="tablist">
+              <?php foreach ($preinscSlides as $index => $_): ?>
+                <button type="button" class="preinsc-lw-dot<?= $index === 0 ? ' is-active' : '' ?>" data-preinsc-dot="<?= $index ?>" aria-label="<?= (string) ($index + 1) ?>"<?= $index === 0 ? ' aria-current="true"' : '' ?>></button>
+              <?php endforeach; ?>
+            </div>
+            <button type="button" class="preinsc-lw-nav preinsc-lw-next" data-preinsc-next aria-label="<?= e($lang === 'ar' ? 'التالي' : ($lang === 'en' ? 'Next' : 'Suivant')) ?>"><?= landing_icon('arrow') ?></button>
+          </div>
         </div>
       </div>
     </section>
@@ -532,6 +590,8 @@ $navItems['contact'] = 'nav_contact';
               <div class="cta-row">
                 <a class="btn btn-primary" href="connexion_etudiant.php"><span><?= t('student_login') ?></span><?= landing_icon('arrow') ?></a>
                 <a class="btn btn-ghost" href="creer_espace_etudiant.php"><?= t('student_activate') ?></a>
+                <a class="btn btn-ghost" href="preinscription.php">Préinscription</a>
+                <a class="btn btn-ghost" href="connexion_candidat.php">Espace candidat</a>
               </div>
               <small><?= t('student_hint') ?></small>
             </article>
@@ -653,7 +713,10 @@ $navItems['contact'] = 'nav_contact';
         var next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
         root.classList.add('theme-shift');
         root.setAttribute('data-theme', next);
-        try { localStorage.setItem('landing-theme', next); } catch (error) {}
+        try {
+          localStorage.setItem('landing-theme', next);
+          localStorage.setItem('webapp-theme', next);
+        } catch (error) {}
         paintTheme();
         window.setTimeout(function () { root.classList.remove('theme-shift'); }, 320);
       });
@@ -869,6 +932,57 @@ $navItems['contact'] = 'nav_contact';
       } else {
         document.querySelectorAll('.reveal').forEach(function (node) { node.classList.add('is-visible'); });
       }
+
+      /* Lightswind-style grain carousel port for préinscription */
+      document.querySelectorAll('[data-preinsc-slider]').forEach(function (root) {
+        var slides = Array.prototype.slice.call(root.querySelectorAll('[data-preinsc-slide]'));
+        var dots = Array.prototype.slice.call(root.querySelectorAll('[data-preinsc-dot]'));
+        if (!slides.length) return;
+        var index = 0;
+        var timer = null;
+        var viewport = root.querySelector('.preinsc-lw-viewport');
+        function paint(next) {
+          index = (next + slides.length) % slides.length;
+          slides.forEach(function (slide, i) {
+            var on = i === index;
+            slide.classList.toggle('is-active', on);
+            if (on) slide.removeAttribute('aria-hidden'); else slide.setAttribute('aria-hidden', 'true');
+          });
+          dots.forEach(function (dot, i) {
+            var on = i === index;
+            dot.classList.toggle('is-active', on);
+            if (on) dot.setAttribute('aria-current', 'true'); else dot.removeAttribute('aria-current');
+          });
+        }
+        function stop() { if (timer) { window.clearInterval(timer); timer = null; } }
+        function start() {
+          stop();
+          if (reduce.matches || slides.length < 2) return;
+          timer = window.setInterval(function () { paint(index + 1); }, 5200);
+        }
+        var prev = root.querySelector('[data-preinsc-prev]');
+        var next = root.querySelector('[data-preinsc-next]');
+        if (prev) prev.addEventListener('click', function () { paint(index - 1); start(); });
+        if (next) next.addEventListener('click', function () { paint(index + 1); start(); });
+        dots.forEach(function (dot) {
+          dot.addEventListener('click', function () {
+            paint(parseInt(dot.getAttribute('data-preinsc-dot'), 10) || 0);
+            start();
+          });
+        });
+        if (viewport) {
+          viewport.addEventListener('keydown', function (event) {
+            if (event.key === 'ArrowLeft') { paint(index - 1); start(); }
+            if (event.key === 'ArrowRight') { paint(index + 1); start(); }
+          });
+          root.addEventListener('mouseenter', stop);
+          root.addEventListener('mouseleave', start);
+          root.addEventListener('focusin', stop);
+          root.addEventListener('focusout', start);
+        }
+        paint(0);
+        start();
+      });
     })();
   </script>
 <script type="module" src="assets/landing-intro-lottie.js?v=4"></script>

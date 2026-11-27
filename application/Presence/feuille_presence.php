@@ -83,7 +83,7 @@ page_head('Feuille de présence', 'attendance');
             <?php if (is_admin()): ?>
                 <div class="col-md-4">
                     <label class="form-label">Enseignant *</label>
-                    <select class="form-select" name="id_enseignant" onchange="this.form.submit()" required>
+                    <select class="form-select" name="id_enseignant" onchange="this.form.submit()" required data-app-list-prompt data-app-list-title="Enseignant" data-app-list-search="Nom ou CIN…" data-app-list-placeholder="Choisir…">
                         <option value="">Choisir</option>
                         <?php foreach ($teachers as $teacher): ?>
                             <option value="<?= (int) $teacher['id_enseignant'] ?>" <?= $teacherId === (int) $teacher['id_enseignant'] ? 'selected' : '' ?>>
@@ -102,7 +102,7 @@ page_head('Feuille de présence', 'attendance');
 
             <div class="col-md-4">
                 <label class="form-label">Groupe affecté *</label>
-                <select class="form-select" name="id_groupe" onchange="this.form.submit()" <?= empty($groups) ? 'disabled' : '' ?> required>
+                <select class="form-select" name="id_groupe" onchange="this.form.submit()" <?= empty($groups) ? 'disabled' : '' ?> required data-app-list-prompt data-app-list-title="Groupe" data-app-list-search="Semestre ou numéro…" data-app-list-placeholder="Choisir…">
                     <option value="">Choisir</option>
                     <?php foreach ($groups as $group): ?>
                         <option value="<?= (int) $group['id_groupe'] ?>" <?= $groupId === (int) $group['id_groupe'] ? 'selected' : '' ?>>
@@ -116,7 +116,7 @@ page_head('Feuille de présence', 'attendance');
 
             <div class="col-md-4">
                 <label class="form-label">Matière affectée *</label>
-                <select class="form-select" name="id_mat" <?= empty($subjects) ? 'disabled' : '' ?> required>
+                <select class="form-select" name="id_mat" <?= empty($subjects) ? 'disabled' : '' ?> required data-app-list-prompt data-app-list-title="Matière" data-app-list-search="Nom ou code ECUE…" data-app-list-placeholder="Choisir…">
                     <option value="">Choisir</option>
                     <?php foreach ($subjects as $subject): ?>
                         <option value="<?= (int) $subject['id_mat'] ?>" <?= $subjectId === (int) $subject['id_mat'] ? 'selected' : '' ?>>

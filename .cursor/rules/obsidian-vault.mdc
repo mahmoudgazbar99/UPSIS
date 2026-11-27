@@ -1,0 +1,26 @@
+---
+description: Always use Mahmoud's Obsidian vault for project memory and decisions
+alwaysApply: true
+---
+
+# Obsidian vault (mandatory)
+
+Vault path (absolute, Windows):
+
+`C:\Users\USER\Documents\remember_me`
+
+From now on, always work with this existing vault. Do not invent another vault path or duplicate Brain OS structure elsewhere.
+
+## How to use it
+
+1. **UPSIS / this repo** — read and update notes under `20_projects/upsis/` (start with `UPSIS.md`, related maps, theme notes). Log durable decisions under `30_logs/` when appropriate (DEC notes).
+2. **Session context** — when the task needs memory, intent, preferences, or “why we did X”, read vault notes (filesystem; or Obsidian MCP tools if connected). Prefer vault for decisions/history; prefer the codebase for live implementation facts.
+3. **Writes** — when the user asks to save/sync memory, or after a meaningful product decision, update the relevant vault note instead of only chatting. Keep frontmatter/links consistent with existing notes. Do not invent new top-level vault folders.
+4. **Secrets** — never store passwords, API keys, or credentials in the vault. Existing remember_me constraints still apply.
+5. **MCP** — if an `obsidian` MCP server is available, use it; otherwise read/write the same paths on disk. Obsidian app does not need to be open for filesystem access.
+
+## Do not
+
+- Skip the vault when the user asks about saved decisions, project memory, or Obsidian notes.
+- Create a parallel notes system inside the git repo for the same content.
+- Treat chat history alone as the source of truth for durable project decisions.

@@ -171,6 +171,12 @@ function role_can(string $permission): bool
         return in_array($permission, [
             'students.view', 'students.create', 'students.edit', 'students.assign',
             'documents.issue', 'requests.manage', 'students.export',
+            'admissions.view', 'admissions.manage', 'admissions.review',
+        ], true);
+    }
+    if (is_finance()) {
+        return in_array($permission, [
+            'admissions.view',
         ], true);
     }
     if (is_stage()) {

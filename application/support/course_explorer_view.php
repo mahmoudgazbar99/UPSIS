@@ -261,7 +261,7 @@ if (!function_exists('course_explorer_url')) {
                             <?php else: ?>
                             <div class="mb-3">
                                 <label class="form-label" for="courseCreateSubject">Matière</label>
-                                <select class="form-select" id="courseCreateSubject" name="id_mat" required>
+                                <select class="form-select" id="courseCreateSubject" name="id_mat" required data-app-list-prompt data-app-list-title="Matière" data-app-list-search="Nom ou code…" data-app-list-placeholder="Choisir une matière…">
                                     <option value="">Choisir une matière…</option>
                                     <?php foreach ($subjects as $subject): if (!is_array($subject)) { continue; } ?>
                                     <option value="<?= (int) ($subject['id_mat'] ?? 0) ?>"><?= e(trim((string) ($subject['code_ecue'] ?? '') . ' — ' . (string) ($subject['description_ecue'] ?? '')) . (trim((string) ($subject['semestre'] ?? '')) !== '' ? ' (' . (string) $subject['semestre'] . ')' : '')) ?></option>

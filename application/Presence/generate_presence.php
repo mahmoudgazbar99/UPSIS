@@ -24,7 +24,7 @@ if (!$student) {
     exit('Erreur : Étudiant introuvable dans la base de données.');
 }
 
-$templatePath = root_path('templates/template_presence_2.docx');
+$templatePath = root_path('templates/template_presence_3.docx');
 if (!is_file($templatePath)) {
     http_response_code(500);
     exit('Erreur : Le modèle Word de présence est introuvable.');
@@ -50,6 +50,8 @@ try {
     $programId = (int) ($student['id_program'] ?? 0);
     $programId = $programId > 0 ? $programId : null;
     $docxPath = institution_copy_docx_template($templatePath);
+    $preview = ($_GET['preview'] ?? '') === '1';
+    $numero = certificate_allocate_number('presence', !$preview);
     institution_replace_docx_placeholders($docxPath, [
         'annee_univ' => institution_ltr_text(($currentYear + 1) . '/' . $currentYear),
         'prenom_ar' => institution_rtl_text((string) ($student['prenom_ar'] ?? '')),
@@ -66,11 +68,11 @@ try {
         'sec_generale' => institution_rtl_text($institution['sec_generale_ar']),
         'establishment_ar' => institution_rtl_text($institution['establishment_ar']),
         'establishment_fr' => $institution['establishment_fr'],
+        'num_pres' => institution_ltr_text((string) $numero),
     ]);
 
-    $preview = ($_GET['preview'] ?? '') === '1';
-    $numero = certificate_allocate_number('presence', !$preview);
-    certificate_docx_apply_extras($docxPath, $numero, $cachetFile['path'] ?? null);
+    // ${num_pres} filled above; extras = cachet only.
+    certificate_docx_apply_extras($docxPath, null, $cachetFile['path'] ?? null);
     $asPdf = !$preview && certificate_wants_pdf();
     certificate_send_generated_document($docxPath, $fileBase, $asPdf, $preview, true);
 } catch (Throwable $exception) {

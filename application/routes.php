@@ -36,8 +36,8 @@ return [
     'affecter_enseignant.php' => 'Enseignant/affecter_enseignant.php',
     'responsables.php' => 'Enseignant/responsables.php',
     'mes_cours.php' => 'Enseignant/mes_cours.php',
+    'emploi_enseignant.php' => 'Enseignant/emploi_enseignant.php',
 
-    'tronc_commun.php' => 'Pedagogie/tronc_commun.php',
     'structure_academique.php' => 'Pedagogie/structure_academique.php',
     'specialites.php' => 'Pedagogie/specialites.php',
     'ajouter_matiere.php' => 'Pedagogie/ajouter_matiere.php',
@@ -50,6 +50,9 @@ return [
     'politique_presence.php' => 'Pedagogie/politique_presence.php',
     'promotion.php' => 'Pedagogie/promotion.php',
     'emploi_temps.php' => 'Pedagogie/emploi_temps.php',
+    'emploi_generateur.php' => 'Pedagogie/emploi_generateur.php',
+    'emploi_editeur.php' => 'Pedagogie/emploi_editeur.php',
+    'emploi_export.php' => 'Pedagogie/emploi_export.php',
     'emploi_pdf.php' => 'Pedagogie/emploi_pdf.php',
     'cours_fichier.php' => 'Pedagogie/cours_fichier.php',
 
@@ -104,4 +107,19 @@ return [
     'brand_logo.php' => 'support/brand_logo.php',
 
     'chatbot_api.php' => 'Chatbot/api.php',
+
+    'preinscription.php' => 'Admissions/preinscription.php',
+    'connexion_candidat.php' => 'Admissions/connexion_candidat.php',
+    'espace_candidat.php' => 'Admissions/espace_candidat.php',
+    'admissions.php' => 'Admissions/admissions.php',
+    'admission_candidat.php' => 'Admissions/admission_candidat.php',
+    'admission_campagnes.php' => 'Admissions/admission_campagnes.php',
+    'admission_tests.php' => 'Admissions/admission_tests.php',
+    'admission_entretiens.php' => 'Admissions/admission_entretiens.php',
+    'admission_config.php' => 'Admissions/admission_config.php',
+    'admission_document_file.php' => 'Admissions/admission_document_file.php',
+    'admission_formulaire.php' => 'Admissions/admission_formulaire.php',
+
+    'preregistration_etudiant.php' => 'Dashboard/preregistration_etudiant.php',
+    'preregistration_suivi.php' => 'Scolarite/preregistration_suivi.php',
 ];

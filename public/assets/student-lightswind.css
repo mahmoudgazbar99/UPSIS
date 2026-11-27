@@ -432,6 +432,21 @@ html[data-student-skin="nursing"] .portal-theme-toggle:active {
   }
 }
 
+/* Activated-account sheet / card polish (pairs with espace-etudiant-lw) */
+html[data-student-skin="nursing"] .student-space-sheet[data-glow] {
+  border-color: color-mix(in srgb, var(--lw-primary) 28%, var(--line));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 5%, transparent) inset,
+    0 14px 36px -20px color-mix(in srgb, var(--lw-primary) 35%, transparent);
+}
+html[data-student-skin="nursing"] .student-space-sheet[data-glow] h1 {
+  letter-spacing: -0.03em;
+}
+html[data-student-skin="nursing"] .student-space-download,
+html[data-student-skin="nursing"] .student-space-sheet .btn-primary {
+  box-shadow: 0 0 18px color-mix(in srgb, var(--lw-primary) 22%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html[data-student-skin="nursing"] .student-space-cards button,
   html[data-student-skin="nursing"] .portal-drawer button,

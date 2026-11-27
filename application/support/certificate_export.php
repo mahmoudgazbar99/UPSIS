@@ -210,6 +210,41 @@ function certificate_loosen_paragraph(DOMXPath $xpath, DOMElement $paragraph, st
     certificate_word_attr($spacing, $namespace, 'lineRule', 'auto');
 }
 
+function certificate_trim_trailing_empty_paragraphs(DOMXPath $xpath): void
+{
+    $body = $xpath->query('/w:document/w:body')->item(0);
+    if (!$body instanceof DOMElement) {
+        return;
+    }
+    $trailing = [];
+    foreach ($body->childNodes as $child) {
+        if (!$child instanceof DOMElement) {
+            continue;
+        }
+        if ($child->localName === 'sectPr') {
+            break;
+        }
+        if ($child->localName === 'tbl') {
+            $trailing = [];
+            continue;
+        }
+        if ($child->localName !== 'p') {
+            $trailing = [];
+            continue;
+        }
+        $hasContent = trim($child->textContent) !== ''
+            || $xpath->query('.//w:drawing|.//w:pict|.//w:br|.//w:sectPr', $child)->length > 0;
+        if ($hasContent) {
+            $trailing = [];
+            continue;
+        }
+        $trailing[] = $child;
+    }
+    foreach ($trailing as $paragraph) {
+        $body->removeChild($paragraph);
+    }
+}
+
 function certificate_raise_landscape_content(DOMXPath $xpath, string $namespace): void
 {
     foreach ($xpath->query('//w:pgMar') as $margin) {
@@ -217,13 +252,14 @@ function certificate_raise_landscape_content(DOMXPath $xpath, string $namespace)
             continue;
         }
         certificate_word_attr($margin, $namespace, 'top', '227');
+        certificate_word_attr($margin, $namespace, 'bottom', '360');
         if ((int) $margin->getAttributeNS($namespace, 'header') >= 227) {
             certificate_word_attr($margin, $namespace, 'header', '113');
         }
     }
-    foreach ($xpath->query('//w:tblpPr') as $float) {
-        if ($float instanceof DOMElement && $float->hasAttributeNS($namespace, 'tblpY')) {
-            certificate_word_attr($float, $namespace, 'tblpY', '0');
+    foreach ($xpath->query('//w:tblPr/w:tblpPr') as $float) {
+        if ($float instanceof DOMElement && $float->parentNode instanceof DOMElement) {
+            $float->parentNode->removeChild($float);
         }
     }
     foreach ($xpath->query('//w:framePr') as $frame) {
@@ -231,10 +267,26 @@ function certificate_raise_landscape_content(DOMXPath $xpath, string $namespace)
             certificate_word_attr($frame, $namespace, 'y', '0');
         }
     }
+    foreach ($xpath->query('//w:pageBreakBefore') as $pageBreak) {
+        if ($pageBreak instanceof DOMElement && $pageBreak->parentNode instanceof DOMElement) {
+            $pageBreak->parentNode->removeChild($pageBreak);
+        }
+    }
+    foreach ($xpath->query('//w:br[@w:type="page"]') as $pageBreak) {
+        if ($pageBreak instanceof DOMElement && $pageBreak->parentNode instanceof DOMElement) {
+            $pageBreak->parentNode->removeChild($pageBreak);
+        }
+    }
 
     $table = $xpath->query('/w:document/w:body/w:tbl')->item(0);
     if (!$table instanceof DOMElement) {
+        certificate_trim_trailing_empty_paragraphs($xpath);
         return;
+    }
+    foreach ($xpath->query('./w:tr/w:trPr/w:trHeight', $table) as $height) {
+        if ($height instanceof DOMElement && $height->parentNode instanceof DOMElement) {
+            $height->parentNode->removeChild($height);
+        }
     }
     foreach ($xpath->query('./w:tr/w:tc', $table) as $cell) {
         if (!$cell instanceof DOMElement) {
@@ -255,6 +307,23 @@ function certificate_raise_landscape_content(DOMXPath $xpath, string $namespace)
             }
         }
     }
+    certificate_trim_trailing_empty_paragraphs($xpath);
+}
+
+function certificate_set_cell_margin(DOMXPath $xpath, DOMElement $cellProperties, string $namespace, string $side, int $twips): void
+{
+    $margins = $xpath->query('./w:tcMar', $cellProperties)->item(0);
+    if (!$margins instanceof DOMElement) {
+        $margins = $cellProperties->ownerDocument->createElementNS($namespace, 'w:tcMar');
+        $cellProperties->appendChild($margins);
+    }
+    $node = $xpath->query('./w:' . $side, $margins)->item(0);
+    if (!$node instanceof DOMElement) {
+        $node = $cellProperties->ownerDocument->createElementNS($namespace, 'w:' . $side);
+        $margins->appendChild($node);
+    }
+    certificate_word_attr($node, $namespace, 'w', (string) $twips);
+    certificate_word_attr($node, $namespace, 'type', 'dxa');
 }
 
 function certificate_apply_centered_halves(DOMXPath $xpath, string $namespace): void
@@ -262,6 +331,7 @@ function certificate_apply_centered_halves(DOMXPath $xpath, string $namespace): 
     $pageWidth = 16838;
     $pageHeight = 11906;
     $margin = 720;
+    $cutPad = 288;
     $table = $xpath->query('/w:document/w:body/w:tbl')->item(0);
     if (!$table instanceof DOMElement) {
         return;
@@ -323,6 +393,15 @@ function certificate_apply_centered_halves(DOMXPath $xpath, string $namespace): 
         $properties = $table->ownerDocument->createElementNS($namespace, 'w:tblPr');
         $table->insertBefore($properties, $table->firstChild);
     }
+    foreach ($xpath->query('./w:tblpPr', $properties) as $float) {
+        $properties->removeChild($float);
+    }
+    foreach ($xpath->query('./w:tblOverlap', $properties) as $overlap) {
+        $properties->removeChild($overlap);
+    }
+    $overlap = $table->ownerDocument->createElementNS($namespace, 'w:tblOverlap');
+    certificate_word_attr($overlap, $namespace, 'val', 'never');
+    $properties->appendChild($overlap);
     foreach ($xpath->query('./w:tblInd', $properties) as $indent) {
         $properties->removeChild($indent);
     }
@@ -356,7 +435,9 @@ function certificate_apply_centered_halves(DOMXPath $xpath, string $namespace): 
                 continue;
             }
             $span = certificate_grid_span($xpath, $cell, $namespace);
-            if ($cursor + $span === $leftCount) {
+            $touchesCutLeft = ($cursor + $span) === $leftCount;
+            $touchesCutRight = $cursor === $leftCount;
+            if ($touchesCutLeft) {
                 certificate_set_cut_border($xpath, $cell, $namespace);
             }
             $cellWidthValue = 0;
@@ -375,9 +456,16 @@ function certificate_apply_centered_halves(DOMXPath $xpath, string $namespace): 
             }
             certificate_word_attr($cellWidth, $namespace, 'w', (string) $cellWidthValue);
             certificate_word_attr($cellWidth, $namespace, 'type', 'dxa');
+            if ($touchesCutLeft) {
+                certificate_set_cell_margin($xpath, $cellProperties, $namespace, 'right', $cutPad);
+            }
+            if ($touchesCutRight) {
+                certificate_set_cell_margin($xpath, $cellProperties, $namespace, 'left', $cutPad);
+            }
+            $innerWidth = max(200, $cellWidthValue - (($touchesCutLeft || $touchesCutRight) ? ($cutPad + 120) : 120));
             foreach ($xpath->query('./w:tbl', $cell) as $nested) {
                 if ($nested instanceof DOMElement) {
-                    certificate_resize_table($xpath, $namespace, $nested, max(200, $cellWidthValue - 80));
+                    certificate_resize_table($xpath, $namespace, $nested, $innerWidth);
                 }
             }
             $cursor += $span;
